@@ -1,0 +1,6 @@
+abstract interface Memory.Buffer {
+	`Creates a buffer of $size bytes long.`
+	void @construct(int size);
+
+	byte @index(int offset); //MEM: Max buffer index size of 2.14 GB
+}

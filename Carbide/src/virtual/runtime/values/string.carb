@@ -1,0 +1,71 @@
+class Carbide.Virtual.Values.String inherits Carbide.Virtual.Value {
+	bound public override string type = "string";
+	bound public override string value = "";
+
+	bound public override <void>function setValue(map raw) {
+		this.value = raw["value"];
+	}
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	fixed public override <Carbide.Virtual.Values.String>function create(string val) {
+		var map m = new map();
+		var Carbide.Virtual.Values.String value = new Carbide.Virtual.Values.String(m);
+		value.value = val;
+		return value;
+	}
+
+	bound public override <void>function iterate(Carbide.Virtual.Variable vKey, Carbide.Virtual.Variable v, Carbide.Virtual.Block code, Carbide.Virtual.Scope scope) {
+		for (var int i in this.value) {
+			vKey.value.value = i;
+			v.value = Carbide.Virtual.Values.String.create(this.value[i]);
+			code.run(scope);
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function property(string name, Carbide.Virtual.Scope scope) {
+		if (name == "length") {
+			var float len = this.value.length();
+			return Carbide.Virtual.Values.Number.create(len);
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function method(string name, <Carbide.Virtual.Value>array input,  Carbide.Virtual.Scope scope) {
+		if (name == "replace") {
+			if (input.length == 2) {
+				var string what = input[0].value;
+				var string replace = input[1].value;
+				return Carbide.Virtual.Values.String.create(this.value.replace(what, replace));
+			}
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	bound public override <Carbide.Virtual.Value>function operate(string operator, Carbide.Virtual.Values.String value,  Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Value v = empty;
+		if (operator == "=") {
+			this.value = value.value;
+			v = Carbide.Virtual.Values.Null.create();
+		}else if (operator == "==") {
+			v = Carbide.Virtual.Values.Bool.create(this.value == value.value);
+		}else if (operator == "!=") {
+			v = Carbide.Virtual.Values.Bool.create(this.value != value.value);
+		}else if (operator == "+") {
+			v = Carbide.Virtual.Values.String.create(this.value + value.value);
+		}else if (operator == "+=") {
+			this.value += value.value;
+			v = Carbide.Virtual.Values.Null.create();
+		}
+		return v;
+	}
+
+	bound public override <Carbide.Virtual.Value>function duplicate() {
+		return Carbide.Virtual.Values.String.create(this.value);
+	}
+}

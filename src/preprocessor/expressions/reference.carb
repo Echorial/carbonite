@@ -1,0 +1,17 @@
+class Carbonite.Pre.Expressions.Reference inherits Carbonite.Pre.Expression {
+	bound public string name = "";
+
+	bound public override <void>function build() {
+		this.buildSubs();
+		this.name = this.data["value"];
+	}
+
+	bound public override <Carbonite.Pre.Value>function run() {
+		var Carbonite.Pre.Variable ref = this.parent.scope.search(this.name);
+		if (ref != empty) {
+			return this.runSubs(ref.value);
+		}else{
+			this.parent.topParent.parent.runtimeError(this.data["startOffset"], this.data["offset"], "Unknown variable '" + this.name + "'");
+		}
+	}
+}

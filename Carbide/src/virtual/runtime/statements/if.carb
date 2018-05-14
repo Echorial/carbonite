@@ -1,0 +1,35 @@
+class Carbide.Virtual.Statements.If inherits Carbide.Virtual.Statement {
+	bound public <Carbide.Virtual.Expression>array checks = new <Carbide.Virtual.Expression>array();
+	bound public Carbide.Virtual.Block code = empty;
+
+	fixed public <Carbide.Virtual.Statements.If>function @construct(Carbide.Virtual.Block parent, <Carbide.Virtual.Expression>array checks, Carbide.Virtual.Block code) {
+		this.parent = parent;
+		this.topParent = this.parent.parent.root;
+		this.checks = checks;
+		for (var int i in this.checks) {
+			var Carbide.Virtual.Expression check = this.checks[i];
+			check.parent = this;
+			check.setParent();
+		}
+		this.code = code;
+	}
+
+	bound public override <void>function run(Carbide.Virtual.Scope scope) {
+		var bool ok = true;
+		for (var int i in this.checks) {
+			var Carbide.Virtual.Expression check = this.checks[i];
+			var Carbide.Virtual.Values.Bool v = check.run(scope);
+			if (v.value == false) {
+				ok = false;
+			}
+		}
+		if (ok) {
+			this.code.run(scope);
+		}
+	}
+
+	bound public override <void>function clear() {
+		this.scope.clear();
+		this.code.clear();
+	}
+}

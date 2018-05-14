@@ -1,0 +1,427 @@
+	class Carbonite.Expression inherits Carbonite.Range {
+	bound public Carbonite.Type output = empty;
+	bound public Carbonite.Class parent = empty;
+	bound public Carbonite.Body container = empty;
+	bound public Carbonite.Compiler compiler = empty;
+	bound public bool grouped = false;
+
+	bound public int blockIndex = 0;
+
+	bound public Carbonite.Expression relativeParent = empty;
+	bound public <Carbonite.Term>array terms = new <Carbonite.Term>array();
+	
+	bound public Carbonite.Term first = empty;
+	bound public Carbonite.Term last = empty;
+
+	bound public map raw = empty;
+	bound public <int>array orders = new <int>array();
+
+	bound public string operator = "";
+	bound public Carbonite.Members.Operator reference = empty;
+
+	bound public Carbonite.Function function = null; //Hack
+	
+	fixed public <Carbonite.Expression>function @construct(Carbonite.Class parent, Carbonite.Body container) {
+		this.parent = parent;
+		this.container = container;
+	}
+
+	bound public <Carbonite.Terms.Expression>function spawnChild(<map>array terms) {
+		var Carbonite.Terms.Expression exp = new Carbonite.Terms.Expression(this, this.container);
+		exp.loadFromRaw(this.raw, this.terms, this.terms.length());
+		exp.expression.loadLocation(this.parent, this.raw);
+		exp.expression.relativeParent = this.relativeParent;
+		exp.expression.raw = this.raw;
+		exp.expression.loadTerms(terms);
+		exp.output = exp.expression.output;
+		return exp;
+	}
+
+	bound public <void>function reOrder(<map>array terms) {
+		var int diff = 0;
+		var bool needsReOrder = false;
+		for (var int i in this.orders) {
+			var int order = this.orders[i];
+			if (diff != order) {
+				if (i == 0) {
+					diff = order;
+				}else{
+					needsReOrder = true;
+				}
+			}
+		}
+
+		if (needsReOrder) {
+			var <int>array orders = this.orders;
+			var <int>array sorted = orders.highToLow();
+			
+			var Carbonite.Term first = empty;
+			var Carbonite.Term last = empty;
+			var int len = sorted.length();
+			var int high = sorted[0];
+
+			for (var int i in terms) {
+				var map term = terms[i];
+				if (first == empty) {
+					first = Carbonite.Term.make(this, this.container, this.getRawTerm(terms[i]));
+					first.loadFromRaw(this.getRawTerm(terms[i]), this.terms, this.terms.length());
+				}else{
+					last = Carbonite.Term.make(this, this.container, this.getRawTerm(terms[i]));
+					last.loadFromRaw(this.getRawTerm(terms[i]), this.terms, this.terms.length());
+					
+					var <Carbonite.Type>array arg = new <Carbonite.Type>array();
+					arg.push(last.output);
+					var map temp = terms[i - 1];
+					var string literalOperator = temp["operator"];
+					var Carbonite.Members.Operator op = first.output.reference.overload(literalOperator, arg, this);
+					if (op.order == high) {
+						this.operator = literalOperator;
+						this.reference = op;
+
+						var <map>array splitTerms = terms.split(i);
+						if (splitTerms.length() == 1) {
+							var map firstTerm = splitTerms[0];
+							var <map>array castParam = [firstTerm["term"]];
+							this.first = this.spawnChild(castParam);
+						}else{
+							this.first = this.spawnChild(splitTerms);
+						}
+						this.last = this.spawnChild(terms.splice(i));
+					}else{
+						first = last;
+					}
+				}
+			}
+		}
+	}
+
+	bound public <void>function loadTerms(<map>array realTerms) {
+		var bool thisIsRelativeParent = false;
+		if (this.relativeParent == empty) {
+			this.relativeParent = this;
+			thisIsRelativeParent = true;
+		}
+
+		var <map>array terms = realTerms.clone();
+
+		var map term = terms[0];
+		var Carbonite.Term t = Carbonite.Term.make(this, this.container, this.getRawTerm(term));
+		t.loadFromRaw(this.getRawTerm(term), this.terms, this.terms.length());
+		this.first = t;
+
+		if (terms.length() > 2) {
+			this.operator = term["operator"];
+			var Carbonite.Terms.Expression exp = new Carbonite.Terms.Expression(this, this.container);
+			exp.loadFromRaw(this.raw, this.terms, this.terms.length());
+			exp.expression.loadLocation(this.parent, this.raw);
+			exp.expression.relativeParent = this.relativeParent;
+			exp.expression.raw = this.raw;
+			exp.expression.loadTerms(terms.splice(1));
+			exp.output = exp.expression.output;
+			this.last = exp;
+		}else if (terms.length() > 1) {
+			this.operator = term["operator"];
+			var map term2 = terms[1];
+			var Carbonite.Term t2 = Carbonite.Term.make(this, this.container, this.getRawTerm(term2));
+			t2.loadFromRaw(this.getRawTerm(term2), this.terms, this.terms.length());
+			this.last = t2;
+		}
+
+		if (this.last == empty) {
+			this.output = this.first.output;
+			if ("operator" in term) {
+				var <Carbonite.Type>array arg = new <Carbonite.Type>array();
+				var string literalOperator = term["operator"];
+				var Carbonite.Members.Operator op = this.first.output.reference.overload(literalOperator, arg, this);
+				this.operator = literalOperator;
+				this.reference = op;
+			}
+		}else{
+			var normal = true;
+			var Carbonite.Type castOutput = null;
+			if (this.operator == "=>") {
+				if (this.first.type == "sequence") {
+					var Carbonite.Terms.Sequence seq = this.first;
+					var Carbonite.Parts.Reference reference = seq.parts[0];
+					if (reference.isConstant) {
+						this.last.output = seq.output;
+						castOutput = seq.output;
+					}
+				}
+			}else if (this.operator == "=") {
+				if (this.first.type == "sequence") {
+					var Carbonite.Terms.Sequence seq = this.first;
+					var Carbonite.Part lastPart = seq.parts[seq.parts.length - 1];
+					var Carbonite.Part prev = seq.parts[seq.parts.length - 2];
+					if (lastPart.type == "index") {
+						var list = prev.output.reference.getMethods("@setIndex");
+						if (list.length > 0) {
+							var setIndex = list[0];
+							var last = this.last;
+							var setExp = new Carbonite.Expression(this.parent, this.container);
+							setExp.output = last.output;
+							setExp.first = last;
+							this.last = null;
+							var Carbonite.Parts.Index castLast = lastPart;
+							var index = castLast.argument;
+							seq.parts.pop(); //MEM: Does it delete last? If so copy.
+							var callSetIndex = new Carbonite.Parts.Call(prev, this.first);
+							callSetIndex.reference = new Carbonite.Members.ReferenceMethod(setIndex, prev.context);
+							callSetIndex.arguments.push(index);
+							callSetIndex.arguments.push(setExp);
+							seq.parts.push(callSetIndex);
+							this.output = callSetIndex.reference.output;
+							this.reference = null;
+							return null;
+						}
+					}
+				}
+			}
+
+			var <Carbonite.Type>array arg = new <Carbonite.Type>array();
+			arg.push(this.last.output);
+
+			this.reference = this.first.output.reference.overload(this.operator, arg, this);
+			this.output = this.reference.output;
+			if (normal == false)
+				this.output = castOutput;
+			
+			if (this.reference.hasFlag("set")) {
+				if (this.first.type == "sequence") {
+					var Carbonite.Terms.Sequence seq = this.first;
+					var Carbonite.Part lastPart = seq.parts[seq.parts.length - 1];
+					var Carbonite.Part prev = seq.parts[seq.parts.length - 2];
+					if (lastPart.type == "index") {
+						var list = prev.output.reference.getMethods("@actIndex");
+						if (list.length > 0) {
+							var setIndex = list[0];
+							var Carbonite.Parts.Index castLast = lastPart;
+							var index = castLast.argument;
+							seq.parts.pop(); //MEM: Does it delete the index?
+							var callSetIndex = new Carbonite.Parts.Call(prev, this.first);
+							callSetIndex.reference = new Carbonite.Members.ReferenceMethod(setIndex, prev.context);
+							callSetIndex.arguments.push(index);
+							seq.parts.push(callSetIndex);
+						}
+					}
+				}
+			}
+
+			this.relativeParent.orders.push(this.reference.order);
+
+			if (thisIsRelativeParent) {
+				this.reOrder(realTerms);
+			}
+		}
+
+		/*if (false) {
+			if (this.operator != "") {
+				for (var int i in terms) {
+					var map term = terms[i];
+					var Carbonite.Term t = Carbonite.Term.make(this, this.container, term);
+					t.loadFromRaw(term, this.terms, this.terms.length());
+					this.terms.push(t);
+				}
+			}else{
+				var <Carbonite.Expression>array seg = new <Carbonite.Expression>array();
+				var <map>array cur = new <map>array();
+				for (var int i in terms) {
+					var map term = terms[i];
+					if ("operator" in term) {
+						cur.push(term["term"]);
+						var Carbonite.Expression exp = new Carbonite.Expression(this.parent, this.container);
+						exp.operator = term["operator"];
+						exp.loadLocation(this.parent, this.raw);
+						exp.loadTerms(cur);
+						seg.push(exp);
+						cur = new <map>array();
+					}else{
+						cur.push(term);
+					}
+				}
+			}
+		}*/
+	}
+
+	bound public <map>function getRawTerm(map term) {
+		if ("operator" in term) {
+			return term["term"];
+		}else{
+			return term;
+		}
+	}
+
+	bound public <void>function loadFromRaw(map raw) {
+		this.raw = raw;
+		var <map>array terms = raw["terms"];
+		this.loadLocation(this.parent, raw);
+		//this.loadTerms(terms);
+		this.relativeParent = this;
+		Carbonite.Expression.buildTermsIntoExpression(this, terms, 0, terms.length - 1);
+	}
+
+	void operate(string operator) {
+		var arg = new <Carbonite.Type>array();
+		arg.push(this.last.output);
+		var Carbonite.Members.Operator op = this.first.output.reference.overload(operator, arg, this);
+		this.operator = operator;
+		this.reference = op;
+		this.output = this.reference.output;
+	}
+
+	fixed void buildTermsIntoExpression(Carbonite.Expression exp, <map>array terms, int start, int end) {
+		var allSame = true;
+		var diff = "";
+		var high = 0-1;
+		var index = 0-1;
+
+		if (terms.length == 1) {
+			exp.first = Carbonite.Term.make(exp, exp.container, exp.getRawTerm(terms[0]));
+			exp.first.loadFromRaw(exp.getRawTerm(terms[0]), exp.terms, 0);
+			exp.output = exp.first.output;
+			if (terms[0]["operator"] != null) {
+				var string operator = terms[0]["operator"];
+				var arg = new <Carbonite.Type>array();
+				var op = exp.first.output.reference.overload(operator, arg, exp);
+				exp.operator = operator;
+				exp.reference = op;
+				exp.output = exp.reference.output;
+			}
+			return null;
+		}
+
+		//TODO: Optimize for single expressions(only two terms)
+
+		//Finds highest order operator and stores the index in var index
+		for (var int i = start; i <= end; i++) {
+			var term = terms[i];
+			if (("operator" in term) and (i != end)) {
+				var string operator = term["operator"];
+				var order = exp.parent.compiler.operatorOrders[operator];
+				if (order == null) {
+					exp.buildError("Unkown operator '" + operator + "'");
+				}else{
+					if (diff == "")
+						diff = operator;
+					else if (diff != operator)
+						allSame = false;
+					
+					if (high < order) {
+						high = order;
+						index = i;
+					}
+				}
+			}
+		}
+
+		if (allSame and ((end - start) == 1)) {
+			var first = Carbonite.Term.make(exp, exp.container, exp.getRawTerm(terms[start]));
+			first.loadFromRaw(exp.getRawTerm(terms[start]), exp.terms, 0);
+			exp.first = first;
+			
+			var last = Carbonite.Term.make(exp, exp.container, exp.getRawTerm(terms[end]));
+			last.loadFromRaw(exp.getRawTerm(terms[end]), exp.terms, 0);
+			exp.last = last;
+
+			exp.operate(terms[start]["operator"]);
+
+			/*
+				var first = Carbonite.Term.make(exp, exp.container, exp.getRawTerm(terms[start]));
+				first.loadFromRaw(exp.getRawTerm(terms[start]), exp.terms, 0);
+				exp.first = first;
+
+				for (var int i = start; i <= end; i++) {
+					var term = terms[i];
+					/*if (i != end) {
+						var lastExpression = new Carbonite.Terms.Expression(exp, exp.container);
+						lastExpression.build(exp, exp.container);
+						Carbonite.Expression.buildTermsIntoExpression(lastExpression.expression, terms, len2, end);
+						lastExpression.output = lastExpression.expression.output;
+						exp.last = lastExpression;
+					}
+				}
+			}*/
+		}else{
+			
+			//     ^
+			var len1 = (index - start) + 1;
+			var len2 = end - index;
+			
+			if (len1 == 1) {
+				var first = Carbonite.Term.make(exp, exp.container, exp.getRawTerm(terms[start]));
+				first.loadFromRaw(exp.getRawTerm(terms[start]), exp.terms, 0);
+				exp.first = first;
+			}else{
+				var firstExpression = new Carbonite.Terms.Expression(exp, exp.container);
+				firstExpression.build(exp, exp.container);
+				Carbonite.Expression.buildTermsIntoExpression(firstExpression.expression, terms, start, index);
+				firstExpression.output = firstExpression.expression.output;
+				exp.first = firstExpression;
+			}
+
+			if (len2 == 1) {
+				var last = Carbonite.Term.make(exp, exp.container, exp.getRawTerm(terms[end]));
+				last.loadFromRaw(exp.getRawTerm(terms[end]), exp.terms, 0);
+				exp.last = last;
+			}else{
+				var lastExpression = new Carbonite.Terms.Expression(exp, exp.container);
+				lastExpression.build(exp, exp.container);
+				Carbonite.Expression.buildTermsIntoExpression(lastExpression.expression, terms, index + 1, end);
+				lastExpression.output = lastExpression.expression.output;
+				exp.last = lastExpression;
+			}
+		}
+		if (exp.operator == "=") {
+			if (exp.first.type == "sequence") {
+				var Carbonite.Terms.Sequence seq = exp.first;
+				var Carbonite.Part lastPart = seq.parts[seq.parts.length - 1];
+				var Carbonite.Part prev = seq.parts[seq.parts.length - 2];
+				if (lastPart.type == "index") {
+					var list = prev.output.reference.getMethods("@setIndex");
+					if (list.length > 0) {
+						var setIndex = list[0];
+						var last = exp.last;
+						var setExp = new Carbonite.Expression(exp.parent, exp.container);
+						setExp.output = last.output;
+						setExp.first = last;
+						exp.last = null;
+						var Carbonite.Parts.Index castLast = lastPart;
+						var argIndex = castLast.argument;
+						seq.parts.pop(); //MEM: Does it delete last? If so copy.
+						var callSetIndex = new Carbonite.Parts.Call(prev, exp.first);
+						callSetIndex.reference = new Carbonite.Members.ReferenceMethod(setIndex, prev.context);
+						callSetIndex.arguments.push(argIndex);
+						callSetIndex.arguments.push(setExp);
+						seq.parts.push(callSetIndex);
+						exp.output = callSetIndex.reference.output;
+						exp.reference = null;
+						return null;
+					}
+				}
+			}
+		}
+
+		exp.operate(terms[index]["operator"]);
+
+		if (exp.reference.hasFlag("set")) {
+			if (exp.first.type == "sequence") {
+				var Carbonite.Terms.Sequence seq = exp.first;
+				var Carbonite.Part lastPart = seq.parts[seq.parts.length - 1];
+				var Carbonite.Part prev = seq.parts[seq.parts.length - 2];
+				if (lastPart.type == "index") {
+					var list = prev.output.reference.getMethods("@actIndex");
+					if (list.length > 0) {
+						var setIndex = list[0];
+						var Carbonite.Parts.Index castLast = lastPart;
+						var argIndex = castLast.argument;
+						seq.parts.pop(); //MEM: Does it delete the index?
+						var callSetIndex = new Carbonite.Parts.Call(prev, exp.first);
+						callSetIndex.reference = new Carbonite.Members.ReferenceMethod(setIndex, prev.context);
+						callSetIndex.arguments.push(argIndex);
+						seq.parts.push(callSetIndex);
+					}
+				}
+			}
+		}
+	}
+}

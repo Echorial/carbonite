@@ -1,0 +1,54 @@
+class Oxygen.FileSystem inherits FileSystem {
+	phpNoRef fixed native string readSync(string location, string format)
+	{return "return file_get_contents(" + context.arguments[0] + ");";}
+
+	fixed native void read(string location, string format, <void, Error, string>function callback)
+	{return context.arguments[2] + "(file_get_contents(" + context.arguments[0] + "));";}
+
+	fixed native void write(string location, string content, <void, Error>function callback)
+	{return context.arguments[2] + "(file_put_contents(" + context.arguments[0] + ", " + context.arguments[1] + "));";}
+
+	phpNoRef fixed native Error writeSync(string location, string content)
+	{return "file_put_contents(" + context.arguments[0] + ", " + context.arguments[1] + ");";}
+
+	fixed native FileSystem.Stat statSync(string location)
+	{return "";}
+
+	void stat(string location, <void, Error, FileSystem.Stat>function callback) {
+
+	}
+
+	FileSystem.File openSync(string location, string flags) {
+
+	}
+
+	void open(string location, string flags, <void, Error, FileSystem.File>function callback) {
+
+	}
+
+	phpNoRef fixed native <string>array readDirSync(string location)
+	{return "return scandir(" + context.arguments[0] + ");";}
+
+	fixed native string dirName(string location)
+	{return "return dirname(" + context.arguments[0] + ");";}
+
+	fixed native bool isDir(string location)
+	{return "return is_dir(" + context.arguments[0] + ");";}
+
+	fixed native string normalize(string path)
+	{return "return realpath(" + context.arguments[0] + ");";}
+
+	fixed native string resolve(string path)
+	{return "return realpath(" + context.arguments[0] + ");";}
+
+	fixed native bool exists(string location)
+	{return "return file_exists(" + context.arguments[0] + ");";}
+
+	fixed native string basename(string location)
+	{return "return basename(" + context.arguments[0] + ");";}
+
+	fixed native void makeDir(string location)
+	{return "mkdir(" + context.arguments[0] + ");";}
+}
+
+Oxygen.FileSystem implements FileSystem;

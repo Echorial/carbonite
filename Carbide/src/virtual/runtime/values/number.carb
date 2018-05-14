@@ -1,0 +1,75 @@
+class Carbide.Virtual.Values.Number inherits Carbide.Virtual.Value {
+	bound public override string type = "number";
+	bound public override float value = 0;
+
+	bound public override <void>function setValue(map raw) {
+		this.value = raw["value"];
+		if (raw["negative"] != empty) {
+			var float zero = 0;
+			this.value = zero - this.value;
+		}
+	}
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function method(string name, <Carbide.Virtual.Value>array args, Carbide.Virtual.Scope scope) {
+		if (name == "toString") {
+			return Carbide.Virtual.Values.String.create(this.value.toString());
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function operate(string operator, Carbide.Virtual.Values.Number value, Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Value v = empty;
+		if (operator == "=") {
+			this.value = value.value;
+			v = Carbide.Virtual.Values.Null.create();
+		}else if (operator == "==") {
+			v = Carbide.Virtual.Values.Bool.create(this.value == value.value);
+		}else if (operator == "!=") {
+			v = Carbide.Virtual.Values.Bool.create(this.value != value.value);
+		}else if (operator == "+") {
+			v = Carbide.Virtual.Values.Number.create(this.value + value.value);
+		}else if (operator == "-") {
+			v = Carbide.Virtual.Values.Number.create(this.value - value.value);
+		}else if (operator == "+=") {
+			this.value += value.value;
+			v = Carbide.Virtual.Values.Null.create();
+		}else if (operator == "*=") {
+			this.value = this.value * value.value;
+			v = Carbide.Virtual.Values.Null.create();
+		}else if (operator == "-=") {
+			this.value -= value.value;
+			v = Carbide.Virtual.Values.Null.create();
+		}else if (operator == "*") {
+			v = Carbide.Virtual.Values.Number.create(this.value * value.value);
+		}else if (operator == "/") {
+			v = Carbide.Virtual.Values.Number.create(this.value / value.value);
+		}else if (operator == ">") {
+			v = Carbide.Virtual.Values.Bool.create(this.value > value.value);
+		}else if (operator == ">=") {
+			v = Carbide.Virtual.Values.Bool.create(this.value >= value.value);
+		}else if (operator == "<") {
+			v = Carbide.Virtual.Values.Bool.create(this.value < value.value);
+		}else if (operator == "<=") {
+			v = Carbide.Virtual.Values.Bool.create(this.value <= value.value);
+		}
+		return v;
+	}
+
+	fixed public override <Carbide.Virtual.Values.Number>function create(float number) {
+		var map m = new map();
+		var Carbide.Virtual.Values.Number value = new Carbide.Virtual.Values.Number(m);
+		value.value = number;
+		return value;
+	}
+
+	bound public override <Carbide.Virtual.Value>function duplicate() {
+		return Carbide.Virtual.Values.Number.create(this.value);
+	}
+}

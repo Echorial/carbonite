@@ -1,0 +1,10 @@
+abstract interface FileSystem.File {
+	int fileDescriptor = 0;
+	string location = 0;
+
+	`Read $length number of bytes from this file into the $buffer from the $position.`
+	void read(Memory.Buffer buffer, int offset `Position in buffer to start wrtiting`, int position `Starting read position in file`, int length `Number of bytes to read from file`, <void, Error, int>function callback);
+
+	`Writes $length number of bytes from the $buffer into this file starting at the $position.`
+	void write(Memory.Buffer buffer, int offset `Position in buffer to start reading`, int position `Starting write position in file`, int length `Number of bytes to write from the buffer`, <void, Error, int>function callback);
+}

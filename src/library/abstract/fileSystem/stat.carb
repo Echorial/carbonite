@@ -1,0 +1,18 @@
+abstract interface FileSystem.Stat {
+	void @construct();
+
+	int dev = 0;
+	int ino = 0;
+	int mode = 0;
+	int nlink = 0;
+	int uid = 0;
+	int gid = 0;
+	int rdev = 0;
+	uint64 size = 0;
+	uint64 blksize = 0;
+	int blocks = 0;
+	uint64 atime = 0;
+	uint64 mtime = 0;
+	uint64 ctime = 0;
+	uint64 birthtime = 0;
+}

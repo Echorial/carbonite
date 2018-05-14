@@ -1,0 +1,110 @@
+class Carbide.Virtual.Processor {
+	bound public Carbide.Virtual.Block root = empty;
+	bound public <Carbide.Virtual.Block>array scripts = new <Carbide.Virtual.Block>array();
+	bound public Carbide.Virtual.Scope scope = empty;
+	bound public Carbide.Virtual.Interface interface = empty;
+	bound public <Carbide.Notice>array notices = new <Carbide.Notice>array();
+	bound public bool hadError = false;
+
+	bound public <Carbide.Virtual.Data>array heap = new <Carbide.Virtual.Data>array();
+	bound public int heapIndex = 0;
+
+	bound public <Carbide.Virtual.Statements.Function>array functionScope = new <Carbide.Virtual.Statements.Function>array();
+
+	fixed public <Carbide.Virtual.Processor>function @construct(Carbide.Virtual.Block root) {
+		this.root = root;
+		var Carbide.Virtual.Processor emp = empty;
+		this.scope = new Carbide.Virtual.Scope(emp);
+		
+		this.setVar("typeOf", Carbide.Virtual.Value (<Carbide.Virtual.Value>array args) => {
+			if (args.length > 0)
+				return Carbide.Virtual.Values.String.create(args[0].type);
+		});
+	}
+
+	bound public <Carbide.Virtual.Data>function findOnHeap(int id) {
+		for (var int i in this.heap) {
+			var Carbide.Virtual.Data data = this.heap[i];
+			if (data.id == id)
+				return data;
+		}
+		return null;
+	}
+
+	bound public <void>function setValue(string name, Carbide.Virtual.Value value) {
+		this.scope.setVariable(new Carbide.Virtual.Variable(name, value));
+	}
+
+	bound public <void>function setVar(string name, int value) {
+		var float cast = value;
+		this.setValue(name, Carbide.Virtual.Values.Number.create(cast));
+	}
+
+	bound public <void>function setVar(string name, float value) {
+		this.setValue(name, Carbide.Virtual.Values.Number.create(value));
+	}
+
+	bound public <void>function setVar(string name, bool value) {
+		this.setValue(name, Carbide.Virtual.Values.Bool.create(value));
+	}
+
+	bound public <void>function setVar(string name, string value) {
+		this.setValue(name, Carbide.Virtual.Values.String.create(value));
+	}
+
+	bound public <void>function setVar(string name, <Carbide.Virtual.Value, <Carbide.Virtual.Value>array>function value) {
+		this.setValue(name, Carbide.Virtual.Values.Function.create(value));
+	}
+
+	bound public <void>function build() {
+		this.root.scope = this.scope;
+		this.root.canOutput = true;
+		this.root.build();
+	}
+
+	bound public <void>function run() {
+		Exception.try();
+			if (this.root != null)
+				this.root.run(this.scope);
+			for (var int i in this.scripts) {
+				var script = this.scripts[i];
+				script.run(this.scope);
+			}
+		Exception.endTry();
+	}
+
+	bound public <void>function addFunction(Carbide.Virtual.Statements.Function func) {
+		this.functionScope.push(func);
+	}
+
+	bound public <void>function addBlock(Carbide.Virtual.Block block) {
+		this.scripts.push(block);
+	}
+
+	bound public <Carbide.Virtual.Statements.Function>function searchFunction(string name) {
+		for (var int i in this.functionScope) {
+			var Carbide.Virtual.Statements.Function func = this.functionScope[i];
+			if (func.name == name) {
+				return func;
+			}
+		}
+		var Carbide.Virtual.Statements.Function emp = empty;
+		return emp;
+	}
+
+	bound public <void>function runtimeError(string message, string location, int start, int end) {
+		this.hadError = true;
+		this.notices.push(new Carbide.Notice(message, location, start, end, 4));
+		Exception.throw("Error in Carbide.Virtual.Runtime");
+	}
+}
+
+class Carbide.Virtual.Interface {
+	fixed public <Carbide.Virtual.Interface>function @construct() {
+
+	}
+
+	bound public <Carbide.Virtual.Value>function call(string name, <Carbide.Virtual.Value>array arguments) {
+
+	}
+}

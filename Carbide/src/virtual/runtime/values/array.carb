@@ -1,0 +1,67 @@
+class Carbide.Virtual.Values.Array inherits Carbide.Virtual.Value {
+	bound public override string type = "array";
+	bound public override <Carbide.Virtual.Value>array value = new <Carbide.Virtual.Value>array();
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function property(string name, Carbide.Virtual.Scope scope) {
+		if (name == "length") {
+			var float len = this.value.length();
+			return Carbide.Virtual.Values.Number.create(len);
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	bound public override <Carbide.Virtual.Value>function method(string name, <Carbide.Virtual.Value>array input, Carbide.Virtual.Scope scope) {
+		if (name == "length") {
+			var float len = this.value.length();
+			return Carbide.Virtual.Values.Number.create(len);
+		}else if (name == "index") {
+			var Carbide.Virtual.Value ind = input[0];
+			var Carbide.Virtual.Value found = this.value[ind.value];
+			return found;
+		}else if (name == "push") {
+			var Carbide.Virtual.Value ind = input[0];
+			var Carbide.Virtual.Value found = this.value.push(ind);
+		}else if (name == "pop") {
+			this.value.pop();
+		}else if (name == "join") {
+			var string joins = "";
+			var string glue = input[0].value;
+			for (var int i in this.value) {
+				var string cast = this.value[i].value;
+				if (i != this.value.length - 1)
+					joins += cast + glue;
+				else
+					joins += cast;
+			}
+			return Carbide.Virtual.Values.String.create(joins);
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	fixed public override <Carbide.Virtual.Values.Array>function create(<Carbide.Virtual.Value>array val) {
+		var map m = new map();
+		var Carbide.Virtual.Values.Array value = new Carbide.Virtual.Values.Array(m);
+		value.value = val;
+		return value;
+	}
+
+	bound public override <void>function iterate(Carbide.Virtual.Variable vKey, Carbide.Virtual.Variable v, Carbide.Virtual.Block code, Carbide.Virtual.Scope scope) {
+		for (var int i in this.value) {
+			vKey.value.value = i;
+			v.value = this.value[i];
+			code.run(scope);
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function duplicate() {
+		return Carbide.Virtual.Values.Array.create(new <Carbide.Virtual.Value>array());
+	}
+}

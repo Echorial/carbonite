@@ -1,0 +1,168 @@
+import WhiteSpace
+import String
+import Json
+
+map|start = document: Source;
+
+map|Source = s: (Raw / Pre)* {map|export = $s;};
+
+map|Pre = p: (If / Define / Return / Doc / Doc_Line / Output / Function / On / Script / Var / Include / For / ForIn / Lost) {map|export = $p;export["offset"] = charPos;export["startOffset"] = startPos;};
+
+map|Raw = c: <string{var string inString = ""; var bool lineComment = false;var bool checkComment = false;var bool openComment = false;}|
+if (checkComment and openComment == false) {
+	if (currentChar == "*") {
+		openComment = true;
+		@capture(" ")
+	}else if (currentChar == "/") {
+		openComment = true;
+		lineComment = true;
+		@capture(" ")
+	}else{
+		@capture("/" + currentChar)
+	}
+	checkComment = false;
+}else if (openComment) {
+	if (lineComment) {
+		if (currentCode == 10) {
+			@capture("\n")
+			openComment = false;
+			lineComment = false;
+		}else{
+			@capture(" ")
+		}
+	}else{
+		if (checkComment) {
+			if (currentCode == 47) {
+				@capture(" ")
+				openComment = false;
+			}
+			checkComment = false;
+		}else{
+			if (currentCode == 10) {
+				@capture("\n")
+			}else if (currentChar == "*") {
+				checkComment = true;
+				@capture(" ")
+			}else{
+				@capture(" ")
+			}
+		}
+	}
+}else{
+	if (currentCode == 47) {
+		checkComment = true;
+	}else if (currentCode == 35) {
+		if (inString == "") {
+			@error(1, "", "")
+		}else{
+			@capture(currentChar)
+		}
+	}else if (currentCode == 1) {
+		@error(1, "", "")
+	}else{
+		@capture(currentChar)
+		if (currentCode == 34) {
+			if (inString == "") {
+				inString = "\"";
+			}else{
+				if (inString == "\"") {
+					inString = "";
+				}
+			}
+		}else if (currentCode == 39) {
+			if (inString == "") {
+				inString = "'";
+			}else{
+				if (inString == "'") {
+					inString = "";
+				}
+			}
+		}
+	}
+}
+>++ {type: "raw", offset: {charPos}, startOffset: {startPos}, content: {$c}};
+
+map|SourceLine = s: (RawLine / Lost)* {map|export = $s;};
+
+map|RawLine = c: [^#\n]++ {type: "raw", content: {$c}, startOffset: {startPos}, offset: {charPos}};
+
+map|If = "#if" checks: If_Expression+|"and" content: Source "#end if" {type: "if", checks: {$checks}, content: {$content}};
+
+string|As = _ "as" __ name: Safe_Name {string|export = $name;};
+
+map|Include = "#include" file: Expression as: As*|"," {type: "include", as: {$as}, file: {$file}};
+
+map|Output = "#out " content: SourceLine {type: "output", content: {$content}};
+
+map|Return = "#return " exp: Expression {type: "return", expression: {$exp}};
+
+map|On = "#on " exp: Expression content: Source "#end on" {type: "on", expression: {$exp}, content: {$content}};
+
+string|DocName = name: ("navDrop" / "tree" / "page") {string|export = $name;};
+
+string|DocNameLine = name: ("navLink" / "include" / "tag") {string|export = $name;};
+
+map|Doc = "#doc " opt: DocName _ arguments: [^\n]** content: Source "#end doc" {type: "doc", name: {$opt}, arguments: {$arguments}, content: {$content}};
+
+map|Doc_Line = "#doc " opt: DocNameLine _ arguments: [^\n]** {type: "doc", name: {$opt}, arguments: {$arguments}};
+
+map|Script = "#script" _ language: [a-zA-Z0-9]** content: Source "#end script" {type: "script", language: {$language}, content: {$content}};
+
+map|Function = "#function" _ name: Safe_Name _ "(" _ args: Argument*|"," _ ")" content: Source "#end function" {type: "function", name: {$name}, arguments: {$args}, content: {$content}};
+
+map|For = "#for" _ name: Safe_Name _ "=" _ start: Expression _ "to" _ end: Expression content: Source "#end for" {type: "for", name: {$name}, start: {$start}, end: {$end}, content: {$content}};
+
+map|ForIn = "#for" _ name: Safe_Name __ "in" __ exp: Expression content: Source "#end for" {type: "forin", name: {$name}, in: {$exp}, content: {$content}};
+
+map|Define = "#define" _ name: Safe_Name _ "=" _ value: Expression {type: "define", name: {$name}, value: {$value}};
+
+map|Var = "#var" _ name: Safe_Name _ "=" _ value: Expression {type: "var", name: {$name}, value: {$value}};
+
+map|Backslash = "#" {type: "raw", content: "#"};
+
+map|Lost = "#" exp: Expression {
+map|
+var bool doSet = true;
+if ($exp["type"] == "constant") {
+if ($exp["value"] == "end") {
+@error(1, "", "")
+doSet = false;
+}
+}
+if (doSet) {
+export["type"] = "lost";
+export["value"] = $exp;
+}
+};
+
+map|Sub = "." _ exp: (Call / Value) {map|export = $exp;};
+
+map|Expression = _ e: (Operation / Call / Value) subs: (Sub / Literal_Array)* {map|export = $e;export["subs"] = $subs; export["startOffset"] = startPos;export["offset"] = charPos;};
+
+map|If_Expression = _ e: (Operation / Call / Check / Value) subs: (Sub / Literal_Array)* {map|export = $e;export["subs"] = $subs; export["startOffset"] = startPos;};
+
+string|Safe_Name = a: [A-Za-z0-9_]++ {string|export = $a;};
+
+string|Argument = _ a: [A-Za-z0-9_]++ {string|export = $a;};
+
+map|Literal_Map = m: Json {type: "map", value: {$m}};
+
+map|Value = v: (Literal_String / Number / Literal_Array / Literal_Map / Bool / Constant) {map|export = $v;export["offset"] = charPos; export["startOffset"] = startPos;};
+
+map|Literal_String = str: String {type: "string", value: {$str}};
+
+map|Number = neg: "-"? n: [0-9.]++ {type: "number", negative: {$neg}, value: {string.parseFloat($n)}};
+
+map|Literal_Array = "[" _ items: Expression*|"," _ "]" {type: "array", value: {$items}};
+
+map|Bool = value: (("true" {bool|~ = true;}) / ("false" {bool|~ = false;})) {type: "bool", value: {$value}};
+
+map|Constant = name: Safe_Name {type: "constant", value: {$name}};
+
+map|Group = "(" exp: Expression ")" {map|export = $exp;};
+
+map|Operation = head: (Group / Call / Value) _ o: [!@$%&^+*-/?><|=]++ _ tail: (Group / Call / Value) {type: "operation", head: {$head}, operator: {$o}, tail: {$tail}};
+
+map|Check = what: Value __ against: Value {type: "check", what: {$what}, against: {$against}};
+
+map|Call = term: Value _ "(" params: Expression*|"," _ ")" {type: "call", term: {$term}, args: {$params}};

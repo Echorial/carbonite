@@ -1,0 +1,15 @@
+class Carbide.Notice {
+	int start = 0;
+	int end = 0;
+	int level = 0;
+	string location = "";
+	string message = "";
+
+	void @construct(string message, string location, int start, int end, int level) {
+		this.message = message;
+		this.location = location;
+		this.start = start;
+		this.end = end;
+		this.level = level;
+	}
+}

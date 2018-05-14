@@ -1,0 +1,128 @@
+#script Carbon
+
+var proxyPrefix = "carbide_proxy_";
+
+var proxyArrays = {};
+
+var buildProxyArray = void (string name, string realName) => {
+	var ind = proxyArrays.index(name);
+	if (typeOf(ind) == "null") {
+		var cls = Carbon.Class.eval("class carbide_valueArray_" + name + " inherits Carbide.Virtual.Values.AutoArray { override <" + realName + ">array value = null; override void @construct(<" + realName + ">array val) {this.value = val;} override " + proxyPrefix + name + " castCarbideValue(int i) {return " + proxyPrefix + name + ".create(this.value[i]);} }");
+	}
+};
+
+var buildProxyClass = void (Class cls) => {
+	//TODO: Change from name to route.
+	var string rep = cls.route.replace(".", "_");
+	var proxyName = proxyPrefix + rep;
+	var proxyClass = Carbon.Class.eval("class " + proxyName + " inherits Carbide.Virtual.Value {}");
+	var propVal = Carbon.Property.eval("override " + cls.route + " value = null;", proxyClass);
+	Carbon.Method.eval("fixed override " + proxyName + " create(" + cls.route + " reference) {var map m = new map();var " + proxyName + " value = new " + proxyName + "(m);value.value = reference;return value;}", proxyClass);
+
+	var methods = [];
+	var properties = [];
+	var propertySet = [];
+	var doAdd = true;
+
+	for (var int i = 0; i < cls.members.length; i += 1) {
+		var member = cls.members.index(i);
+		doAdd = true;
+		if (member.name == "@construct")
+			doAdd = false;
+		var expose = member.getAttribute("Expose");
+
+		if (typeOf(expose) == "null")
+			doAdd = false;
+		
+		if (doAdd) {
+			var args = [];
+			var argNames = [];
+			var methodCall = "";
+			if (member.type == "method") {
+				for (var int a = 0; a < member.arguments.length; a += 1) {
+					var arg = member.arguments.index(a);
+					argNames.push("cast_" + arg.name);
+					args.push("var " + arg.type.reference.name + " cast_" + arg.name + " = args[" + a.toString() + "].value;");
+				}
+				methodCall = "(" + argNames.join(", ") + ")";
+			}
+			var storeReturn = "";
+			var rtnValue = "";
+			
+			if (member.output.reference.name != "void") {
+				storeReturn = "var carbide_rtn = ";
+				var name = member.output.reference.name;
+				var primitive = false;
+				var isArray = false;
+				if (name == "float") {
+					primitive = true;
+				}
+				if (name == "int") {
+					primitive = true;
+				}
+				if (name == "string") {
+					primitive = true;
+				}
+				if (name == "bool") {
+					primitive = true;
+				}
+				if (name == "array") {
+					primitive = true;
+					var firstTemplate = member.output.templates.index(0);
+					if (firstTemplate.reference.name != "primitive") {
+						primitive = false;
+						isArray = true;
+					}
+				}
+				if (name == "map") {
+					primitive = true;
+				}
+				if (name == "primitive") {
+					primitive = true;
+				}
+				if (primitive) {
+					rtnValue = "return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);";
+				}
+				
+				if (primitive == false) {
+					if (isArray) {
+						var firstTemplate = member.output.templates.index(0);
+						var aName = firstTemplate.reference.route.replace(".", "_");
+						rtnValue = "return new carbide_valueArray_" + aName + "(carbide_rtn);"; //TODO: Update with <T>AutoArray when templates are fixed
+						buildProxyArray(aName, firstTemplate.reference.route);
+					}else{
+						rtnValue = "return " + proxyPrefix + name + ".create(carbide_rtn);";
+					}
+				}
+			}
+
+			var push = "if (name == '" + member.name + "') {" + args.join("") + "var insta = this.value; " + storeReturn + "insta." + member.name + methodCall + ";" + rtnValue + "}";
+			if (member.type == "method")
+				methods.push(push);
+			if (member.type == "property") {
+				var readOnly = member.getAttribute("ReadOnly");
+				if (typeOf(readOnly) == "null") {
+					propertySet.push("if (name == '" + member.name + "') {var " + member.output.reference.route + " c_setCast = setTo.value; this.value." + member.name + " = c_setCast;}");
+				}
+				properties.push(push);
+			}
+		}
+	}
+
+	var method = Carbon.Method.eval("override Carbide.Virtual.Value method(string name, <Carbide.Virtual.Value>array args, Carbide.Virtual.Scope c_scope) {" + methods.join("else ") + "}", proxyClass);
+	var prop = Carbon.Method.eval("override Carbide.Virtual.Value property(string name, Carbide.Virtual.Scope c_scope) {" + properties.join("else ") + "}", proxyClass);
+	var dotSet = Carbon.Method.eval("override Carbide.Virtual.Value dotSet(string name, Carbide.Virtual.Value setTo, Carbide.Virtual.Scope c_scope) {" + propertySet.join("else ") + "}", proxyClass);
+
+	Carbon.Method.eval(proxyName + " toCarbideValue() {return " + proxyName + ".create(this);}", cls);
+};
+
+Carbon.on("members.end", bool (Class clss) => {
+	var does = clss.getAttribute("Carbide");
+	if (typeOf(does) != "null") {
+		if (typeOf(does.value) == "bool") {
+			buildProxyClass(clss);
+		}
+	}
+});
+
+#end script

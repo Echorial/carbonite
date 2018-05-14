@@ -1,0 +1,7 @@
+platform = "documentation.dynamic"
+
+output = "~/Docs/index.html"
+
+entry = "carbonite.carb"
+
+type = "doc"

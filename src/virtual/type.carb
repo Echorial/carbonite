@@ -1,0 +1,82 @@
+class VirtualTypes inherits Carbide.Virtual.Value {
+	bound public override string type = "array";
+	bound public override <Carbonite.Type>array value = null;
+
+	fixed override VirtualTypes create(<Carbonite.Type>array val) {
+		var map m = new map();
+		var VirtualTypes value = new VirtualTypes(m);
+		value.value = val;
+		return value;
+	}
+
+	bound public override <void>function iterate(Carbide.Virtual.Variable vKey, Carbide.Virtual.Variable v, Carbide.Virtual.Block code, Carbide.Virtual.Scope scope) {
+		for (var int i in this.value) {
+			vKey.value.value = i;
+			v.value = VirtualType.create(this.value[i]);
+			code.run(scope);
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function property(string name, Carbide.Virtual.Scope scope) {
+		if (name == "length") {
+			var float cast = this.value.length;
+			var Carbide.Virtual.Values.Number rtn = Carbide.Virtual.Values.Number.create(cast);
+			return rtn;
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	bound public override <Carbide.Virtual.Value>function method(string name, <Carbide.Virtual.Value>array input, Carbide.Virtual.Scope scope) {
+		if (name == "length") {
+			var float len = this.value.length();
+			return Carbide.Virtual.Values.Number.create(len);
+		}else if (name == "index") {
+			var Carbide.Virtual.Value ind = input[0];
+			var Carbide.Virtual.Value found = VirtualType.create(this.value[ind.value]);
+			return found;
+		}else if (name == "push") {
+			var Carbide.Virtual.Value ind = input[0];
+			var Carbonite.Type cast = ind.value;
+			var Carbide.Virtual.Value found = this.value.push(cast);
+		}else if (name == "pop") {
+			this.value.pop();
+		}
+		
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+class VirtualType inherits Carbide.Virtual.Value {
+	override string type = "Carbon.Type";
+	override Carbonite.Type value = null;
+
+	fixed override VirtualType create(Carbonite.Type val) {
+		var map m = new map();
+		var value = new VirtualType(m);
+		value.value = val;
+		return value;
+	}
+
+	override <Carbide.Virtual.Value>function property(string name, Carbide.Virtual.Scope scope) {
+		if (name == "reference") {
+			return VirtualClass.create(this.value.reference);
+		}else if (name == "templates") {
+			return VirtualTypes.create(this.value.templates);
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	override <Carbide.Virtual.Value>function method(string name, <Carbide.Virtual.Value>array input, Carbide.Virtual.Scope scope) {
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	override <Carbide.Virtual.Value>function dotSet(string prop, Carbide.Virtual.Value value,  Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Value v = empty;
+		if (prop == "reference") {
+			var VirtualClass cast = value;
+			this.value.reference = cast.value;
+		}
+		v = Carbide.Virtual.Values.Null.create();
+		return v;
+	}
+}

@@ -1,0 +1,21 @@
+native relative CalciumParser {
+	fixed public inject <Carbonite.ParserOutput>nativeFunction parse(string input)
+	{"Calcium.parse(" + parameters.input + ")"}
+}
+
+class Carbide.Languages.Calcium inherits Carbide.Language {
+	bound public override <Carbide.Bytecode>function generate(string input) {
+		var Carbonite.ParserOutput po = CalciumParser.parse(input);
+		var map ast = po.data;
+
+		var Carbide.Bytecode bc = new Carbide.Bytecode();
+		bc.add(Carbide.Codes.storeInteger(1));
+		bc.add(Carbide.Codes.move("r0"));
+		bc.add(Carbide.Codes.storeKey("a0", "x"));
+		bc.add(Carbide.Codes.storeSum("r0"));
+		bc.add(Carbide.Codes.return());
+		var map m = new map();
+		m["x"] = 52;
+		var Carbide.Values.Integer num = bc.execute([new Carbide.Values.Map(m)]);
+	}
+}

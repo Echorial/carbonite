@@ -1,0 +1,152 @@
+class Carbonite.Member inherits object, Carbonite.Range {
+	bound public string binding = "bound";
+	bound public string visibility = "public";
+	bound public Carbonite.Class inheritedFrom = null;
+	bound public Carbonite.Doc doc = null;
+	bound public string name = "";
+	bound public Carbonite.Type output = empty;
+	bound public <string>array flags = new <string>array();
+	bound public <map>array attributes = empty;
+	bound public Carbonite.Class parent = empty;
+	bound public bool abstract = false;
+	
+	bound public string type = "";
+	bound public map raw = empty;
+
+	fixed public <Carbonite.Member>function @construct(Carbonite.Class parent, map raw) {
+		this.parent = parent;
+		if (raw == empty) {
+
+		}else{
+			this.raw = raw;
+			this.doc = new Carbonite.Doc(this.raw["doc"]);
+			this.attributes = raw["attribute"];
+			if (this.attributes == empty) {
+				this.attributes = new <map>array();
+			}
+			this.loadLocation(this.parent, this.raw);
+			this.name = this.raw["name"];
+			this.output = new Carbonite.Type(parent.compiler, parent);
+			var map rawOutput = this.raw["output"];
+			if (rawOutput["name"] == "function") {
+				if (raw["type"] == "method")
+					rawOutput = rawOutput["template"][0];
+			}else if (rawOutput["name"] == null) {
+				this.buildError("No output type provided for member '" + raw["flags"][0] + "' in class '" + parent.route + "'");
+			}
+			
+			this.output.loadFromRaw(rawOutput);
+
+			var <string>array flags = raw["flags"];
+			for (var int i = flags.length - 1; i >= 0; i--) {
+				var string flag = flags[i];
+				if (flag == "fixed") {
+					this.binding = "fixed";
+				}else if (flag == "private") {
+					this.visibility = "private";
+				}else if (flag == "protected") {
+					this.visibility = "protected";
+				}else if ((flag != "bound") and (flag != "public")){
+					this.flags.push(flag);
+				}
+			}
+			this.build();
+		}
+	}
+
+	bound public <<map>array>function getAttributes(string key) {
+		var <map>array found = new <map>array();
+		for (var int i in this.attributes) {
+			var map a = this.attributes[i];
+			if (a["key"] == key) {
+				found.push(a);
+			}
+		}
+		return found;
+	}
+
+	fixed public <Carbonite.ReferenceMember>function makeReference(Carbonite.Class parent, Carbonite.Member mem, Carbonite.Type ctx) {
+		var Carbonite.ReferenceMember rtn = empty;
+		if (mem.type == "property") {
+			rtn = new Carbonite.Members.ReferenceProperty(mem, ctx);
+		}else{
+			rtn = new Carbonite.Members.ReferenceMethod(mem, ctx);
+		}
+		return rtn;
+	}
+
+	fixed public <Carbonite.Member>function make(Carbonite.Class parent, map raw) {
+		var string type = raw["type"];
+		var Carbonite.Member rtn = empty;
+		if (type == "method") {
+			rtn = new Carbonite.Members.Method(parent, raw);
+			rtn.type = "method";
+		}else if (type == "property") {
+			rtn = new Carbonite.Members.Property(parent, raw);
+			rtn.type = "property";
+		}else if (type == "operator") {
+			rtn = new Carbonite.Members.Operator(parent, raw);
+			rtn.type = "operator";
+			var Carbonite.Members.Operator cast = rtn;
+			parent.compiler.operatorOrders[cast.operator] = cast.order;
+		}
+		return rtn;
+	}
+
+	bound public <void>function build() {
+
+	}
+
+	bound public <bool>function hasFlag(string flag) {
+		for (var int i in this.flags) {
+			var string cur = this.flags[i];
+			if (cur == flag) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bound public <string>function extraDocDynamic() {}
+
+	bound public <string>function docDynamic() {
+		var extra = this.extraDocDynamic();
+		if (extra != null)
+			extra = ", " + extra;
+		else
+			extra = "";
+
+		return '{"type": "' + this.type + '", "name": "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "output": "' + this.output.lookPretty() + '"' + extra + '}';
+	}
+
+	fixed Carbonite.Member fromHeader(Carbonite.Class parent, map data) {
+		var string type = data["type"];
+		if (type == "method") {
+			return Carbonite.Members.Method.fromHeader(parent, data);
+		}else if (type == "property") {
+			return Carbonite.Members.Property.fromHeader(parent, data);
+		}
+		//TODO: Add operator headers
+	}
+
+	string toHeader();
+
+	string getHeaderFlags() {
+		var flags = "";
+
+		if (this.flags.length > 0) {
+			var flgs = new <string>array();
+			for (var int i in this.flags)
+				flgs.push('"' + this.flags[i] + '"');
+			
+			flags = '"flags": [' + flgs.join(", ") + '], ';
+		}
+
+		return flags;
+	}
+}
+
+class Carbonite.ReferenceMember inherits object {
+	bound public string type = "";
+	bound public Carbonite.Type output = empty;
+}

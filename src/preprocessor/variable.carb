@@ -1,0 +1,9 @@
+class Carbonite.Pre.Variable {
+	bound public string name = "";
+	bound public Carbonite.Pre.Value value = empty;
+
+	fixed public <Carbonite.Pre.Variable>function @construct(string name, Carbonite.Pre.Value value) {
+		this.name = name;
+		this.value = value;
+	}
+}

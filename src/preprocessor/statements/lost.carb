@@ -1,0 +1,26 @@
+class Carbonite.Pre.Statements.Lost inherits Carbonite.Pre.Statement {
+	bound public Carbonite.Pre.Expression value = empty;
+
+	bound public override <void>function build() {
+		this.value = Carbonite.Pre.Expression.make(this, this.data["value"]);
+		this.value.build();
+	}
+
+	bound public override <void>function run() {
+		var Carbonite.Pre.Values.String val = this.value.run();
+		var bool output = false;
+		if (val != null) {
+			if (val.type == "string") {
+				output = true;
+			}else if (val.type == "number") {
+				output = true;
+			}else if (val.type == "bool") {
+				output = true;
+			}
+		}
+		if (output) {
+			var int end = this.data["offset"];
+			this.parent.output(val.value, end, end);
+		}
+	}
+}

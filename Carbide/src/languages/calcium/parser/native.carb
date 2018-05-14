@@ -1,0 +1,23 @@
+class CalciumParserLocation inherits object {
+	bound public int offset = 0;
+	bound public int line = 1;
+	bound public int column = 0;
+
+	fixed public <Carbonite.ParserLocation>function @construct(int offset, int line, int column) {
+		this.offset = offset; this.line = line; this.column = column;
+	}
+}
+
+class CalciumParserError inherits CalciumParserLocation {
+	bound public int code = 0;
+	bound public string found = "";
+	bound public string expected = "";
+	bound public int vested = 0;
+}
+
+class CalciumParserOutput inherits object {
+	fixed public <CalciumParserOutput>function @construct(bool hadError, CalciumParserError error, map data) {this.hadError = hadError; this.error = error; this.data = data;}
+	bound public CalciumParserError error = empty;
+	bound public bool hadError = false;
+	bound public map data = new map();
+}

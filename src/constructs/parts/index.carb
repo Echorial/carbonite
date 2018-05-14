@@ -1,0 +1,22 @@
+class Carbonite.Parts.Index inherits Carbonite.Part {
+	bound public Carbonite.Part previous = null;
+	bound public Carbonite.Expression argument = null;
+	bound public Carbonite.Members.ReferenceMethod reference = null;
+	bound public override string type = "index";
+
+	fixed public <Carbonite.Parts.Index>function @construct(Carbonite.Part prev, map arg, Carbonite.Term parent) {
+		this.parent = parent;
+		this.previous = prev;
+		this.root = prev.root;
+
+		var Carbonite.Expression exp = new Carbonite.Expression(parent.container.parent.parent, parent.container);
+		exp.loadFromRaw(arg);
+		this.argument = exp;
+		var <Carbonite.Type>array castParam = new <Carbonite.Type>array();
+		castParam.push(exp.output);
+		var Carbonite.Members.Method index = prev.output.reference.overloadWithContext("@index", castParam, prev.context, parent);
+		this.reference = Carbonite.Member.makeReference(prev.output.reference, index, prev.context);
+		this.output = index.output.getWithContext(prev.output);
+		this.context = this.output;
+	}
+}

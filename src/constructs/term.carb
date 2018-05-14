@@ -1,0 +1,51 @@
+class Carbonite.Term inherits object, Carbonite.Range {
+	bound public Carbonite.Type output = empty;
+	bound public Carbonite.Expression parent = empty;
+	bound public Carbonite.Body container = empty;
+	bound public <Carbonite.Term>array context = empty;
+	bound public int index = 0;
+	bound public map raw = empty;
+	bound public string type = "";
+	
+	fixed public <Carbonite.Term>function @construct(Carbonite.Expression parent, Carbonite.Body container) {
+		this.parent = parent;
+		this.container = container;
+	}
+
+	bound public <void>function loadFromRaw(map raw, <Carbonite.Term>array context, int index) {
+		this.raw = raw;
+		this.context = context;
+		this.index = index;
+		this.loadLocation(this.parent.parent, raw);
+		this.build(this.parent, this.container);
+	}
+
+	fixed public <Carbonite.Term>function make(Carbonite.Expression parent, Carbonite.Body container, map raw) {
+		var string type = raw["type"];
+		var Carbonite.Term rtn = empty;
+		if (type == "literal") {
+			rtn = new Carbonite.Terms.Literal(parent, container);
+		}else if (type == "constant") {
+			rtn = new Carbonite.Terms.Sequence(parent, container);
+		}else if (type == "function") {
+			rtn = new Carbonite.Terms.Function(parent, container);
+		}else if (type == "group") {
+			var Carbonite.Terms.Expression exp = new Carbonite.Terms.Expression(parent, container);
+			exp.expression = new Carbonite.Expression(parent.parent, container);
+			exp.expression.grouped = true;
+			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.relativeParent = parent.relativeParent;
+			exp.expression.raw = raw["expression"];
+			var <map>array cast = raw["expression"]["terms"];
+			exp.expression.loadTerms(cast);
+			
+			exp.output = exp.expression.output;
+			rtn = exp;
+		}else if (type == "prefix") {
+			rtn = new Carbonite.Terms.Prefix(parent, container);
+		}
+		return rtn;
+	}
+
+	bound public <void>function build(Carbonite.Expression parent, Carbonite.Body container) {}
+}

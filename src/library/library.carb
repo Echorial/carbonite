@@ -1,0 +1,32 @@
+#include "context.carb"
+
+#include "abstract/error/"
+#include "abstract/fileSystem/fileSystem.carb"
+#include "abstract/fileSystem/file.carb"
+#include "abstract/fileSystem/stat.carb"
+#include "abstract/memory/memory.carb"
+#include "abstract/memory/buffer.carb"
+
+#if platform.javascript
+	#include "primitive.carb"
+	#include "javascript/primitive"
+#end if
+
+#if platform.documentation
+	#include "primitive.carb"
+	#include "javascript/primitive"
+#end if
+
+#if platform.header
+	#include "primitive.carb"
+	#include "javascript/primitive"
+#end if
+
+#if platform.php
+	#include "php/primitive.carb"
+	#include "php/primitive"
+#end if
+
+#if platform.cpp
+	#include "cpp/primitive"
+#end if

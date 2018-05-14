@@ -1,0 +1,13 @@
+class Carbide.Virtual.Statements.Out inherits Carbide.Virtual.Statement {
+	bound public Carbide.Virtual.Block code = empty;
+
+
+	bound public override <void>function run(Carbide.Virtual.Scope scope) {
+		this.code.run(scope);
+	}
+
+	bound public override <void>function clear() {
+		this.scope.clear();
+		this.code.clear();
+	}
+}

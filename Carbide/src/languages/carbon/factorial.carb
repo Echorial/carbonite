@@ -1,0 +1,9 @@
+var factorial = int (int n) => {
+	var ret = 1;
+    for (var int i = 1; i <= n; i += 1) {
+        ret *= i;
+	}
+    return ret;
+};
+
+print(factorial(5)); //120

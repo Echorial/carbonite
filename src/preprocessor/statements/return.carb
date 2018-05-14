@@ -1,0 +1,14 @@
+class Carbonite.Pre.Statements.Return inherits Carbonite.Pre.Statement {
+	bound public Carbonite.Pre.Expression value = empty;
+
+	bound public override <void>function build() {
+		this.value = Carbonite.Pre.Expression.make(this, this.data["expression"]);
+		this.value.build();
+	}
+
+	bound public override <void>function run() {
+		var string name = "functionReturn";
+		var Carbonite.Pre.Variable variable = new Carbonite.Pre.Variable(name, this.value.run());
+		this.parent.scope.addVariable(variable);
+	}
+}

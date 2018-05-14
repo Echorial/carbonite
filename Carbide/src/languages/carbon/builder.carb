@@ -1,0 +1,222 @@
+class Carbide.Languages.Carbon inherits Carbide.Language {
+	fixed public <Carbide.Virtual.Processor>function virtualize(string input) {
+		var <map>CarboniteCarbonParserOutput po = CarboniteCarbonParser.parse("Block", "{" + input + "}");
+		var map ast = po.data;
+		var Carbide.Virtual.Block root = empty;
+		var Carbide.Virtual.Processor proc = new Carbide.Virtual.Processor(root);
+		if (po.hadError) {
+			proc.runtimeError("Found " + po.error.found + " expected " + po.error.expected, "?", po.error.offset, po.error.offset + 1);
+		}else{
+			var <map>array exps = ast["data"]["code"];
+			root = Carbide.Languages.Carbon.buildBlock(proc, exps, root);
+			root.topBlock = root;
+		}
+		return proc;
+	}
+
+	fixed public <Carbide.Virtual.Block>function virtualizeIntoProcessor(string label, string input, Carbide.Virtual.Processor processor) {
+		var <map>CarboniteCarbonParserOutput po = CarboniteCarbonParser.parse("Block", "{" + input + "}");
+		if (po.hadError) {
+			processor.runtimeError("Found " + po.error.found + " expected " + po.error.expected, label, po.error.offset, po.error.offset + 1);
+			Exception.throw("Error in script parser");
+		}
+		var map ast = po.data;
+		var Carbide.Virtual.Block root = empty;
+		var <map>array exps = ast["data"]["code"];
+		root = Carbide.Languages.Carbon.buildBlock(processor, exps, root);
+		root.label = label;
+		processor.addBlock(root);
+		return root;
+	}
+
+	fixed public <Carbide.Virtual.Block>function buildBlock(Carbide.Virtual.Processor parent, <map>array code, Carbide.Virtual.Block parentBlock) {
+		var Carbide.Virtual.Block rtn = new Carbide.Virtual.Block(parent);
+		if (parentBlock == null) {
+			rtn.topBlock = rtn;
+			parentBlock = rtn;
+		}
+		if (parent.root == empty) {
+			parent.root = rtn;
+			parent.root.scope = parent.scope;
+		}
+		for (var int i in code) {
+			var map exp = code[i];
+			var Carbide.Virtual.Statement state = empty;
+			var string type = exp["type"];
+			if (type == "define") {
+				state = new Carbide.Virtual.Statements.Var(rtn, exp["name"], Carbide.Languages.Carbon.buildExpression(exp["value"], parent, parentBlock));
+			}else if (type == "if") {
+				var <map>array exps = exp["body"]["code"];
+				var <Carbide.Virtual.Expression>array checks = new <Carbide.Virtual.Expression>array();
+				checks.push(Carbide.Languages.Carbon.buildExpression(exp["check"]["expression"], parent, parentBlock));
+				state = new Carbide.Virtual.Statements.If(rtn, checks, Carbide.Languages.Carbon.buildBlock(parent, exps, parentBlock));
+				var Carbide.Virtual.Statements.If castState = state;
+				castState.code.topBlock = parentBlock.topBlock;
+			}else if (type == "for") {
+				var <map>array exps = exp["body"]["code"];
+				var Carbide.Virtual.Expression refer = new Carbide.Virtual.Expressions.Reference(exp["define"]["name"]);
+				var float one = 1;
+				var Carbide.Virtual.Expression numb = Carbide.Languages.Carbon.buildExpression(exp["define"]["value"], parent, parentBlock);
+				var Carbide.Virtual.Expression operation = Carbide.Languages.Carbon.buildExpression(exp["iterate"], parent, parentBlock);
+				state = new Carbide.Virtual.Statements.For(rtn, exp["define"]["name"], numb,
+					Carbide.Languages.Carbon.buildExpression(exp["check"], parent, parentBlock),
+					operation,
+					Carbide.Languages.Carbon.buildBlock(parent, exps, parentBlock));
+					var Carbide.Virtual.Statements.For castState = state;
+					castState.code.topBlock = parentBlock.topBlock;
+			}else if (type == "return") {
+				state = new Carbide.Virtual.Statements.Return(rtn, Carbide.Languages.Carbon.buildExpression(exp["expression"], parent, parentBlock));
+			}else if (type == "expression") {
+				state = new Carbide.Virtual.Statements.Lost(rtn, Carbide.Languages.Carbon.buildExpression(exp, parent, parentBlock));
+			}
+			state.scope = new Carbide.Virtual.Scope(parent);
+			rtn.statements.push(state);
+		}
+		return rtn;
+	}
+
+	fixed public <Carbide.Virtual.Expression>function buildSub(string name) {
+		var splits = name.split(".");
+		var rtn = new Carbide.Virtual.Expressions.Reference(splits[0]);
+		if (splits.length > 1) {
+			for (var int s = 1; s < splits.length; s++) {
+				var sub = new Carbide.Virtual.Sub(null);
+				sub.type = 1;
+				sub.property = splits[s];
+				rtn.subs.push(sub);
+			}
+		}
+		return rtn;
+	}
+
+	fixed public <Carbide.Virtual.Value>function buildValue(map lit, Carbide.Virtual.Processor parent, Carbide.Virtual.Block parentBlock) {
+		var Carbide.Virtual.Value val = empty;
+		var string litType = lit["literalType"];
+		if (litType == "number") {
+			var float rVal = lit["value"];
+			val = Carbide.Virtual.Values.Number.create(rVal);
+		}else if (litType == "boolean") {
+			var bool rVal = lit["value"];
+			val = Carbide.Virtual.Values.Bool.create(rVal);
+		}else if (litType == "string") {
+			var string rVal = lit["value"];
+			val = Carbide.Virtual.Values.String.create(rVal);
+		}else if (litType == "map") {
+			val = Carbide.Virtual.Values.Map.create(new map());
+		}else if (litType == "array") {
+			val = Carbide.Virtual.Values.Array.create(new <Carbide.Virtual.Value>array());
+		}else if (litType == "function") {
+			var <string>array args = new <string>array();
+			var <map>array tArgs = lit["parameters"];
+			for (var int i in tArgs) {
+				args.push(tArgs[i]["name"]);
+			}
+			val = Carbide.Virtual.Values.Function.create(args, Carbide.Languages.Carbon.buildBlock(parent, lit["body"]["code"], parentBlock));
+			var Carbide.Virtual.Values.Function castVal = val;
+			castVal.code.topBlock = parentBlock.topBlock;
+		}
+		return val;
+	}
+
+	fixed public <Carbide.Virtual.Expression>function buildExpression(map exp, Carbide.Virtual.Processor proc, Carbide.Virtual.Block parentBlock) {
+		var string type = exp["type"];
+
+		if ("terms" in exp) {
+		}else{
+			var Carbide.Virtual.Expression rtn = null;
+			if (type == "literal") {
+				var Carbide.Virtual.Value val = Carbide.Languages.Carbon.buildValue(exp, proc, parentBlock);
+				rtn = new Carbide.Virtual.Expressions.Raw(val);
+				return rtn;
+			}else if (type == "constant") {
+				var string constantName = exp["name"];
+				var <string>array splits = constantName.split(".");
+				rtn = new Carbide.Virtual.Expressions.Reference(splits[0]);
+				for (var int i = 1; i < splits.length; i++) {
+					var sub = new Carbide.Virtual.Sub(null);
+					sub.type = 1;
+					sub.property = splits[i];
+					rtn.subs.push(sub);
+				}
+				var <map>array appendix = exp["appendix"];
+				for (var int i in appendix) {
+					var append = appendix[i];
+					if (append["type"] == "dot") {
+						var sub = new Carbide.Virtual.Sub(null);
+						sub.type = 1;
+						sub.property = append["name"];
+						if (appendix.length > i + 1) {
+							var nextAppend = appendix[i + 1];
+							if (nextAppend["type"] == "call") {
+								sub.type = 2;
+								for (var int a in nextAppend["expression"]) {
+									var map appExp = nextAppend["expression"][a];
+									sub.arguments.push(Carbide.Languages.Carbon.buildExpression(appExp, proc, parentBlock));
+								}
+							}
+						}
+						rtn.subs.push(sub);
+					}else if ((append["type"] == "call") and (i == 0)) {
+						var Carbide.Virtual.Sub sub = null;
+						var doPush = true;
+						if ((rtn.subs.length > 0) and (rtn.subs[rtn.subs.length - 1].type == 1)) {
+							sub = rtn.subs[rtn.subs.length - 1];
+							doPush = false;
+						}else{
+							sub = new Carbide.Virtual.Sub(null);
+						}
+						sub.type = 2;
+						for (var int a in append["expression"]) {
+							var map appExp = append["expression"][a];
+							sub.arguments.push(Carbide.Languages.Carbon.buildExpression(appExp, proc, parentBlock));
+						}
+						if (doPush)
+							rtn.subs.push(sub);
+					}else{
+						var Carbide.Virtual.Sub sub = new Carbide.Virtual.Sub(null);
+						sub.type = 2;
+						for (var int a in append["expression"]) {
+							var map appExp = append["expression"][a];
+							sub.arguments.push(Carbide.Languages.Carbon.buildExpression(appExp, proc, parentBlock));
+						}
+						rtn.subs.push(sub);
+					}
+				}
+				return rtn;
+			}else if (type == "function") {
+				var <string>array args = new <string>array();
+				var <map>array tArgs = exp["parameters"];
+				for (var int i in tArgs) {
+					args.push(tArgs[i]["name"]);
+				}
+				var Carbide.Virtual.Value val = Carbide.Virtual.Values.Function.create(args, Carbide.Languages.Carbon.buildBlock(proc, exp["body"]["code"], parentBlock));
+				rtn = new Carbide.Virtual.Expressions.Raw(val);
+				return rtn;
+			}
+		}
+
+		var <map>array terms = exp["terms"];
+		var Carbide.Virtual.Expression rtn = empty;
+		if (terms.length == 1) {
+			if ("operator" in terms[0]) {
+				rtn = new Carbide.Virtual.Expressions.Operation(terms[0]["operator"], Carbide.Languages.Carbon.buildExpression(terms[0]["term"], proc, parentBlock), null);
+			}else{
+				rtn = Carbide.Languages.Carbon.buildExpression(terms[0], proc, parentBlock);
+			}
+		}else{
+			var map head = terms[0];
+			var map tail = terms[1];
+			var Carbide.Virtual.Expression tailExp = null;
+			if ("operator" in tail) {
+				terms.shift();
+				tailExp = Carbide.Languages.Carbon.buildExpression(exp, proc, parentBlock);
+			}else{
+				tailExp = Carbide.Languages.Carbon.buildExpression(tail, proc, parentBlock);
+			}
+
+			rtn = new Carbide.Virtual.Expressions.Operation(head["operator"], Carbide.Languages.Carbon.buildExpression(head["term"], proc, parentBlock), tailExp);
+		}
+
+		return rtn;
+	}
+}

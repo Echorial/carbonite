@@ -1,0 +1,18 @@
+class Carbide.Virtual.Statement {
+	bound public map data = new map();
+	bound public Carbide.Virtual.Block parent = empty;
+	bound public Carbide.Virtual.Block topParent = empty;
+	bound public Carbide.Virtual.Scope scope = empty;
+
+	bound public <void>function build() {
+		
+	}
+
+	bound public <void>function run(Carbide.Virtual.Scope scope) {
+		
+	}
+
+	bound public <void>function clear() {
+		
+	}
+}

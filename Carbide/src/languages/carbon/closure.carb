@@ -1,0 +1,10 @@
+var x = null (int closed) => {
+	return int (int times) => {
+		return int () => {
+			return closed * times;
+		};
+	};
+};
+
+var closure = x(123);
+print(closure(2)());

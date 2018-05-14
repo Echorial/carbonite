@@ -1,0 +1,40 @@
+abstract interface FileSystem {
+	`Reads the file at $location into a string.
+	@note You should use FileSystem.File buffer object for faster reading.`
+	fixed string readSync(string location, string format);
+
+	`Reads the file at $location into a string and calls $callback passing an Error(or null) and the content.
+	@note You should use FileSystem.File buffer object for faster reading.`
+	fixed void read(string location, string format `Text format to use when reading. @example "utf8"`, <void, Error, string>function callback);
+
+	fixed void write(string location, string content, <void, Error>function callback);
+	fixed Error writeSync(string location, string content);
+
+	`Returns a FileSystem.Stat about the file at $location.`
+	fixed FileSystem.Stat statSync(string location);
+
+	`Invokes $callback passing an Error along with a FileSystem.Stat about the file at $location.`
+	fixed void stat(string location, <void, Error, FileSystem.Stat>function callback);
+
+	`Opens a file into a FileSystem.File using the $flags provided.`
+	fixed FileSystem.File openSync(string location, string flags);
+
+	`Opens a file into a FileSystem.File using the $flags and calls callback.`
+	fixed void open(string location, string flags, <void, Error, FileSystem.File>function callback);
+
+	fixed <string>array readDirSync(string location);
+
+	fixed string dirName(string location);
+
+	fixed bool isDir(string location);
+
+	fixed string normalize(string path);
+
+	fixed string resolve(string path);
+
+	fixed bool exists(string location);
+
+	fixed string basename(string location);
+
+	fixed void makeDir(string location);
+}

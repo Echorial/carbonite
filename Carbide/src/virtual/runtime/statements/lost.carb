@@ -1,0 +1,15 @@
+class Carbide.Virtual.Statements.Lost inherits Carbide.Virtual.Statement {
+	bound public Carbide.Virtual.Expression value = empty;
+
+	fixed public <Carbide.Virtual.Statements.Lost>function @construct(Carbide.Virtual.Block parent, Carbide.Virtual.Expression exp) {
+		this.parent = parent;
+		this.topParent = this.parent.parent.root;
+		this.value = exp;
+		this.value.parent = this;
+		this.value.setParent();
+	}
+
+	bound public override <void>function run(Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Value val = this.value.run(scope);
+	}
+}

@@ -1,0 +1,387 @@
+ class Carbonite.Assemblers.Cpp inherits Carbonite.Assembler {
+	bound public override <string>function build() {
+		var string rtn = "";
+		for (var int i in this.compiler.roots) {
+			var Carbonite.Class root = this.compiler.roots[i];
+			rtn += this.root(root);
+		}
+		return rtn;
+	}
+
+	bound public <string>function root(Carbonite.Class root) {
+		if (root.base == "relative") {
+			return "/" + "/Relative " + root.name + "\n";
+		}
+		var body = "";
+		if (root.base == "namespace") {
+			var <string>array children = new <string>array();
+			for (var int i in root.children) {
+				var Carbonite.Class cls = root.children[i];
+				if (cls.base != "relative") {
+					children.push(cls.base + " " + cls.name);
+				}
+			}
+			body = "{\npublic:\n" + children.join("\n") + "\n};";
+		}else{
+			body = "{\npublic:\n" + this.properties(root) +  this.methods(root) + "\n};\n\n";
+		}
+
+		var string pref = "";
+		if (root.parent != null) {
+			pref = root.parent.route + "::";
+		}
+		return root.base + " " + pref + root.name + body;
+	}
+
+	bound public <string>function properties(Carbonite.Class root) {
+		var string rtn = "";
+		for (var int i in root.members) {
+			var Carbonite.Member member = root.members[i];
+			if (member.type == "property") {
+				var Carbonite.Members.Property prop = member;
+				var string route = this.route(prop.output);
+				var string prefix = "";
+				if (prop.binding == "fixed") {
+					prefix = "static ";
+				}
+				rtn += prefix + route + " " + prop.name + " = " + this.expression(prop.default) + ";\n";
+			}
+		}
+		return rtn;
+	}
+
+	bound public <string>function route(Carbonite.Type what) {
+		if (what.reference.route == "array") {
+			return "vector<" + this.route(what.templates[0]) + ">";
+		}else if (what.reference.route == "map") {
+			return "map<std::string, " + this.route(what.templates[0]) + ">";
+		}else if (what.reference.route == "string") {
+			return "std::string";
+		}
+		return what.reference.route;
+	}
+
+	bound public override <string>function methods(Carbonite.Class root) {
+		var <string>array methods = new <string>array();
+		for (var int i in root.members) {
+			var Carbonite.Member member = root.members[i];
+			if (member.type != "property") {
+				if (member.hasFlag("inline") == false) {
+					if (member.name != "@construct") {
+						if (member.hasFlag("relative") == false) {
+							var Carbonite.Members.Method method = member;
+							var <string>array args = new <string>array();
+							for (var int a in method.arguments) {
+								var Carbonite.Argument arg = method.arguments[a];
+								args.push(this.route(arg.type) + " " + arg.name);
+							}
+							var string prefix = "";
+							if (method.binding == "fixed") {
+								prefix = "static ";
+							}
+							methods.push(prefix + this.route(method.output) + " " + method.name + "(" + args.join(", ") + ") {\n" + this.body(method.body) + "\n}");
+						}
+					}
+				}
+			}
+		}
+		
+		return methods.join("\n\n");
+	}
+
+
+	bound public override <string>function body(Carbonite.Body body) {
+		var <string>array statements = new <string>array();
+
+		for (var int i in body.statements) {
+			var Carbonite.Statement statement = body.statements[i];
+			statements.push(this.statement(statement));
+		}
+
+		return statements.join("\n");
+	}
+
+	bound public override <string>function define(Carbonite.Define define) {
+		var string set = "";
+		if (define.initializer != null) {
+			set = " = " + this.expression(define.initializer);
+		}
+		return this.route(define.output) + " " + define.name + set;
+	}
+
+	bound public override <string>function statement(Carbonite.Statement statement) {
+		if (statement.type == "define") {
+			var Carbonite.Statements.Define def = statement;
+			return this.define(def.define) + ";";
+		}else if (statement.type == "expression") {
+			var Carbonite.Statements.Expression exp = statement;
+			return this.expression(exp.expression) + ";";
+		}else if (statement.type == "return") {
+			var Carbonite.Statements.Return exp = statement;
+			return "return " + this.expression(exp.expression) + ";";
+		}else if (statement.type == "if") {
+			var Carbonite.Statements.If ifState = statement;
+			var string str = "";
+			str = "if (" + this.expression(ifState.check) + ") {\n" + this.body(ifState.body) + "}";
+			for (var int i in ifState.alternatives) {
+				var Carbonite.Statements.IfAlternative alt = ifState.alternatives[i];
+				if (alt.doCheck) {
+					str += "else if (" + this.expression(alt.check) + ") {\n" + this.body(alt.body) + "}";
+				}else{
+					str += "else{\n" + this.body(alt.body) + "}";
+				}
+			}
+			return str;
+		}else if (statement.type == "for") {
+			var Carbonite.Statements.For forState = statement;
+			var string str = "";
+			str = "for (" + this.define(forState.define) + ";" + this.expression(forState.check) + ";" + this.expression(forState.iterate) + ") {\n" + this.body(forState.body) + "}";
+			return str;
+		}else if (statement.type == "forin") {
+			var Carbonite.Statements.ForIn forState = statement;
+			var string str = "";
+			if (forState.iterate.output.reference.route == "array") {
+				str = "for (" + this.define(forState.define) + " = 0; " + forState.define.name + " < " + this.expression(forState.iterate) + ".size(); " + forState.define.name + "++) {\n" + this.body(forState.body) + "}";
+			}else{
+				str = "for (" + this.define(forState.define) + " in " + this.expression(forState.iterate) + ") {\n" + this.body(forState.body) + "}";
+			}
+			return str;
+		}else if (statement.type == "while") {
+			var Carbonite.Statements.While whileState = statement;
+			return "while (" + this.expression(whileState.check) + ") {\n" + this.body(whileState.body) + "}";
+		}else if (statement.type == "continue") {
+			return "continue;";
+		}else if (statement.type == "break") {
+			return "break;";
+		}
+	}
+	bound public override <string>function native(Carbonite.Native native) {
+		if (native.type == "integer") {
+			var Carbonite.Natives.Integer cast = native;
+			var string rtn = cast.value;
+			return rtn;
+		}else if (native.type == "float") {
+			var Carbonite.Natives.Float cast = native;
+			var string rtn = cast.value;
+			return rtn;
+		}else if (native.type == "number") {
+			var Carbonite.Natives.Integer cast = native;
+			var string rtn = cast.value;
+			return rtn;
+		}else if (native.type == "string") {
+			var Carbonite.Natives.String cast = native;
+			return "\"" + cast.value.replace("\r", "\\r").replace("\\\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"";
+		}else if (native.type == "array") {
+			var Carbonite.Natives.Array cast = native;
+			var <string>array expressions = new <string>array();
+			for (var int i in cast.value) {
+				var Carbonite.Natives.ArrayItem item = cast.value[i];
+				expressions.push(this.expression(item.value));
+			}
+			return "{" + expressions.join(", ") + "}";
+		}else if (native.type == "boolean") {
+			var Carbonite.Natives.Boolean cast = native;
+			if (cast.value) {
+				return "true";
+			}else{
+				return "false";
+			}
+		}
+	}
+
+	bound public override <string>function term(Carbonite.Term term) {
+		if (term.type == "expression") {
+			var Carbonite.Terms.Expression cast = term;
+			return this.expression(cast.expression);
+		}else if (term.type == "literal") {
+			var Carbonite.Terms.Literal cast = term;
+			return this.native(cast.native);
+		}else if (term.type == "function") {
+			var Carbonite.Terms.Function cast = term;
+			return this.func(cast.function);
+		}else if (term.type == "prefix") {
+			var Carbonite.Terms.Prefix cast = term;
+			var string doNew = "";
+			var <Carbonite.Members.Method>array cstrs = cast.expression.output.reference.getMethods("@construct");
+			var Carbonite.Members.Method cnstr = cstrs[0];
+			if (cnstr.hasFlag("inline")) {
+				doNew = "";
+			}
+			if (cast.prefix == "new") {
+				return doNew + this.expression(cast.expression);
+			}
+		}else if (term.type == "sequence") {
+			var Carbonite.Terms.Sequence cast = term;
+			return this.sequence(cast);
+		}
+	}
+
+	bound public override <string>function sequence(Carbonite.Terms.Sequence sequence) {
+		var string rtn = "";
+
+		for (var int i in sequence.parts) {
+			var Carbonite.Part part = sequence.parts[i];
+			if (part.type == "reference") {
+				var Carbonite.Parts.Reference cast = part;
+				if (cast.isConstant) {
+					if (cast.isConstructor) {
+						if (cast.constantReference.reference.name == "empty") {
+							rtn += "null";
+						}else{
+							rtn += cast.constantReference.reference.route;
+						}
+					}else{
+						rtn += cast.constantReference.reference.name;
+					}
+				}else{
+					rtn += cast.reference.name;
+				}
+			}else if (part.type == "dot") {
+				var Carbonite.Parts.Dot cast = part;
+				if (cast.reference != empty) {
+					if (cast.reference.type == "property") {
+						var Carbonite.Members.ReferenceProperty refCast = cast.reference;
+						var string access = ".";
+						if (refCast.reference.binding == "fixed") {
+							access = "::";
+						}
+						if (refCast.reference.hasFlag("native")) {
+							if (refCast.reference.hasFlag("inline") == false) {
+								rtn += access + refCast.reference.name;
+							}
+						}else{
+							rtn += access + refCast.reference.name;
+						}
+					}else{
+						var Carbonite.Members.ReferenceMethod refMeth = cast.reference;
+						var string access = ".";
+						if (refMeth.reference.binding == "fixed") {
+							access = "::";
+						}
+						if (refMeth.reference.hasFlag("native") == false) {
+							rtn += access + refMeth.reference.getRealName();
+						}else if (refMeth.reference.hasFlag("property")) {
+							var bool isNotCall = true;
+							var string castI = i;
+							var int ni = string.parseInt(castI) + 1;
+							if (ni < sequence.parts.length()) {
+								var Carbonite.Part next = sequence.parts[ni];
+								if (next.type == "call") {
+									isNotCall = false;
+								}
+							}
+							if (isNotCall) {
+								var <Carbonite.Expression>array strArr = new <Carbonite.Expression>array();
+								rtn = this.callMethod(refMeth.reference, strArr, sequence.templates, rtn);
+							}
+						}
+					}
+				}else{
+					rtn += "::" + cast.output.reference.name;
+				}
+			}else if (part.type == "call") {
+				var Carbonite.Parts.Call cast = part;
+				if (cast.previous.type == "property") {
+					
+				}else if (cast.reference != null) {
+					var bool normal = true;
+					var Carbonite.Members.Method callOn = cast.reference.getReference();
+					var string methodName = "";
+					if (callOn.hasFlag("inline") == false) {
+						methodName = "." + callOn.name;
+					}
+					if (callOn.hasFlag("native")) {
+						rtn = this.callMethod(callOn, cast.arguments, sequence.templates, rtn + methodName);
+					}else{
+						rtn += this.callMethod(callOn, cast.arguments, sequence.templates, "");
+					}
+				}else{
+					var <string>array args = new <string>array();
+					for (var int a in cast.arguments) {
+						args.push(this.expression(cast.arguments[a]));
+					}
+					rtn += "(" + args.join(", ") + ")";
+				}
+			}else if (part.type == "index") {
+				var Carbonite.Parts.Index cast = part;
+				var Carbonite.Members.Method callOn = cast.reference.getReference();
+				var string methodName = "";
+				if (callOn.hasFlag("inline") == false) {
+					var <map>array attrs = callOn.getAttributes("name");
+					var map mp = attrs[0];
+					var string attr = mp["value"];
+					methodName = "." + attr;
+				}
+				var <Carbonite.Expression>array castArr = new <Carbonite.Expression>array();
+				castArr.push(cast.argument);
+				if (callOn.hasFlag("native")) {
+					rtn = this.callMethod(callOn, castArr, sequence.templates, rtn + methodName);
+				}else{
+					rtn += methodName + this.callMethod(callOn, castArr, sequence.templates, "");
+				}
+			}
+		}
+
+		return rtn;
+	}
+
+	bound public override <string>function callMethodWithStrings(Carbonite.Members.Method method, <string>array arguments, <Carbonite.Type>array templates, string context) {
+		var bool normal = true;
+		if (method.hasFlag("native")) {
+			if (method.hasFlag("inline")) {
+				normal = false;
+			}
+		}
+		if (normal) {
+			return context + "(" + arguments.join(", ") + ")";
+		}else{
+			var <string>array temps = new <string>array();
+			for (var int i in templates) {
+				var Carbonite.Type temp = templates[i];
+				temps.push(this.route(temp));
+			}
+			var Carbonite.Context ctx = new Carbonite.Context(context, arguments, temps);
+			return method.generate(ctx);
+		}
+	}
+
+	bound public override <string>function callMethod(Carbonite.Members.Method method, <Carbonite.Expression>array arguments, <Carbonite.Type>array templates, string context) {
+		var <string>array args = new <string>array();
+		for (var int i in arguments) {
+			var Carbonite.Expression arg = arguments[i];
+			args.push(this.expression(arg));
+		}
+		return this.callMethodWithStrings(method, args, templates, context);
+	}
+
+	string func(Carbonite.Function func) {
+		var <string>array args = new <string>array();
+		for (var int i in func.arguments) {
+			var Carbonite.Argument arg = func.arguments[i];
+			args.push(this.route(arg.type) + " " + arg.name);
+		}
+		return "[](" + args.join(", ") + ") {\n" + this.body(func.body) + "\n}";
+	}
+
+	bound public override <string>function expression(Carbonite.Expression expression) {
+		var rtn = "";
+		var string first = this.term(expression.first);
+		if (expression.reference != empty) {
+			var <string>array args = new <string>array();
+			if (expression.last != empty) {
+				args.push(this.term(expression.last));
+			}
+			var <Carbonite.Type>array temps = new <Carbonite.Type>array();
+			if (expression.reference.hasFlag("native")) {
+				return this.callMethodWithStrings(expression.reference, args, temps, first);
+			}else{
+				first += "." + expression.reference.getRealName() + this.callMethodWithStrings(expression.reference, args, temps, "");
+			}
+		}
+		rtn = first;
+		if (expression.grouped)
+			return "(" + rtn + ")";
+		else
+			return rtn;
+	}
+}

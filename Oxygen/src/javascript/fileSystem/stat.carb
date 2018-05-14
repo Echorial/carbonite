@@ -1,0 +1,41 @@
+class Oxygen.FileSystem.Stat inherits FileSystem.Stat {
+	void @construct() {}
+
+	int dev = 0;
+	int ino = 0;
+	int mode = 0;
+	int nlink = 0;
+	int uid = 0;
+	int gid = 0;
+	int rdev = 0;
+	uint64 size = 0;
+	uint64 blksize = 0;
+	int blocks = 0;
+	uint64 atime = 0;
+	uint64 mtime = 0;
+	uint64 ctime = 0;
+	uint64 birthtime = 0;
+
+	fixed Oxygen.FileSystem.Stat fromMap(map data) {
+		var stat = new Oxygen.FileSystem.Stat();
+
+		stat.dev = data["dev"];
+		stat.ino = data["ino"];
+		stat.mode = data["mode"];
+		stat.nlink = data["nlink"];
+		stat.uid = data["uid"];
+		stat.gid = data["gid"];
+		stat.rdev = data["rdev"];
+		stat.size = data["size"];
+		stat.blksize = data["blksize"];
+		stat.blocks = data["blocks"];
+		stat.atime = data["atimeMs"];
+		stat.mtime = data["mtimeMs"];
+		stat.ctime = data["ctimeMs"];
+		stat.birthtime = data["birthtimeMs"];
+
+		return stat;
+	}
+}
+
+Oxygen.FileSystem.Stat implements FileSystem.Stat;

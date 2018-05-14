@@ -1,0 +1,7 @@
+class Carbonite.Level inherits object {
+	bound public <Carbonite.Named>array names = new <Carbonite.Named>array();
+	bound public int level = 0;
+	fixed public <Carbonite.Router>function @construct(int lvl) {
+		this.level = lvl;
+	}
+}

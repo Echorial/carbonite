@@ -1,0 +1,39 @@
+relative int inherits primitive {
+	native inline void @construct() {return '0';}
+
+	[operator="=", order = 10] native inline void set(int what) {return context.instance + " = " + context.arguments[0];}
+	[operator="+"] native inline int add(int what) {return context.instance + " + " + context.arguments[0];}
+	[operator="==", order=5] native inline bool equal(int compare) {return context.instance + " == " + context.arguments[0];}
+	[operator="!=", order=5] native inline bool notEqual(int compare) {return context.instance + " != " + context.arguments[0];}
+	[operator="^", order=4] native inline int pow(int to) {return context.instance + " ^ " + context.arguments[0];}
+	[operator="*", order=3] native inline int multiply(int what) {return context.instance + " * " + context.arguments[0];}
+	[operator="/", order=3] native inline int divide(int what) {return context.instance + " / " + context.arguments[0];}
+	[operator="-"] native inline int subtract(int what) {return context.instance + " - " + context.arguments[0];}
+	[operator=">", order=5] native inline bool greater(int what) {return context.instance + " > " + context.arguments[0];}
+	[operator="<", order=5] native inline bool lesser(int what) {return context.instance + " < " + context.arguments[0];}
+	[operator="<=", order=5] native inline bool lesserOrEqual(int what) {return context.instance + " <= " + context.arguments[0];}
+	[operator=">=", order=5] native inline bool greaterOrEqual(int what) {return context.instance + " >= " + context.arguments[0];}
+	[operator="++"] native inline bool increment() {return context.instance + "++";}
+	[operator="--"] native inline bool decrement() {return context.instance + "--";}
+	[operator="+="] native inline bool plusEquals(int what) {return context.instance + "+=" + context.arguments[0];}
+	[operator="-="] native inline bool minusEquals(int what) {return context.instance + "-=" + context.arguments[0];}
+
+	fixed native inline bool mid(int val, int min, int max) {return context.arguments[0] + " >= " + context.arguments[1] + " and " + context.arguments[0] + " <= " + context.arguments[2];}
+
+	fixed native inline int parse(string value) {return "intval(" + context.arguments[0] + ")";}
+	fixed native inline string toString() {return "strval(" + context.instance + ")";}
+}
+
+relative uint inherits int {}
+
+relative uint8 inherits int {}
+relative int8 inherits int {}
+
+relative uint16 inherits int {}
+relative int16 inherits int {}
+
+relative uint32 inherits int {}
+relative int32 inherits int {}
+
+relative uint64 inherits int {}
+relative int64 inherits int {}

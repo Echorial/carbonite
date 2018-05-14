@@ -1,0 +1,95 @@
+class Carbonite.Parts.Call inherits Carbonite.Part {
+	bound public Carbonite.Part previous = null;
+	bound public Carbonite.Members.ReferenceMethod reference = null;
+	bound public <Carbonite.Expression>array arguments = new <Carbonite.Expression>array();
+	bound public override string type = "call";
+
+	fixed public <Carbonite.Parts.Call>function @construct(Carbonite.Part prev, Carbonite.Term parent) {
+		this.previous = prev;
+		this.parent = parent;
+		this.root = prev.root;
+	}
+
+	fixed public <Carbonite.Parts.Call>function @construct(Carbonite.Part prev, <map>array args, Carbonite.Term parent) {
+		this.parent = parent;
+		this.previous = prev;
+		this.root = prev.root;
+		for (var int i in args) {
+			var map arg = args[i];
+
+			var Carbonite.Expression exp = new Carbonite.Expression(parent.container.parent.parent, parent.container);
+			exp.loadFromRaw(arg);
+			this.arguments.push(exp);
+		}
+		if (this.previous.type == "dot") {
+			var Carbonite.Parts.Dot cast = this.previous;
+			
+			if (cast.reference.type == "property") {
+				var Carbonite.Members.ReferenceProperty refProp = cast.reference;
+				if (cast.reference.output.reference.route == "function") {
+					this.functionCheck(cast.reference.output);
+				}else{
+					parent.source.error(parent, "Cannot call non function property '" + refProp.reference.name + "' on type '" + refProp.output.reference.name + "'");
+					Exception.throw("Build error");
+				}
+			}else{
+				var Carbonite.Members.ReferenceMethod refMeth = cast.reference;
+				if (refMeth.reference.name == "@dot") {
+					parent.source.error(parent, "TODO: Add function casting");
+					Exception.throw("Build error");
+				}else{
+					var <Carbonite.Type>array types = new <Carbonite.Type>array();
+					for (var int i in this.arguments) {
+						var Carbonite.Expression arg = this.arguments[i];
+						types.push(arg.output);
+					}
+					
+					if (this.root == empty) {
+						var Carbonite.Members.Method method = refMeth.reference.parent.overload(cast.text, types, parent);
+						this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
+						this.output = method.output;
+						if (method.binding == "bound") {
+							parent.source.error(parent, "Cannot call bounded method on a fixed reference in type '" + refMeth.reference.parent.name + "'");
+							Exception.throw("Build error");
+						}
+					}else{
+						var Carbonite.Members.Method method = refMeth.reference.parent.overloadWithContext(cast.text, types, prev.context, parent);
+						this.reference = Carbonite.Member.makeReference(prev.output.reference, method, prev.context);
+						this.output = method.output.getWithContext(prev.context);
+					}
+				}
+			}
+		}else{
+			var Carbonite.Parts.Reference cast = this.previous;
+			if (cast.isConstant) {
+				var <Carbonite.Type>array types = new <Carbonite.Type>array();
+				for (var int i in this.arguments) {
+					var Carbonite.Expression arg = this.arguments[i];
+					types.push(arg.output);
+				}
+				
+				this.reference = new Carbonite.Members.ReferenceMethod(cast.output.reference.overload("@construct", types, parent), prev.context);
+				this.output = cast.output;
+			}else{
+				this.functionCheck(cast.output);
+			}
+		}
+	}
+
+	void functionCheck(Carbonite.Type func) {
+		if (func.templates.length == 0) {
+			func.buildError("Function type must have at least one template");
+		}
+		this.output = func.templates[0];
+		if ((func.templates.length - 1) != this.arguments.length) {
+			this.parent.buildError("Invalid argument count " + this.arguments.length + " for function " + func.lookPretty());
+		}
+		for (var int i in this.arguments) {
+			var Carbonite.Expression arg = this.arguments[i];
+			var Carbonite.Type check = func.templates[i + 1];
+			if (arg.output.check(check) == false) {
+				arg.output.buildError("Expression does not match argument " + check.lookPretty());
+			}
+		}
+	}
+}

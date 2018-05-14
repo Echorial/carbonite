@@ -1,0 +1,8 @@
+relative <class T = primitive>map inherits primitive {
+	native inline void @construct() {return "{}";}
+
+	[operator="="] native inline void set(map what) {return context.instance + " = " + context.arguments[0];}
+	[operator="==", order=5] native inline bool equal(<T>map compare) {return context.instance + " == " + context.arguments[0];}
+	[operator="!=", order=5] native inline bool notEqual(<T>map compare) {return context.instance + " != " + context.arguments[0];}
+	native inline primitive @index(string key) {return context.instance + "[" + context.arguments[0] + "]";}
+}

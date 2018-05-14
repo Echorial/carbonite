@@ -1,0 +1,7 @@
+let x = function (y)
+	return y + 2
+end
+
+let obj = {z: x(2)}
+
+let yes = obj.z == 4 //true

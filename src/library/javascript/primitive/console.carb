@@ -1,0 +1,4 @@
+relative Console {
+	fixed native inline void log(primitive message)
+	{return "console.log(" + context.arguments[0] + ")";}
+}

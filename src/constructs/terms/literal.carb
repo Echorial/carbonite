@@ -1,0 +1,9 @@
+class Carbonite.Terms.Literal inherits Carbonite.Term {
+	bound public Carbonite.Native native = empty;
+	bound public override string type = "literal";
+
+	bound public override <void>function build(Carbonite.Expression parent, Carbonite.Body container) {
+		this.native = Carbonite.Native.make(parent, this.raw);
+		this.output = this.native.output;
+	}
+}

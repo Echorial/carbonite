@@ -1,0 +1,16 @@
+class Carbonite.Platforms.Javascript inherits Carbonite.Platform {
+	bound public override <void>function build() {
+		var bool outputToFile = true;
+		for (var int i in this.root) {
+			var string r = this.root[i];
+			if (r == "memory") {
+				outputToFile = false;
+			}
+		}
+		var Carbonite.Assemblers.Javascript assembler = new Carbonite.Assemblers.Javascript(this.compiler, this.options);
+		var string source = assembler.build();
+		if (outputToFile == false) {
+			this.compiler.rawOutput = source;
+		}
+	}
+}

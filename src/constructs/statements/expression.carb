@@ -1,0 +1,11 @@
+class Carbonite.Statements.Expression inherits Carbonite.Statement {
+	fixed public override string type = "expression";
+
+	bound public Carbonite.Expression expression = empty;
+
+	bound public override <void>function build(map raw, Carbonite.Body container) {
+		this.expression = new Carbonite.Expression(container.parent.parent, container);
+		this.expression.blockIndex = this.blockIndex;
+		this.expression.loadFromRaw(raw);
+	}
+}

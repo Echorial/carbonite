@@ -1,0 +1,54 @@
+class Carbide.Virtual.Sub {
+	bound public map data = new map();
+	bound public Carbide.Virtual.Statement parent = empty;
+	bound public int type = 0;
+	bound public string property = "";
+	bound public <Carbide.Virtual.Expression>array arguments = new <Carbide.Virtual.Expression>array();
+
+	fixed public <Carbide.Virtual.Expression>function @construct(Carbide.Virtual.Statement parent) {
+		this.parent = parent;
+		/*
+		var string type = this.data["type"];
+
+		if (type == "constant") {
+			this.type = 1;
+			this.property = this.data["value"];
+		}else if (type == "call"){
+			this.type = 2;
+			this.property = this.data["term"]["value"];
+			var <map>array args = this.data["args"];
+			for (var int i in args) {
+				var Carbide.Virtual.Expression argument = empty;
+				this.arguments.push(argument);
+				argument.build();
+			}
+		}else if (type == "array"){
+			this.type = 2;
+			this.property = "index";
+			var <map>array args = this.data["value"];
+			for (var int i in args) {
+				var Carbide.Virtual.Expression argument = empty;
+				this.arguments.push(argument);
+				argument.build();
+			}
+		}
+		*/
+	}
+
+	bound public <Carbide.Virtual.Value>function run(Carbide.Virtual.Value on, Carbide.Virtual.Scope scope) {
+		if (this.type == 1) {
+			return on.property(this.property, scope);
+		}else{
+			var <Carbide.Virtual.Value>array args = new <Carbide.Virtual.Value>array();
+			for (var int i in this.arguments) {
+				var Carbide.Virtual.Expression arg = this.arguments[i];
+				args.push(arg.run(scope));
+			}
+			if (on.type == "function") {
+				return on.call(args, scope);
+			}else{
+				return on.method(this.property, args, scope);
+			}
+		}
+	}
+}

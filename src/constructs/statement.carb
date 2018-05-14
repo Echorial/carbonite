@@ -1,0 +1,51 @@
+[Carbide]
+class Carbonite.Statement inherits Carbonite.Range, object {
+	bound public Carbonite.Body container = empty;
+	bound public map raw = empty;
+	bound public int blockIndex = 0;
+
+	[Expose, ReadOnly]
+	fixed public string type = "";
+
+	fixed public <Carbonite.Statement>function @construct(Carbonite.Body container) {
+		this.container = container;
+	}
+
+	bound public <void>function loadFromRaw(map raw) {
+		this.raw = raw;
+		this.loadLocation(this.container.parent.parent, raw);
+		this.build(raw, this.container);
+	}
+
+	fixed public <Carbonite.Statement>function make(Carbonite.Body container, map raw) {
+		var string type = raw["type"];
+		var Carbonite.Statement rtn = empty;
+		if (type == "if") {
+			rtn = new Carbonite.Statements.If(container);
+		}else if (type == "define") {
+			rtn = new Carbonite.Statements.Define(container);
+		}else if (type == "return") {
+			rtn = new Carbonite.Statements.Return(container);
+		}else if (type == "for") {
+			var bool forIn = raw["in"];
+			if (forIn) {
+				rtn = new Carbonite.Statements.ForIn(container);
+			}else{
+				rtn = new Carbonite.Statements.For(container);
+			}
+		}else if (type == "while") {
+			rtn = new Carbonite.Statements.While(container);
+		}else if (type == "expression") {
+			rtn = new Carbonite.Statements.Expression(container);
+		}else if (type == "continue") {
+			rtn = new Carbonite.Statements.Continue(container);
+		}else if (type == "break") {
+			rtn = new Carbonite.Statements.Break(container);
+		}else if (type == "native") {
+			rtn = new Carbonite.Statements.Native(container);
+		}
+		return rtn;
+	}
+
+	bound public <void>function build(map raw, Carbonite.Body container) {}
+}

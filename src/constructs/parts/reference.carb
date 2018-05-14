@@ -1,0 +1,65 @@
+class Carbonite.Parts.Reference inherits Carbonite.Part {
+	bound public Carbonite.Define reference = null;
+	bound public Carbonite.Type constantReference = null;
+	bound public bool isConstant = false;
+	bound public bool isConstructor = false;
+	bound public override string type = "reference";
+
+	fixed public <Carbonite.Parts.Reference>function @construct(string name, Carbonite.Term parent) {
+		this.parent = parent;
+		if (parent.container == empty) {
+			this.constantReference = new Carbonite.Type(parent.parent.parent.compiler, parent.parent.parent);
+			if ("template" in parent.raw) {
+				var map template = parent.raw["template"];
+				if ("types" in template) {
+					parent.raw["template"] = parent.raw["template"]["types"];
+				}
+				this.isConstructor = true;
+			}
+			var string rawName = parent.raw["name"];
+			if (parent.parent.parent.compiler.getClass(rawName) != empty) {
+				this.isConstructor = true;
+			}
+
+			if (this.isConstructor) {
+				this.constantReference.loadFromRaw(parent.raw);
+			}else{
+				this.constantReference.loadFromName(name, parent.raw);
+			}
+			this.output = this.constantReference;
+			this.root = empty;
+			this.context = this.constantReference;
+			this.isConstant = true;
+		}else{
+			this.reference = parent.container.scope.search(name);
+			if (this.reference == empty) {
+				this.constantReference = new Carbonite.Type(parent.parent.parent.compiler, parent.parent.parent);
+				if ("template" in parent.raw) {
+					var map template = parent.raw["template"];
+					if ("types" in template) {
+						parent.raw["template"] = parent.raw["template"]["types"];
+					}
+					this.isConstructor = true;
+				}
+				var string rawName = parent.raw["name"];
+				if (parent.parent.parent.compiler.getClass(rawName) != empty) {
+					this.isConstructor = true;
+				}
+
+				if (this.isConstructor) {
+					this.constantReference.loadFromRaw(parent.raw);
+				}else{
+					this.constantReference.loadFromName(name, parent.raw);
+				}
+				this.output = this.constantReference;
+				this.root = empty;
+				this.context = this.constantReference;
+				this.isConstant = true;
+			}else{
+				this.output = this.reference.output;
+				this.root = this.reference;
+				this.context = this.reference.output;
+			}
+		}
+	}
+}

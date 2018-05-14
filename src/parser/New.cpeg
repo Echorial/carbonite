@@ -1,0 +1,223 @@
+import WhiteSpace
+import String
+import Json
+
+map|start = document: Document;
+
+map|Document = roots: Root* _ {type: "document", roots: {$roots}};
+
+string|Safe_Name = start: [a-zA-Z_@] after: [a-zA-Z0-9_.]** {string|export = $start + $after;};
+
+map|Template = "<" types: Type+|"," _ ">" {map|export["types"] = $types;};
+
+map|Template_Def = _ type: Safe_Name __ name: Safe_Name _ {name: {$name}, type: {$type}};
+
+map|Template_Default = _ type: Safe_Name __ name: Safe_Name _ "=" _ default: Type _ {name: {$name}, type: {$type}, default: {$default}};
+
+map|Template_Type = "<" templates: (Template_Default / Template_Def)*|"," _ ">" {map|export["templates"] = $templates;};
+
+map|Inherit = "inherits" __ types: Type+|"," {types: {$types}};
+
+map|Root = _ doc: String_Tick* _ attr: Attribute? _ flags: Flag*|"," _ type: ("interface" / "relative" / "class" / "extend" / "namespace") __ templates: Template_Type* _ name: Safe_Name _ inherits: Inherit? _ "{" _ members: (Member_Flagged / Member)* _ "}"
+{type: {$type}, attribute: {$attr}, doc: {$doc}, flags: {$flags}, name: {$name}, members: {$members}, inherits: {$inherits}, templates: {$templates}, start: {startPos}, end: {charPos}};
+
+map|Type = _ template: Template? name: Safe_Name
+{map|
+export["name"] = $name;
+export["start"] = startPos;
+export["end"] = charPos;
+if ($template != empty) {
+	var <map>array tt = $template["types"];
+	export["template"] = tt;
+}else{
+	export["template"] = false;
+}};
+
+string|Flag = _ str: Safe_Name {string|export = $str;
+	if ($str == "class") {@error(1, "", "")}
+	if ($str == "relative") {@error(1, "", "")}
+	if ($str == "extend") {@error(1, "", "")}
+	if ($str == "namespace") {@error(1, "", "")}
+};
+
+map|Optional = "=" _ exp: Expression {map|export = $exp;};
+
+map|Parameter = _ type: Type __ name: Safe_Name _ op: Optional* _ doc: String_Tick* {type: {$type}, doc: {$doc}, name: {$name}, optional: {$op}};
+
+map|Method = "(" _ parameters: Parameter*|"," _ ")" _ body: (Block / Interface) {type: "method", parameters: {$parameters}, body: {$body}};
+
+map|Property = "=" _ exp: Expression _ ";" {type: "property", value: {$exp}};
+
+map|Attribute_Value = _ "=" _ val: Json_Value {map|export = $val;};
+
+map|Attribute_Pair = _ key: Safe_Name val: Attribute_Value*
+{map|export["key"] = $key;
+if ($val.length() > 0) {
+	export["value"] = $val[0];
+}else{
+	export["value"] = true;
+}};
+
+map|Attribute = "[" _ attrs: Attribute_Pair*|"," _ "]" {map|export = $attrs;};
+
+map|Interface = ";" {type: "iterface"};
+
+map|Member_Value = v: (Method / Property / Interface) {map|export = $v;};
+
+map|Member_Flagged = _ attr: Attribute? _ flags: Flag+ _ type: Type? _ templates: Template_Type* _ name: Safe_Name? _ val: Member_Value
+{map|
+export["type"] = $val["type"];
+export["name"] = $name;
+export["value"] = $val;
+if ($type == empty) {
+
+	export["output"] = new map();
+	if ($flags.length() == 0) {
+		@error(1, "", "")
+	}else if($flags.length() >= 2){
+		export["name"] = $flags[$flags.length() - 1];
+		$flags.pop();
+		export["output"]["name"] = $flags[$flags.length() - 1];
+		$flags.pop();
+	}
+	export["output"]["template"] = new <map>array();
+	export["flags"] = $flags;
+}else{
+	export["flags"] = $flags;
+	export["output"] = $type;
+}
+export["templates"] = $templates;
+export["start"] = startPos;
+export["attribute"] = $attr;
+export["end"] = charPos;};
+
+map|Member = _ doc: String_Tick* _ attr: Attribute? _ type: Type __ templates: Template_Type* _ name: Safe_Name _ val: Member_Value {type: {$val["type"]}, attribute: {$attr}, doc: {$doc}, output: {$type}, name: {$name}, value: {$val}, flags: {new <string>array()}, templates: {$templates}, start: {startPos}, end: {charPos}};
+
+map|Group = "(" exp: Expression ")" {map|export["type"] = "group"; export["expression"] = $exp;};
+
+map|Constant = name: Safe_Name {type: "constant", name: {$name}};
+
+map|Literal_Number = num: [0-9.]++ {map|export["type"] = "literal";
+export["literalType"] = "number";
+var float num = string.parseFloat($num);
+export["value"] = num;
+if (num.isInteger()) {
+export["integer"] = true;
+}else{
+export["integer"] = false;
+}};
+
+map|Literal_Boolean = bool: (("true" {bool|~ = true;}) / ("false" {bool|~ = false;})) {type: "literal", literalType: "boolean", value: {$bool}};
+
+map|Literal_String = str: String {type: "literal", literalType: "string", value: {$str}};
+
+map|Literal_Array = "[" arr: Expression*|"," _ "]" {type: "literal", literalType: "array", value: {$arr}};
+
+map|Literal_Map_Key = _ key: (Safe_Name / String) _ ":" _ value: Expression {key: {$key}, value: {$value}};
+
+map|Literal_Map = "{" _ arr: Literal_Map_Key*|"," _ "}" {type: "literal", literalType: "map", value: {$arr}};
+
+map|Literal = l: (Literal_Number / Literal_Boolean / Literal_String / Literal_Array / Literal_Map) {map|export = $l;export["start"] = startPos;export["end"] = charPos;};
+
+map|Prefix = pre: "new" __ exp: Expression {type: "prefix", prefix: {$pre}, expression: {$exp}};
+
+map|Appendix_Dot = _ "." _ name: Safe_Name {type: "dot", name: {$name}};
+
+map|Appendix_Call = _ templates: Template? _ "(" _ exp: Expression*|"," _ ")" {type: "call", expression: {$exp}, templates: {$templates}};
+
+map|Appendix_Index = _ "[" _ exp: Expression _ "]" {type: "index", expression: {$exp}};
+
+map|Appendix_Code = _ code: Block {type: "code", code: {$code}};
+
+map|Appendix = a: (Appendix_Dot / Appendix_Call / Appendix_Index / Appendix_Code) {map|export = $a;};
+
+map|Term = prefix: [!@#:$%^&*_+=~`>|/-]** template: Template? e: (Anonymous_Function / Literal / Prefix / Constant / Group) appendix: Appendix* {map|export = $e;export["start"] = startPos;export["end"] = charPos; export["appendix"] = $appendix; if ($template != empty) {export["template"] = $template;} if ($prefix.length() > 0) {export["prefix"] = $prefix;}};
+
+string|Operand_Symbolic = _ operator: [!@:$%^&*_+=~`|>/<-]++ _ {string|export = $operator;};
+
+string|Operand_Word = __ operator: [A-Za-z0-9_!@#$%^&*_+=~`|></-]++ __ {string|export = $operator;};
+
+map|Operation = 
+head: Term
+operator: (Operand_Symbolic / Operand_Word)
+{operator: {$operator}, term: {$head}};
+
+map|Anonymous_Function = type: Type _ "(" _ parameters: Parameter*|"," _ ")" _ "=>" _ body: Block {type: "function", output: {$type}, parameters: {$parameters}, body: {$body}};
+
+map|Expression = _ exp: (Expression_Operation / Expression_Operated) {map|export = $exp;export["start"] = startPos;export["end"] = charPos;};
+
+map|Expression_Line = exp: Expression _ ";" {map|export = $exp;};
+
+map|Expression_Operation = exp: Operation* t: Term {map|$exp.push($t); export["terms"] = $exp; export["type"] = "expression";};
+
+map|Expression_Operated = exp: Operation+ {map|export["terms"] = $exp; export["type"] = "expression";};
+
+map|Block = "{" _ code: Statement* _ "}" {type: "block", code: {$code}, start: {startPos}, end: {charPos}};
+
+map|Statement = _ state: (If / Define / Define_Auto / For / For_In / Break / Continue / While / Return / Expression_Line) {map|export = $state;export["start"] = startPos;export["end"] = charPos;};
+
+map|Single_Statement = state: Statement {type: "block", code: {[$state]}, start: {startPos}, end: {charPos}};
+
+map|If = "if" _ check: Group _ body: (Block / Single_Statement) _ alt: (ElseIf / Else)* {type: "if", alternatives: {$alt}, check: {$check}, body: {$body}};
+
+map|ElseIf = "else if" _ check: Group _ body: (Block / Single_Statement) {type: "elseif", check: {$check}, body: {$body}};
+
+map|Else = "else" _ body: (Block / Single_Statement) {type: "else", body: {$body}};
+
+map|For = "for" _ "(" _ define: (Define / Define_Auto) _ check: Expression ";" _ iterate: Expression ")" _ body: (Block / Single_Statement) {type: "for", define: {$define}, iterate: {$iterate}, check: {$check}, body: {$body}};
+
+map|For_In = "for" _ "(" _ define: Inline_Def __ "in" _ iterate: Expression ")" _ body: (Block / Single_Statement) {type: "for", in: {true}, define: {$define}, iterate: {$iterate}, body: {$body}};
+
+map|Break = "break" _ ";" {type: "break"};
+
+map|Continue = "continue" _ ";" {type: "continue"};
+
+map|While = "while" _ check: Group _ body: (Block / Single_Statement) {type: "while", check: {$check}, body: {$body}};
+
+map|Return = "return " _ exp: Expression _ ";" {type: "return", expression: {$exp}};
+
+map|Define_Auto = "var " _ type: Type _ name: Safe_Name _ "=" _ exp: Expression _ ";" {type: "define", name: {$name}, valueType: {$type}, value: {$exp}};
+
+map|Define = "var " _ name: Safe_Name _ "=" _ exp: Expression _ ";" {type: "define", name: {$name}, valueType: "", auto: {true}, value: {$exp}};
+
+map|Inline_Def = def: (Inline_Define / Inline_Define_Auto) {map|export = $def;export["start"] = startPos;export["end"] = charPos;};
+
+map|Inline_Define = "var" __ type: Type __ name: Safe_Name {type: "define", name: {$name}, valueType: {$type}};
+
+map|Inline_Define_Auto = "var" __ name: Safe_Name {type: "define", name: {$name}, valueType: "", auto: {true}};
+
+
+string|String_Tick = '`' str:
+<string{
+var bool escaped = false;
+var map escapeCodes = new map();
+escapeCodes["n"] = "\n";
+escapeCodes["b"] = "\b";
+escapeCodes["f"] = "\f";
+escapeCodes["r"] = "\r";
+escapeCodes["t"] = "\t";
+escapeCodes["v"] = "\v";
+escapeCodes["\\"] = "\\";
+}|
+
+var bool doCapture = true;
+
+if (currentChar == "\\") {if (escaped == false) {escaped = true; doCapture = false;}}
+
+if (currentChar == "`") {
+  if (escaped == false) {
+    doCapture = false;
+    @error(1, "", "")
+  }
+  escaped = false;
+}else if (escaped and doCapture == true) {
+  doCapture = false;
+  @capture(escapeCodes[currentChar])
+  escaped = false;
+}
+
+if (doCapture) {
+  @capture(currentChar)
+}
+
+>** '`' {string|export = $str;};

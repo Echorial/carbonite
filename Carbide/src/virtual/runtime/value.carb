@@ -1,0 +1,118 @@
+class Carbide.Virtual.Value {
+	bound public string type = "null";
+	bound public int value = 0;
+	bound public map raw = empty;
+
+	fixed public <Carbide.Virtual.Value>function @construct(map raw) {
+		this.raw = raw;
+	}
+
+	fixed public <Carbide.Virtual.Value>function make(map data, Carbide.Virtual.Processor proc) {
+		var Carbide.Virtual.Value rtn = empty;
+		var string type = data["type"];
+		if (type == "string") {
+			rtn = new Carbide.Virtual.Values.String(data);
+		}else if (type == "map") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Map(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var Carbide.Virtual.Values.Reference ref = new Carbide.Virtual.Values.Reference(new map());
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+		}else if (type == "number") {
+			rtn = new Carbide.Virtual.Values.Number(data);
+		}else if (type == "bool") {
+			rtn = new Carbide.Virtual.Values.Bool(data);
+		}else if (type == "array") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Array(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var Carbide.Virtual.Values.Reference ref = new Carbide.Virtual.Values.Reference(new map());
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+		}
+		rtn.setValue(data);
+
+		return rtn;
+	}
+
+	fixed public <Carbide.Virtual.Value>function create(int value) {
+
+	}
+
+	bound public <Carbide.Virtual.Value>function getValue() {
+		return this;
+	}
+
+	bound public <Carbide.Virtual.Value>function duplicate() {
+		return this;
+	}
+
+	bound public <void>function setValue(map raw) {
+		
+	}
+
+	bound public <bool>function compare(map raw) {
+		
+	}
+
+	fixed public <Carbide.Virtual.Value>function primitiveToValue(primitive prim) {
+		if (prim == null) {
+			return Carbide.Virtual.Values.Null.create();
+		}
+		var type = prim.typeAsString();
+		if (type == "array") {
+			/*var vals = new <Carbide.Virtual.Value>array(); //Move to array copy
+			var array cast = prim;
+			for (var int i in prim) {
+				vals.push(Carbide.Virtual.Value.primitiveToValue(prim[i]));
+			}*/
+			return Carbide.Virtual.Values.ProxyArray.create(prim);
+		}else if (type == "map") {
+			/*var vals = new <Carbide.Virtual.Value>map(); //Move to map copy
+			var map cast = prim;
+			for (var string i in prim) {
+				vals.push(Carbide.Virtual.Value.primitiveToValue(prim[i]));
+			}*/
+			return Carbide.Virtual.Values.ProxyMap.create(prim);
+		}else if (type == "string") {
+			return Carbide.Virtual.Values.String.create(prim);
+		}else if (type == "boolean") {
+			return Carbide.Virtual.Values.Bool.create(prim);
+		}else if ((type == "integer") or (type == "float")) {
+			return Carbide.Virtual.Values.Number.create(prim);
+		}
+	}
+
+	bound public <Carbide.Virtual.Value>function dotSet(string prop, Carbide.Virtual.Value value,  Carbide.Virtual.Scope scope) {
+
+	}
+
+	bound public <Carbide.Virtual.Value>function property(string name, Carbide.Virtual.Scope scope) {
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	bound public <Carbide.Virtual.Value>function method(string name, <Carbide.Virtual.Value>array input, Carbide.Virtual.Scope scope) {
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	bound public <Carbide.Virtual.Value>function call(<Carbide.Virtual.Value>array args, Carbide.Virtual.Scope scope) {
+
+	}
+
+	bound public <Carbide.Virtual.Value>function call(<Carbide.Virtual.Value>array args, Carbide.Virtual.Scope scope, Carbide.Virtual.Value context) {
+
+	}
+
+	bound public <Carbide.Virtual.Value>function operate(string operator, Carbide.Virtual.Value value, Carbide.Virtual.Scope scope) {
+
+	}
+
+	bound public <void>function iterate(Carbide.Virtual.Variable variableKey, Carbide.Virtual.Variable variable, Carbide.Virtual.Block code, Carbide.Virtual.Scope scope) {
+
+	}
+}

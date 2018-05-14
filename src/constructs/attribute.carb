@@ -1,0 +1,3 @@
+class Carbonite.Attribute inherits object {
+	bound public string key = "";
+}

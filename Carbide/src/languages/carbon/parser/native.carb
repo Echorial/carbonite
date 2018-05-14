@@ -1,0 +1,35 @@
+relative CarboniteCarbonParserLocation inherits object {
+	bound public int offset = 0;
+	bound public int line = 1;
+	bound public int column = 0;
+
+	fixed public <CarboniteCarbonParserLocation>function @construct(int offset, int line, int column) {
+		this.offset = offset; this.line = line; this.column = column;
+	}
+}
+
+relative CarboniteCarbonParserError inherits CarboniteCarbonParserLocation {
+	bound public int code = 0;
+	bound public string found = "";
+	bound public string expected = "";
+	bound public int vested = 0;
+}
+
+relative CarboniteCarbonParserOutput inherits object {
+	fixed public <CarboniteCarbonParserOutput>function @construct(bool hadError, CarboniteCarbonParserError error, map data) {this.hadError = hadError; this.error = error; this.data = data;}
+	bound public CarboniteCarbonParserError error = empty;
+	bound public bool hadError = false;
+	bound public map data = new map();
+}
+
+relative CarboniteCarbonParser inherits CarboniteCarbonParserLocation {
+	fixed public override <CarboniteCarbonParser>function @construct() {}
+
+	fixed public <<map>CarboniteCarbonParserOutput>function parse(string input) {
+
+	}
+
+	fixed public <<map>CarboniteCarbonParserOutput>function parse(string rule, string input) {
+
+	}
+}

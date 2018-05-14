@@ -1,0 +1,67 @@
+class Carbonite.Argument inherits Carbonite.Range {
+	bound public string name = "";
+	bound public Carbonite.Type type = empty;
+	bound public Carbonite.Compiler compiler = empty;
+	bound public Carbonite.Class parent = empty;
+	bound public bool optional = false;
+	bound public Carbonite.Expression default = empty;
+	bound public Carbonite.Body container = empty;
+	bound public Carbonite.Define define = empty;
+	bound public map raw = empty;
+	bound public Carbonite.Doc doc = null;
+
+	void @construct(Carbonite.Class parent, string name, map type) {
+		this.name = name;
+		this.type = new Carbonite.Type(parent.compiler, parent);
+		this.type.loadFromRaw(type);
+		this.parent = parent;
+		this.compiler = parent.compiler;
+	}
+
+	fixed public <Carbonite.Argument>function @construct(Carbonite.Compiler compiler, Carbonite.Class parent, Carbonite.Body container, map raw) {
+		this.raw = raw;
+		this.doc = new Carbonite.Doc(this.raw["doc"]);
+		this.container = container;
+		this.name = raw["name"];
+		var <map>array optional = raw["optional"];
+		this.define = new Carbonite.Define(this.name, this.type);
+
+		if (optional.length() > 0) {
+			this.default = new Carbonite.Expression(parent, container);
+		
+			this.default.loadFromRaw(optional[0]);
+			this.optional = true;
+			this.define.initializer = this.default;
+		}
+
+		this.type = new Carbonite.Type(compiler, parent);
+		this.type.loadFromRaw(raw["type"]);
+		this.define.output = this.type;
+		this.loadLocation(parent, raw);
+
+		if (this.container != null)
+			this.container.scope.add(this.define);
+	}
+
+	bound public <string>function docDynamic() {
+		var opt = "false";
+		if (this.optional)
+			opt = "true";
+
+		return '{"optional": "' + opt + '", "name": "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "type": "' + this.type.lookPretty() + '"}';
+	}
+
+	string toHeader() {
+		var opt = "false";
+		if (this.optional)
+			opt = "true";
+
+		return '{"optional": "' + opt + '", "name": "' + this.name + '", "type": ' + this.type.toHeader() + '}';
+	}
+
+	fixed Carbonite.Argument fromHeader(Carbonite.Class parent, map raw) {
+		var argument = new Carbonite.Argument(parent, raw["name"], raw["type"]);
+		//TODO: Support optional
+		return argument;
+	}
+}

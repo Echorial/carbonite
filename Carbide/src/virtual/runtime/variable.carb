@@ -1,0 +1,9 @@
+class Carbide.Virtual.Variable {
+	bound public string name = "";
+	bound public Carbide.Virtual.Value value = empty;
+
+	fixed public <Carbide.Virtual.Variable>function @construct(string name, Carbide.Virtual.Value value) {
+		this.name = name;
+		this.value = value;
+	}
+}

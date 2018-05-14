@@ -1,0 +1,38 @@
+class Carbide.Virtual.Expressions.Reference inherits Carbide.Virtual.Expression {
+	bound public string name = "";
+
+	fixed public <Carbide.Virtual.Expressions.Reference>function @construct(string name) {
+		this.name = name;
+	}
+	
+	bound public override <void>function build() {
+		this.buildSubs();
+		this.name = this.data["value"];
+	}
+
+	bound public <Carbide.Virtual.Value>function runTo(Carbide.Virtual.Scope scope, int to) {
+		var Carbide.Virtual.Variable ref = scope.search(this.name);
+		if (ref != empty) {
+			if (to == 0)
+				return ref.value.getValue();
+			return this.runSubsTo(ref.value.getValue(), scope, to);
+		}else{
+			var location = "anon";
+			if (this.parent.parent.topBlock != null)
+				location = this.parent.parent.topBlock.label;
+			this.parent.topParent.parent.runtimeError("Undefined reference '" + this.name + "'", location, 0, 0);
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function run(Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Variable ref = scope.search(this.name);
+		if (ref != empty) {
+			return this.runSubs(ref.value.getValue(), scope);
+		}else{
+			var location = "anon";
+			if (this.parent.parent.topBlock != null)
+				location = this.parent.parent.topBlock.label;
+			this.parent.topParent.parent.runtimeError("Undefined reference '" + this.name + "'", location, 0, 0);
+		}
+	}
+}

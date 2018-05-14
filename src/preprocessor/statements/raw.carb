@@ -1,0 +1,17 @@
+class Carbonite.Pre.Statements.Raw inherits Carbonite.Pre.Statement {
+	bound public string code = "";
+	bound public bool doOuput = false;
+	bound public override <void>function build() {
+		this.code = this.data["content"];
+		if (this.code == "\n") {
+			this.doOuput = true;
+		}
+	}
+
+	bound public override <void>function run() {
+		if (this.doOuput == false) {
+			var int end = this.data["offset"];
+			this.parent.output(this.code, end - this.code.length(), end);
+		}
+	}
+}

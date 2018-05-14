@@ -1,0 +1,11 @@
+class Carbonite.Pre.Map {
+	bound public int virtual = 0 - 1;
+	bound public int realStart = 0 - 1;
+	bound public int realEnd = 0 - 1;
+
+	fixed public <Carbonite.Pre.Map>function @construct(int virtual, int realStart, int realEnd) {
+		this.virtual = virtual;
+		this.realStart = realStart;
+		this.realEnd = realEnd;
+	}
+}

@@ -1,0 +1,49 @@
+import WhiteSpace
+import String
+import Json
+
+map|start = document: Document;
+
+map|Document = exp: Statement*|"\n" {expressions: {$exp}};
+
+map|Expression = _ exp: (Function / Call / Operation / Value) {map|export = $exp;};
+
+map|Call = name: Safe_Name "(" _ args: Expression*|"," _ ")" {type: "call", name: {$name}, arguments: {$args}};
+
+map|Operation = head: Value _ operator: Operator _ tail: Expression {type: "operation", head: {$head}, tail: {$tail}, operator: {$operator}};
+
+string|Operator = s: ("+" / "-" / "*" / "/" / "==" / ">" / "<" / "!=" / "+=" / "-=" / "*=" / "/=") {string|export = $s;};
+
+map|Statement = _ exp: (For / If / Return / Let / Call / Set / Operation) {map|export = $exp;};
+
+map|Return = "return" _ exp: Expression {type: "return", value: {$exp}};
+
+map|If = "if" _ check: Expression _ body: Document _ "end" {type: "if", check: {$check}, body: {$body["expressions"]}};
+
+map|Set = _ name: Safe_Name _ "=" _ value: Expression {type: "set", name: {$name}, value: {$value}};
+
+map|Let = "let" _ name: Safe_Name _ "=" _ value: Expression {type: "let", name: {$name}, value: {$value}};
+
+map|For = "for" _ name: Safe_Name _ "=" _ from: Value _ "as" _ exp: Expression _ "do" _ body: Document _ "end" {type: "for", name: {$name}, from: {$from}, check: {$exp}, body: {$body["expressions"]}};
+
+map|Constant = name: Safe_Name {type: "constant", name: {$name}};
+
+map|Literal_Number = num: [0-9.]++ {type: "literal", literalType: "number", value: {string.parseFloat($num)}};
+
+map|Literal_Boolean = bool: ("true" {bool|~ = true;} / "false" {bool|~ = false;}) {type: "literal", literalType: "boolean", value: {$bool}};
+
+map|Literal_String = str: String {type: "literal", literalType: "string", value: {$str}};
+
+map|Literal_Array = "[" arr: Expression*|"," _ "]" {type: "literal", literalType: "array", value: {$arr}};
+
+map|Literal_Map_Key = _ key: (Safe_Name / String) _ ":" _ value: Expression {key: {$key}, value: {$value}};
+
+map|Literal_Map = "{" _ arr: Literal_Map_Key*|"," _ "}" {type: "literal", literalType: "map", value: {$arr}};
+
+map|Literal = l: (Literal_Number / Literal_Boolean / Literal_String / Literal_Array / Literal_Map) {map|export = $l;export["start"] = startPos;export["end"] = charPos;};
+
+string|Safe_Name = start: [a-zA-Z_@] after: [a-zA-Z0-9_.]** {string|export = $start + $after;};
+
+map|Value = v: (Function / Literal / Constant) {map|export = $v;};
+
+map|Function = "function" _ "(" _ params: Safe_Name*|"," _ ")" _ body: Document _ "end" {type: "function", parameters: {$params}, body: {$body["expressions"]}};

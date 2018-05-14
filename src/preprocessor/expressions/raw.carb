@@ -1,0 +1,11 @@
+class Carbonite.Pre.Expressions.Raw inherits Carbonite.Pre.Expression {
+	bound public Carbonite.Pre.Value value = empty;
+
+	bound public override <void>function build() {
+		this.value = Carbonite.Pre.Value.make(this.data);
+	}
+
+	bound public override <Carbonite.Pre.Value>function run() {
+		return this.value;
+	}
+}

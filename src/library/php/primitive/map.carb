@@ -1,0 +1,101 @@
+relative <class T = primitive>map inherits primitive {
+	native inline void @construct() {return "new _carb_map()";}
+
+	[operator="=", order = 10] native inline void set(map what) {return context.instance + " = " + context.arguments[0];}
+	[operator="==", order=5] native inline bool equal(<T>map compare) {return context.instance + " == " + context.arguments[0];}
+	[operator="!=", order=5] native inline bool notEqual(<T>map compare) {return context.instance + " != " + context.arguments[0];}
+	native inline primitive @index(string key) {return context.instance + "[" + context.arguments[0] + "]";}
+
+	native inline primitive @setIndex(string key, T value) {return context.instance + "[" + context.arguments[0] + "] = " + context.arguments[1];}
+
+	native inline primitive @actIndex(string key) {return context.instance + "[" + context.arguments[0] + "]";}
+
+	native inline string toJson()
+	{return "json_encode(" + context.instance + "->data)";}
+}
+
+core class _c_lib__mapUtils {
+	[rawFront = "static function &readIndex(&$args, $key) {", rawBack = "}"]
+	raw fixed native everything readIndex(map data, string key)
+	{return "$nll = null; if (isset($args[$key])) return $args[$key]; else return $nll;";}
+
+	trust fixed bool isMap(void test) {
+		native php {
+			if (count($test) == 0)
+				return true; //WARN: Could be a map
+			
+			return array_keys($test) !== range(0, count($test) - 1);
+		}
+	}
+}
+
+[phpImplements="Iterator, ArrayAccess, JsonSerializable"]
+core class _carb_map {
+	int index = 0;
+	map data = null;
+
+	void @construct() {
+		native php {
+			$this->data = [];
+		}
+	}
+
+	void current() {
+		native php {
+			return $this->data[$this->key()];
+		}
+	}
+
+	phpNoRef map jsonSerialize() {
+		return this.data;
+	}
+
+	bool valid() {
+		native php {
+			return count(array_keys($this->data)) < $this->index;
+		}
+	}
+
+	void next() {
+		native php {
+			$this->index++;
+		}
+	}
+
+	void key() {
+		native php {
+			return array_keys($this->data)[$this->index];
+		}
+	}
+
+	void rewind() {
+		this.index = 0;
+	}
+
+	trust bool offsetExists(primitive offset) {
+		native php {
+			return isset($this->data[$offset]);
+		}
+	}
+
+	trust void offsetGet(primitive offset) {
+		native php {
+			return isset($this->data[$offset]) ? $this->data[$offset] : null;
+		}
+	}
+
+	trust void offsetUnset(primitive offset) {
+		native php {
+			unset($this->data[$offset]);
+		}
+	}
+
+	trust void offsetSet(primitive offset, void value) {
+		native php {
+			if (is_null($offset))
+				$this->data[] = $value;
+			else
+				$this->data[$offset] = $value;
+		}
+	}
+}

@@ -1,0 +1,8 @@
+class Carbonite.Part inherits object {
+	bound public Carbonite.Type output = empty;
+	bound public Carbonite.Term parent = empty;
+	bound public Carbonite.Type context = empty;
+	bound public Carbonite.Define root = empty; //CHANGE: from Carbonite.Parts.Reference
+	bound public string type = "";
+	bound public map raw = empty;
+}

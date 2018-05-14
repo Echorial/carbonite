@@ -1,0 +1,62 @@
+class Carbonite.Pre.Values.Number inherits Carbonite.Pre.Value {
+	bound public override string type = "number";
+	bound public override float value = 0;
+
+	bound public override <void>function setValue(map raw) {
+		this.value = raw["value"];
+		var float zero = 0;
+		if (raw["negative"] != empty) {
+			this.value = zero - this.value;
+		}
+	}
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	bound public override <Carbonite.Pre.Value>function operate(string operator, Carbonite.Pre.Values.Number value) {
+		var Carbonite.Pre.Value v = empty;
+		if (operator == "=") {
+			this.value = value.value;
+			v = Carbonite.Pre.Values.Null.create();
+		}else if (operator == "==") {
+			v = Carbonite.Pre.Values.Bool.create(this.value == value.value);
+		}else if (operator == "!=") {
+			v = Carbonite.Pre.Values.Bool.create(this.value != value.value);
+		}else if (operator == "+") {
+			v = Carbonite.Pre.Values.Number.create(this.value + value.value);
+		}else if (operator == "-") {
+			v = Carbonite.Pre.Values.Number.create(this.value - value.value);
+		}else if (operator == "+=") {
+			this.value += value.value;
+			v = Carbonite.Pre.Values.Null.create();
+		}else if (operator == "-=") {
+			this.value -= value.value;
+			v = Carbonite.Pre.Values.Null.create();
+		}else if (operator == "*") {
+			v = Carbonite.Pre.Values.Number.create(this.value * value.value);
+		}else if (operator == "/") {
+			v = Carbonite.Pre.Values.Number.create(this.value / value.value);
+		}else if (operator == ">") {
+			v = Carbonite.Pre.Values.Bool.create(this.value > value.value);
+		}else if (operator == ">=") {
+			v = Carbonite.Pre.Values.Bool.create(this.value >= value.value);
+		}else if (operator == "<") {
+			v = Carbonite.Pre.Values.Bool.create(this.value < value.value);
+		}else if (operator == "<=") {
+			v = Carbonite.Pre.Values.Bool.create(this.value <= value.value);
+		}
+		return v;
+	}
+
+	fixed public override <Carbonite.Pre.Values.Number>function create(float number) {
+		var map m = new map();
+		var Carbonite.Pre.Values.Number value = new Carbonite.Pre.Values.Number(m);
+		value.value = number;
+		return value;
+	}
+}

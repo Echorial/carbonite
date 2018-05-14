@@ -1,0 +1,5 @@
+class Carbide.Codes {
+	bound public <Carbide.Code>function storeInteger() {
+
+	}
+}

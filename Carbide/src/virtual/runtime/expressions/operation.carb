@@ -1,0 +1,34 @@
+class Carbide.Virtual.Expressions.Operation inherits Carbide.Virtual.Expression {
+	bound public Carbide.Virtual.Expression head = empty;
+	bound public Carbide.Virtual.Expression tail = empty;
+	bound public string operator = "";
+
+	fixed public <Carbide.Virtual.Expressions.Operation>function @construct(string operator, Carbide.Virtual.Expression head, Carbide.Virtual.Expression tail) {
+		this.operator = operator;
+		this.head = head;
+		this.head.parent = this.parent;
+		this.tail = tail;
+		this.tail.parent = this.parent;
+	}
+
+	bound public override <void>function setParent() {
+		this.tail.parent = this.parent;
+		this.head.parent = this.parent;
+	}
+
+	bound public <Carbide.Virtual.Value>function runTo(Carbide.Virtual.Scope scope, int to) {
+		return this.run(scope);
+	}
+
+	bound public override <Carbide.Virtual.Value>function run(Carbide.Virtual.Scope scope) {
+		this.setParent();
+		var Carbide.Virtual.Value head = this.head.run(scope);
+		var Carbide.Virtual.Value tail = this.tail.run(scope); //TODO: Add single term operations(prefix)
+		if ((this.operator == "=") and (this.head.subs.length > 0)) {
+			var top = this.head.runTo(scope, this.head.subs.length - 1);
+			return top.dotSet(this.head.subs[this.head.subs.length - 1].property, tail, scope);
+		}else{
+			return head.operate(this.operator, tail, scope);
+		}
+	}
+}

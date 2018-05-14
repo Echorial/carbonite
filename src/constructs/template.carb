@@ -1,0 +1,30 @@
+class Carbonite.Template inherits object, Carbonite.Range {
+	bound public string name = "";
+	bound public Carbonite.Type default = empty;
+	bound public bool optional = false;
+	bound public string type = "class";
+	bound public Carbonite.Class parent = empty;
+	bound public map raw = empty;
+	bound public int index = 0;
+
+	fixed public <Carbonite.Template>function @construct(Carbonite.Class parent) {
+		this.parent = parent;
+	}
+
+	bound public <void>function loadFromRaw(map raw) {
+		this.raw = raw;
+		this.name = raw["name"];
+		if ("default" in raw) {
+			this.optional = true;
+		}
+
+		this.loadLocation(this.parent, raw);
+	}
+
+	bound public <void>function build() {
+		if (this.optional) {
+			this.default = new Carbonite.Type(this.parent.compiler, this.parent);
+			this.default.loadFromRaw(this.raw["default"]);
+		}
+	}
+}

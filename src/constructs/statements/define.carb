@@ -1,0 +1,10 @@
+class Carbonite.Statements.Define inherits Carbonite.Statement {
+	fixed public override string type = "define";
+
+	bound public Carbonite.Define define = empty;
+
+	bound public override <void>function build(map raw, Carbonite.Body container) {
+		this.define = Carbonite.Define.make(raw, container);
+		this.define.blockIndex = this.blockIndex;
+	}
+}

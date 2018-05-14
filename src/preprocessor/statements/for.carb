@@ -1,0 +1,51 @@
+class Carbonite.Pre.Statements.For inherits Carbonite.Pre.Statement {
+	bound public string itName = "";
+	bound public Carbonite.Pre.Expression initial = empty;
+	bound public Carbonite.Pre.Expression to = empty;
+	
+	bound public Carbonite.Pre.Block code = empty;
+	bound public bool in = false;
+
+	bound public override <void>function build() {
+		var string type = this.data["type"];
+		if (type == "forin") {
+			this.in = true;
+			this.to = Carbonite.Pre.Expression.make(this, this.data["in"]);
+		}
+		this.itName = this.data["name"];
+		if (this.in == false) {
+			this.initial = Carbonite.Pre.Expression.make(this, this.data["start"]);
+			this.initial.build();
+			this.to = Carbonite.Pre.Expression.make(this, this.data["end"]);
+		}
+		this.to.build();
+		var <map>array content = this.data["content"];
+		this.code = new Carbonite.Pre.Block(this.topParent.parent, content);
+		this.code.canOutput = this.parent.canOutput;
+		this.code.scope = this.scope;
+		this.code.build();
+	}
+
+	bound public override <void>function run() {
+		var Carbonite.Pre.Values.Number to = this.to.run();
+		if (this.in) {
+			var Carbonite.Pre.Variable it = new Carbonite.Pre.Variable(this.itName, Carbonite.Pre.Values.Null.create());
+			var Carbonite.Pre.Variable itKey = new Carbonite.Pre.Variable(this.itName, Carbonite.Pre.Values.Null.create());
+			this.code.scope.addVariable(it);
+			to.iterate(itKey, it, this.code);
+		}else{
+			var Carbonite.Pre.Variable it = new Carbonite.Pre.Variable(this.itName, this.initial.run());
+			this.code.scope.addVariable(it);
+			var Carbonite.Pre.Values.Number value = it.value;
+			for (var float i = it.value.value; i < to.value; i++) {
+				value.value = i;
+				this.code.run();
+			}
+		}
+	}
+
+	bound public override <void>function clear() {
+		this.scope.clear();
+		this.code.clear();
+	}
+}

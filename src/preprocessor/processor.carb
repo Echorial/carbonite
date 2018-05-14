@@ -1,0 +1,102 @@
+class Carbonite.Pre.Processor {
+	bound public Carbonite.Source source = empty;
+	bound public <Carbonite.Pre.Map>array map = new <Carbonite.Pre.Map>array();
+	bound public Carbonite.Pre.Block root = empty;
+	bound public Carbonite.Status status = new Carbonite.Status();
+	
+	`If the source code does not contain any pre processor statements`
+	bound public bool isPure = false;
+
+	fixed public <Carbonite.Pre.Processor>function @construct(Carbonite.Source src) {
+		this.source = src;
+		var <map>CarbonitePreprocessorOutput po = Carbonite.Parsers.PreParse(this.source.data);
+		if (po.hadError) {
+			this.status.give(Carbonite.Notice.fromParser(this.source, po));
+		}else{
+			var <map>array parsed = po.data["document"];
+			this.root = new Carbonite.Pre.Block(this, parsed);
+		}
+	}
+
+	bound public <Carbonite.Status>function build() {
+		if (this.status.hadError == false) {
+			this.root.scope = this.source.parent.scope;
+			this.root.canOutput = true;
+			this.root.build();
+			
+			if (this.root.statements.length == 1)
+				if (this.root.statements[0].type == "raw")
+					this.isPure = true;
+		}
+		return this.status;
+	}
+
+	bound public <Carbonite.Status>function run() {
+		if (this.status.hadError == false) {
+			Exception.try();
+				this.root.run();
+			Exception.endTry();
+		}
+		return this.status;
+	}
+
+	bound public <Carbonite.Location>function getLocation(int offset) {
+		return this.getRealLocation(this.getReal(offset));
+	}
+
+	bound public <Carbonite.Location>function getRealLocation(int offset) {
+		var int line = 1;
+		var int column = 1;
+		for (var int i = 0; i < offset; i++) {
+			var int code = this.source.data.charCodeAt(i);
+			column++;
+			if (code == 10) {
+				line++;
+				column = 1;
+			}
+		}
+		var Carbonite.Location loc = new Carbonite.Location(line, column, offset);
+		return loc;
+	}
+
+	bound public <int>function getReal(int offset) {
+		var int real = 0;
+		for (var int i in this.map) {
+			var Carbonite.Pre.Map m = this.map[i];
+			if (offset > m.virtual) {
+				real = m.realStart + (offset - m.virtual);
+			}else{
+				break;
+			}
+		}
+		return real;
+	}
+
+	bound public <void>function addFunction(Carbonite.Pre.Statements.Function func) {
+		this.source.parent.functionScope.push(func);
+	}
+
+	bound public <Carbonite.Pre.Statements.Function>function searchFunction(string name) {
+		for (var int i in this.source.parent.functionScope) {
+			var Carbonite.Pre.Statements.Function func = this.source.parent.functionScope[i];
+			if (func.name == name) {
+				return func;
+			}
+		}
+		var Carbonite.Pre.Statements.Function emp = empty;
+		return emp;
+	}
+
+	bound public <void>function runtimeError(int start, int end, string message) {
+		var Carbonite.Notice notice = new Carbonite.Notice(message);
+		notice.level = 4;
+		notice.module = "Preprocessor Script";
+		notice.type = "Runtime";
+		notice.source = this.source;
+		
+		notice.start = this.getRealLocation(start);
+		notice.end = this.getRealLocation(end);
+		this.status.give(notice);
+		Exception.throw("Error in Preprocessor");
+	}
+}

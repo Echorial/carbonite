@@ -1,0 +1,52 @@
+class Carbonite.Platform inherits object {
+	bound public Carbonite.Compiler compiler = empty;
+	bound public map options = empty;
+	bound public <string>array root = "";
+	bound public string platform = "";
+
+	fixed public <Carbonite.Platform>function @construct(Carbonite.Compiler compiler, <string>array root, map options) {
+		this.compiler = compiler;
+		this.options = options;
+		this.root = root;
+	}
+
+	bound public <void>function build() {
+
+	}
+
+	fixed public <Carbonite.Platform>function make(Carbonite.Compiler compiler, string platform, map options) {
+		var <string>array splits = platform.split(".");
+		if (splits.length() < 2) {
+			var Carbonite.Notice notice = new Carbonite.Notice("Invalid platform arguments '" + platform + "'");
+			notice.level = 4;
+			compiler.status.give(notice);
+			Exception.throw("Build error");
+		}
+
+		var string platformName = splits[0];
+		splits.shift();
+		var Carbonite.Platform rtn = empty;
+		if (platformName == "javascript") {
+			rtn = new Carbonite.Platforms.Javascript(compiler, splits, options);
+			rtn.platform = platformName;
+		}else if (platformName == "php") {
+			rtn = new Carbonite.Platforms.Php(compiler, splits, options);
+			rtn.platform = platformName;
+		}else if (platformName == "cpp") {
+			rtn = new Carbonite.Platforms.Cpp(compiler, splits, options);
+			rtn.platform = platformName;
+		}else if (platformName == "documentation") {
+			rtn = new Carbonite.Platforms.Doc(compiler, splits, options);
+			rtn.platform = platformName;
+		}else if (platformName == "header") {
+			rtn = new Carbonite.Platforms.Header(compiler, splits, options);
+			rtn.platform = platformName;
+		}else{
+			var Carbonite.Notice notice = new Carbonite.Notice("Invalid platform '" + platformName + "'");
+			notice.level = 4;
+			compiler.status.give(notice);
+			Exception.throw("Build error");
+		}
+		return rtn;
+	}
+}

@@ -1,0 +1,121 @@
+class Carbonite.Router inherits object {
+	bound public map cacheMap = new map();
+	bound public <Carbonite.Level>array levelMap = new <Carbonite.Level>array();
+	bound public Carbonite.Compiler parent = empty;
+
+	fixed public <Carbonite.Router>function @construct(Carbonite.Compiler parent) {
+		this.parent = parent;
+	}
+
+	bound public <Carbonite.Level>function getLevel(int level) {
+		var <Carbonite.Level>array lvlCast = this.levelMap;
+		for (var int i in this.levelMap) {
+			var Carbonite.Level lvl = lvlCast[i];
+			if (lvl.level == level) {
+				return lvl;
+			}
+		}
+		var Carbonite.Level emp = empty;
+		return emp;
+	}
+
+	bound public <bool>function addToLevel(Carbonite.Named nme, int level) {
+		var <Carbonite.Level>array lvlCast = this.levelMap;
+		for (var int i in this.levelMap) {
+			var Carbonite.Level lvl = lvlCast[i];
+			if (lvl.level == level) {
+				lvl.names.push(nme);
+				return true;
+			}
+		}
+		var Carbonite.Level nl = new Carbonite.Level(level);
+		nl.names.push(nme);
+		this.levelMap.push(nl);
+		return true;
+	}
+
+	bound public <Carbonite.Named>function getNamedAtLevel(string route, int level) {
+		var Carbonite.Level lvl = this.getLevel(level);
+		if (lvl != empty) {
+			var <Carbonite.Named>array names = lvl.names;
+			for (var int i in lvl.names) {
+				var Carbonite.Named nme = names[i];
+				if (nme.route == route) {
+					return nme;
+				}
+			}
+		}
+		var Carbonite.Named emp = empty;
+		return emp;
+	}
+
+	bound public <string>function getOwnName(Carbonite.Named nme) {
+		var <string>array splits = nme.route.split(".");
+		var int lst = splits.length() - 1;
+		var string rtn = splits[lst];
+		return rtn;
+	}
+
+	bound public <string>function getParentString(Carbonite.Named nme) {
+		var <string>array splits = nme.route.split(".");
+		var int lst = splits.pop();
+		var string rtn = splits.join(".");
+		return rtn;
+	}
+
+	bound public <void>function bake(Carbonite.Source container, <Carbonite.Named>array names) {
+		var int high = 1;
+		for (var int i in names) {
+			var Carbonite.Named nme = names[i];
+			nme.name = this.getOwnName(nme);
+			var <string>array splits = nme.route.split(".");
+			var int level = splits.length();
+			this.addToLevel(nme, level);
+			if (level > high) {
+				high = level;
+			}
+		}
+		for (var int i = 1; i <= high; i++) {
+			var Carbonite.Level lvl = this.getLevel(i);
+			if (lvl != empty) {
+				if (i == 1) {
+
+				}else{
+					var <Carbonite.Named>array nmes = lvl.names;
+					for (var int j = 0; j < lvl.names.length(); j++) {
+						var Carbonite.Named nme = nmes[j];
+						var Carbonite.Named parent = this.getNamedAtLevel(this.getParentString(nme), i - 1);
+						if (nme.leveled == false) {
+							if (parent != empty) {
+								if (parent.hasChild(nme.name) == false) {
+									parent.children.push(nme);
+									nme.parent = parent;
+									nme.leveled = true;
+								}else{
+									var Carbonite.Class nmeCast = nme;
+									if (nmeCast.base == "extend") {
+										var Carbonite.Class cls = parent.getChild(nme.name);
+										cls.extend(nme);
+									}else {
+										var Carbonite.Class ext = parent.getChild(nme.name);
+										if ((ext.base == "interface") and ext.hasFlag("abstract") == false) {
+											parent.children.push(nme);
+											nme.parent = parent;
+											nme.leveled = true;
+										}else{
+											container.error(nme, "Use extend on class '" + nme.route + "' to add to an already existing class");
+										}
+									}
+								}
+							}else{
+								container.error(nme, "Unable to put " + nme.name + " into a non namespace <" + nme.route + "> " + this.getParentString(nme));
+							}
+						}
+					}
+				}
+			}else{
+				
+			}
+		}
+	}
+}

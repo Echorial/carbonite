@@ -1,0 +1,43 @@
+class Carbonite.Native inherits object, Carbonite.Range {
+	bound public Carbonite.Expression parent = empty;
+	bound public map raw = empty;
+	bound public string type = "";
+	bound public Carbonite.Type output = empty;
+	
+	fixed public <Carbonite.Native>function @construct(Carbonite.Expression parent) {
+		this.parent = parent;
+	}
+
+	bound public <void>function loadFromRaw(map raw) {
+		this.raw = raw;
+		this.type = raw["literalType"];
+		this.loadLocation(this.parent.parent, raw);
+		this.build();
+	}
+
+	fixed public <Carbonite.Native>function make(Carbonite.Expression parent, map raw) {
+		var string type = raw["literalType"];
+		var Carbonite.Native rtn = empty;
+		if (type == "number") {
+			var bool isInt = raw["integer"];
+			if (isInt) {
+				rtn = new Carbonite.Natives.Integer(parent);
+			}else{
+				rtn = new Carbonite.Natives.Float(parent);
+			}
+			rtn.loadFromRaw(raw);
+		}else if (type == "boolean") {
+			rtn = new Carbonite.Natives.Boolean(parent);
+			rtn.loadFromRaw(raw);
+		}else if (type == "string") {
+			rtn = new Carbonite.Natives.String(parent);
+			rtn.loadFromRaw(raw);
+		}else if (type == "array") {
+			rtn = new Carbonite.Natives.Array(parent);
+			rtn.loadFromRaw(raw);
+		}
+		return rtn;
+	}
+
+	bound public <void>function build() {}
+}

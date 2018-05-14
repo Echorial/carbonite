@@ -1,0 +1,11 @@
+namespace Carbide {
+
+}
+
+namespace Carbide.Languages {}
+
+namespace Carbide.Virtual {}
+
+namespace Carbide.Virtual.Statements {}
+namespace Carbide.Virtual.Values {}
+namespace Carbide.Virtual.Expressions {}

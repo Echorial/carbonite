@@ -1,0 +1,15 @@
+class Carbonite.Statements.While inherits Carbonite.Statement {
+	fixed public override string type = "while";
+
+	bound public Carbonite.Expression check = empty;
+	bound public Carbonite.Body body = empty;
+
+	bound public override <void>function build(map raw, Carbonite.Body container) {
+		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body.inherit(container);
+		this.check = new Carbonite.Expression(container.parent.parent, this.body);
+		this.check.loadFromRaw(raw["check"]["expression"]);
+
+		this.body.build();
+	}
+}

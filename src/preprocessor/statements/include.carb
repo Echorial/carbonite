@@ -1,0 +1,56 @@
+class Carbonite.Pre.Statements.Include inherits Carbonite.Pre.Statement {
+	bound public string file = "";
+	bound public <string>array as = null;
+
+	fixed public <void>function include(string location, Carbonite.Pre.Statements.Include inc) {
+		var owner = inc.parent.parent.source;
+		location = FileSystem.normalize(location);
+		var FileSystem.Stat stat = null;
+
+		if (owner.parent.autoCache) {
+			stat = FileSystem.statSync(location);
+			var cache = owner.parent.getCache(location, stat.mtime);
+			if (cache != null) {
+				var cachedSource = new Carbonite.Source(location, "");
+				cachedSource.file = location;
+				cachedSource.parent = owner.parent;
+				cachedSource.index = owner.parent.sourceIndex;
+				owner.parent.sourceIndex++;
+				owner.parent.sources.push(cachedSource);
+
+				cachedSource.raw = cache.parsed; //TODO: Move to Carbonite.Source as Carbonite.Source.loadFromRaw(map raw)
+
+				return null;
+			}
+		}
+		var Carbonite.Source source = inc.parent.parent.source.parent.addSource(location, FileSystem.readSync(location, "utf8"));
+		source.file = location;
+		source.process();
+
+		if (owner.parent.autoCache)
+			if (source.pre.isPure) { //Only cache if there are no dynamic expressions(Pre and buildScript*)
+				source.doCache = true;
+				source.mtime = stat.mtime;
+			}
+	}
+
+	bound public override <void>function build() {
+		
+	}
+
+	bound public override <void>function run() {
+		this.file = this.data["file"]["value"];
+		this.as = this.data["as"];
+		var string location = FileSystem.dirName(this.parent.parent.source.file) + "/" + this.file;
+		if (FileSystem.isDir(location)) {
+			var <string>array files = FileSystem.readDirSync(location);
+			for (var int i in files) {
+				var string file = files[i];
+				if (FileSystem.isDir(location + "/" + file) == false)
+					Carbonite.Pre.Statements.Include.include(location + "/" + file, this);
+			}
+		}else{
+			Carbonite.Pre.Statements.Include.include(location, this);
+		}
+	}
+}

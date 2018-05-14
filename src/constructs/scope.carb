@@ -1,0 +1,30 @@
+class Carbonite.Scope inherits object {
+	bound public Carbonite.Scope parent = empty;
+	bound public Carbonite.Body container = empty;
+	bound public <Carbonite.Define>array scope = new <Carbonite.Define>array();
+
+	fixed public <Carbonite.Scope>function @construct(Carbonite.Body container, Carbonite.Scope parent) {
+		this.parent = parent;
+		this.container = container;
+	}
+
+	bound public <void>function add(Carbonite.Define def) {
+		this.scope.push(def);
+	}
+
+	bound public <Carbonite.Define>function search(string name) {
+		for (var int i in this.scope) {
+			var Carbonite.Define ref = this.scope[i];
+			if (ref.name == name) {
+				return ref;
+			}
+		}
+
+		if (this.parent != empty) {
+			return this.parent.search(name);
+		}
+		
+		var Carbonite.Define emp = empty;
+		return emp;
+	}
+}

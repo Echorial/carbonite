@@ -1,0 +1,36 @@
+class Carbonite.Platforms.Doc inherits Carbonite.Platform {
+	override void build() {
+		var bool outputToFile = true;
+		var string mode = "none";
+		for (var int i in this.root) {
+			var string r = this.root[i];
+			if (r == "memory") {
+				outputToFile = false;
+			}else if (r == "dynamic") {
+				mode = r;
+			}
+		}
+		
+		var source = "";
+
+		if (mode == "dynamic")
+			source = this.buildDynamic();
+
+		if (outputToFile == false) {
+			this.compiler.rawOutput = source;
+		}
+	}
+
+	string buildDynamic() {
+		var <string>array articles = new <string>array();
+
+		for (var int i in this.compiler.roots) {
+			var Carbonite.Class root = this.compiler.roots[i];
+			articles.push(root.docDynamic());
+		}
+
+		var output = '{"version": "Unkown", "articles": [' + articles.join(",") + ']}';
+
+		return "<!DOCTYPE html><html><head><script src='core.js'></script><script src='widget.js'></script><link rel='stylesheet' href='theme.css'></link></head><body><script>window.__cDoc = " + output + "; CarbonDoc.load(__cDoc);</script></body></html>";
+	}
+}

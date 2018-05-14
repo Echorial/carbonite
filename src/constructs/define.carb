@@ -1,0 +1,40 @@
+class Carbonite.Define inherits Carbonite.Range, object {
+	bound public string name = "";
+	bound public Carbonite.Type output = empty;
+	bound public Carbonite.Expression initializer = empty;
+	bound public Carbonite.Body container = empty;
+	bound public bool isConstantReference = false;
+	bound public int blockIndex = 0;
+	
+	fixed public <Carbonite.Define>function @construct(string name, Carbonite.Type output) {
+		this.name = name;
+		this.output = output;
+	}
+
+	fixed public <Carbonite.Define>function make(map raw, Carbonite.Body container) {
+		var string name = raw["name"];
+		var Carbonite.Expression initializer = new Carbonite.Expression(container.parent.parent, container);
+		initializer.blockIndex = this.blockIndex;
+		if ("value" in raw) {
+			initializer.loadFromRaw(raw["value"]);
+		}else{
+			initializer = empty;
+		}
+		var Carbonite.Type type = new Carbonite.Type(container.parent.parent.compiler, container.parent.parent);
+		var bool auto = raw["auto"];
+		if (auto) {
+			type = initializer.output;
+		}else{
+			type.loadFromRaw(raw["valueType"]);
+		}
+		var Carbonite.Define rtn = new Carbonite.Define(name, type);
+		rtn.initializer = initializer;
+		rtn.container = container;
+		rtn.loadLocation(container.parent.parent, raw);
+		if (container.scope.search(rtn.name) != null) {
+			rtn.buildError("'" + rtn.name + "' already defined");
+		}
+		container.scope.add(rtn);
+		return rtn;
+	}
+}

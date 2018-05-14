@@ -1,0 +1,11 @@
+class Carbonite.BuildScript.Engine {
+	fixed public <Carbonite.BuildScript.Engine>function @construct() {
+
+	}
+
+	bound public <Carbonite.Status>function executeCarbon(string input) {
+		var Carbonite.Status status = empty;
+		
+		return status;
+	}
+}

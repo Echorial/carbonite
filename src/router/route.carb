@@ -1,0 +1,15 @@
+class Carbonite.Route {
+	bound public Carbonite.Compiler compiler = empty;
+	bound public string raw = "";
+	bound public <Carbonite.Class>array path = new <Carbonite.Class>array();
+	bound public Carbonite.Class topClass = empty;
+	bound public bool hasBaked = false;
+
+	bound public <void>function bake() {
+		var <string>array split = this.raw.split(".");
+		for (var int i in split) {
+			var string name = split[i];
+			
+		}
+	}
+}

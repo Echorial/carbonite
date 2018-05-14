@@ -1,0 +1,47 @@
+core class cbonStringShiv {
+	fixed <string>array match(string data, string reg) {
+		var matches = new <string>array();
+		cbonStringShiv.regMatch(data, reg, matches);
+		return matches;
+	}
+
+	native inline fixed void regMatch(string data, string reg, <string>array mat)
+	{return "preg_match(" + context.arguments[1] + ", " + context.arguments[0] + ", " + context.arguments[2] + ")";}
+}
+
+relative string inherits primitive {
+	native inline void @construct() {return '""';}
+
+	[operator="=", order = 10] native inline void set(string what) {return context.instance + " = " + context.arguments[0];}
+	[operator="+"] native inline string concat(string what) {return context.instance + " . " + context.arguments[0];}
+	[operator="+="] native inline string concatTo(string what) {return context.instance + " .= " + context.arguments[0];}
+	[operator="==", order=5] native inline bool equal(string compare) {return context.instance + " == " + context.arguments[0];}
+	[operator="!=", order=5] native inline bool notEqual(string compare) {return context.instance + " != " + context.arguments[0];}
+	native inline string @index(int index) {return context.instance + "[" + context.arguments[0] + "]";}
+	
+	native inline property int length() {return "strlen(" + context.instance + ")";}
+
+	native inline int charCodeAt(int index) {return "ord(" + context.instance + "[" + context.arguments[0] + "])";}
+	native inline bool contains(string what) {return "(strpos(" + context.instance + ", " + context.arguments[0] + ") !== false)";}
+	
+	native inline string replace(string regex, string with) {return "preg_replace('/'." + context.arguments[0] + ".'/', " + context.arguments[1] + ", " + context.instance + ")";}
+
+	fixed native inline string fromCharCode(int code) {return "chr(" + context.arguments[0] + ")";}	
+
+	fixed native inline float parseFloat(string value) {return "floatval(" + context.arguments[0] + ")";}
+	fixed native inline float parseInt(string value) {return "intval(" + context.arguments[0] + ")";}
+
+	phpNoRef native inline <string>array split(string at) {return "explode(" + context.arguments[0] + ", " + context.instance + ")";}
+
+	native inline string toLower() {return "strtolower(" + context.instance + ")";}
+	native inline string toUpper() {return "strtoupper(" + context.instance + ")";}
+	native inline string trimWhitespace() {return "trim(" + context.instance + ", \"\\n\\t\\r \")";}
+
+	native inline string escape() {return "addcslashes(" + context.instance + ", '\"\n\\\\')";}
+
+	phpNoRef native inline <string>array match(string regex) {return "cbonStringShiv::match(" + context.instance + ", " + context.arguments[0] + ")";}
+	native inline bool test(string regex) {return "(preg_match('/'." + context.arguments[0] + ".'/', " + context.instance + ") === 1 ? true : false)";}
+	native inline string substr(int start, int end) {return "substr(" + context.instance + ", " + context.arguments[0] + "," + context.arguments[1] + ")";}
+	
+	[operator = "in", order = 5] native inline bool in(map what) {return "isset(" + context.arguments[0] + "[" + context.instance + "])";}
+}

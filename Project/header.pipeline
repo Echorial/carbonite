@@ -1,0 +1,9 @@
+platform = "header"
+
+output = "~/Project/header.json"
+
+entry = "carbonite.carb"
+
+exports = "Carbonite,Carbide"
+
+type = "header"

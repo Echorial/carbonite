@@ -1,0 +1,10 @@
+class Carbonite.Members.Operator inherits Carbonite.Members.Method {
+	bound public bool prefix = false;
+	bound public string operator = "";
+	bound public int order = 0;
+	bound public string realName = "";
+
+	bound public override <string>function getRealName() {
+		return this.realName;
+	}
+}

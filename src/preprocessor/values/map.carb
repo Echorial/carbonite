@@ -1,0 +1,54 @@
+class Carbonite.Pre.Values.Map inherits Carbonite.Pre.Value {
+	bound public override string type = "map";
+	bound public override map value = 0;
+
+	bound public override <void>function setValue(map raw) {
+		this.value = raw["value"];
+	}
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	fixed public override <Carbonite.Pre.Values.Map>function create(map val) {
+		var map m = new map();
+		var Carbonite.Pre.Values.Map value = new Carbonite.Pre.Values.Map(m);
+		value.value = val;
+		return value;
+	}
+
+	bound public override <void>function iterate(Carbonite.Pre.Variable vKey, Carbonite.Pre.Variable v, Carbonite.Pre.Block code) {
+		for (var string key in this.value) {
+			var Carbonite.Pre.Values.String castKey = vKey.value;
+			castKey.value = key;
+			v.value.value = this.value[key];
+			code.run();
+		}
+	}
+
+	bound public override <Carbonite.Pre.Value>function property(string name) {
+		var has = this.value[name];
+		if (has != null) {
+			var Carbonite.Pre.Value rtn = Carbonite.Pre.Value.create(this.value[name]); //Warn
+			return rtn;
+		}
+		return Carbonite.Pre.Values.Null.create();
+	}
+
+	bound public override <Carbonite.Pre.Value>function method(string name, <Carbonite.Pre.Value>array input) {
+		if (name == "set") {
+			var Carbonite.Pre.Values.String key = input[0];
+			var Carbonite.Pre.Value ind = input[1];
+			this.value[key.value] = ind.value;
+		}else if (name == "index") {
+			var Carbonite.Pre.Value ind = input[0];
+			var Carbonite.Pre.Value found = this.value[ind.value];
+			return found;
+		}
+		return Carbonite.Pre.Values.Null.create();
+	}
+}

@@ -1,0 +1,10 @@
+class Carbonite.Natives.Boolean inherits Carbonite.Native {
+	bound public bool value = false;
+	bound public override string type = "boolean";
+
+	bound public override <void>function build() {
+		this.value = this.raw["value"];
+		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
+		this.output.loadFromName("bool", this.raw);
+	}
+}

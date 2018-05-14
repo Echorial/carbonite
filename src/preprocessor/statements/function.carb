@@ -1,0 +1,50 @@
+class Carbonite.Pre.Statements.Function inherits Carbonite.Pre.Statement {
+	bound public <string>array arguments = new <string>array();
+	bound public string name = "";
+	bound public Carbonite.Pre.Block code = empty;
+
+	bound public override <void>function build() {
+		this.name = this.data["name"];
+		var <map>array content = this.data["content"];
+		this.code = new Carbonite.Pre.Block(this.topParent.parent, content);
+		this.code.scope = this.scope;
+		var <map>array args = this.data["arguments"];
+		for (var int i in args) {
+			var string arg = args[i];
+			this.arguments.push(arg);
+		}
+		this.topParent.parent.addFunction(this);
+		this.code.build();
+	}
+
+	bound public <Carbonite.Pre.Value>function call(<Carbonite.Pre.Expression>array args) {
+		if (args.length() != this.arguments.length()) {
+			this.topParent.parent.runtimeError(this.data["startOffset"], this.data["offset"], "Call to function '" + this.name + "' invalid argument count " + args.length());
+		}
+
+		this.clear();
+		for (var int i in this.arguments) {
+			var Carbonite.Pre.Expression value = args[i];
+			var string name = this.arguments[i];
+			this.code.scope.addVariable(new Carbonite.Pre.Variable(name, value.run()));
+		}
+
+		this.code.run();
+		var Carbonite.Pre.Variable rtn = this.code.scope.search("functionReturn");
+		if (rtn == empty) {
+			var Carbonite.Pre.Value retu = Carbonite.Pre.Values.Null.create();
+			return retu;
+		}else{
+			return rtn.value;
+		}
+	}
+
+	bound public override <void>function clear() {
+		this.scope.clear();
+		this.code.clear();
+	}
+
+	bound public override <void>function run() {
+		
+	}
+}

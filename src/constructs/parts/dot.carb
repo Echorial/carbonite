@@ -1,0 +1,27 @@
+class Carbonite.Parts.Dot inherits Carbonite.Part {
+	bound public Carbonite.ReferenceMember reference = empty;
+	bound public Carbonite.Part previous = empty;
+	bound public string text = "";
+	bound public override string type = "dot";
+
+	fixed public <Carbonite.Parts.Dot>function @construct(Carbonite.Part prev, string text, Carbonite.Term parent) {
+		this.parent = parent;
+		this.previous = prev;
+		this.text = text;
+		if (prev.output.reference.hasChild(text)) {
+			this.output = new Carbonite.Type(parent.parent.parent.compiler, parent.parent.parent);
+			var Carbonite.Class found = prev.output.reference.getChild(text);
+			this.output.loadFromName(found.route, parent.raw);
+		}else{
+			this.reference = Carbonite.Member.makeReference(prev.output.reference, prev.output.reference.dotMember(text, parent), prev.context);
+			this.output = this.reference.output;
+			if (this.reference.type == "property") {
+				var Carbonite.Members.ReferenceProperty cast = this.reference;
+				this.context = cast.reference.output;
+			}else{
+				this.context = prev.context;
+			}
+		}
+		this.root = prev.root;
+	}
+}

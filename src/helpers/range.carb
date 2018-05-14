@@ -1,0 +1,22 @@
+class Carbonite.Range {
+	bound public int startOffset = 0;
+	bound public int endOffset = 0;
+	bound public Carbonite.Source source = empty;
+
+	bound public <void>function loadLocation(Carbonite.Class parent, map raw) { //TODO: Use the Carbonite.Class parent as extra location data
+		this.startOffset = raw["start"];
+		this.endOffset = raw["end"];
+		this.source = parent.source;
+	}
+
+	bound public <void>function loadLocation(Carbonite.Source parent, map raw) {
+		this.startOffset = raw["start"];
+		this.endOffset = raw["end"];
+		this.source = parent;
+	}
+
+	bound public <void>function buildError(string msg) {
+		this.source.error(this, msg);
+		Exception.throw("Build error");
+	}
+}

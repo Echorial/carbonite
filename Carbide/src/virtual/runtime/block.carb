@@ -1,0 +1,50 @@
+class Carbide.Virtual.Block {
+	bound public <map>array data = new <map>array();
+	bound public <Carbide.Virtual.Statement>array statements = new <Carbide.Virtual.Statement>array();
+	bound public Carbide.Virtual.Processor parent = empty;
+	bound public Carbide.Virtual.Scope scope = empty;
+	bound public string label = empty;
+	bound public Carbide.Virtual.Block topBlock = empty;
+	bound public bool canOutput = false;
+	
+	fixed public <Carbide.Virtual.Block>function @construct(Carbide.Virtual.Processor parent) {
+		this.parent = parent;
+		this.scope = new Carbide.Virtual.Scope(parent);
+	}
+
+	bound public <void>function buildFromAst(<map>array data) {
+		this.data = data;
+		this.build();
+	}
+
+	bound public <void>function build() {
+		var <map>array data = this.data;
+		for (var int i in data) {
+			var map statementData = data[i];
+			var Carbide.Virtual.Statement state = empty;
+			state.scope = new Carbide.Virtual.Scope(this.parent);
+			state.scope.setParentScope(this.scope);
+			state.build();
+			this.statements.push(state);
+		}
+	}
+
+	bound public <void>function run(Carbide.Virtual.Scope scope) {
+		for (var int i in this.statements) {
+			var Carbide.Virtual.Statement state = this.statements[i];
+			state.scope.setParentScope(this.scope);
+			state.run(scope);
+		}
+	}
+
+	bound public <void>function clear() {
+		for (var int i in this.statements) {
+			var Carbide.Virtual.Statement state = this.statements[i];
+			state.clear();
+		}
+	}
+
+	bound public <void>function output(string data, int start, int end) {
+		
+	}
+}

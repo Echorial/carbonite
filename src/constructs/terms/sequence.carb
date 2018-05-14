@@ -1,0 +1,64 @@
+class Carbonite.Terms.Sequence inherits Carbonite.Term {
+	bound public string name = empty;
+	bound public <Carbonite.Part>array parts = new <Carbonite.Part>array();
+	bound public <Carbonite.Type>array templates = new <Carbonite.Type>array();
+	bound public override string type = "sequence";
+
+	bound public override <void>function split(string name) {
+		var bool isConstructor = false;
+		var <string>array splits = name.split(".");
+		for (var int i in splits) {
+			if (isConstructor == false) {
+				var string p = splits[i];
+				if (this.parts.length() == 0) {
+					var Carbonite.Parts.Reference ref = new Carbonite.Parts.Reference(p, this);
+					this.parts.push(ref);
+					this.output = ref.output;
+					isConstructor = ref.isConstructor;
+				}else{
+					var Carbonite.Part last = this.parts[this.parts.length() - 1];
+					var Carbonite.Parts.Dot dot = new Carbonite.Parts.Dot(last, p, this);
+					this.parts.push(dot);
+					this.output = dot.output;
+				}
+			}
+		}
+	}
+
+	bound public override <void>function build(Carbonite.Expression parent, Carbonite.Body container) {
+		this.container = container;
+		var string name = this.raw["name"];
+
+		if ("template" in this.raw) {
+			var <map>array templates = this.raw["template"]; //CHANGE: From ["template"]["types"]
+
+			for (var int i in templates) {
+				var Carbonite.Type type = new Carbonite.Type(parent.parent.compiler, parent.parent);
+				type.loadFromRaw(templates[i]);
+				this.templates.push(type);
+			}
+		}
+
+		this.split(name);
+		var <map>array appendix = this.raw["appendix"];
+
+		for (var int i in appendix) {
+			var map p = appendix[i];
+			var string type = p["type"];
+			var Carbonite.Part last = this.parts[this.parts.length() - 1];
+			var Carbonite.Part part = empty;
+			if (type == "call") {
+				var <map>array args = p["expression"];
+				part = new Carbonite.Parts.Call(last, args, this);
+				this.parts.push(part);
+				this.output = part.output;
+			}else if (type == "dot") {
+				this.split(p["name"]);
+			}else if (type == "index") {
+				part = new Carbonite.Parts.Index(last, p["expression"], this);
+				this.parts.push(part);
+				this.output = part.output;
+			}
+		}
+	}
+}

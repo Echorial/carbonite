@@ -1,0 +1,14 @@
+class Carbonite.Terms.Prefix inherits Carbonite.Term {
+	bound public Carbonite.Expression expression = empty;
+	bound public Carbonite.Expression parentExpression = empty;
+	bound public string prefix = "";
+	bound public override string type = "prefix";
+
+	bound public override <void>function build(Carbonite.Expression parent, Carbonite.Body container) {
+		this.expression = new Carbonite.Expression(parent.parent, container);
+		this.expression.loadFromRaw(this.raw["expression"]);
+		this.output = this.expression.output;
+		this.parentExpression = parent;
+		this.prefix = this.raw["prefix"];
+	}
+}

@@ -1,0 +1,74 @@
+#if platform.javascript
+relative nativeCarboniteParsers {
+	fixed native inline Carbonite.ParserOutput PreParse(string input)
+	{return "CarbonitePreprocessor.parse(" + context.arguments[0] + ")";}
+
+	fixed native inline Carbonite.ParserOutput CarbonParse(string input)
+	{return "CarboniteCarbonParser.parse(" + context.arguments[0] + ")";}
+}
+#end if
+
+#if platform.documentation
+relative nativeCarboniteParsers {
+	fixed native inline Carbonite.ParserOutput PreParse(string input)
+	{return "CarbonitePreprocessor.parse(" + context.arguments[0] + ")";}
+
+	fixed native inline Carbonite.ParserOutput CarbonParse(string input)
+	{return "CarboniteCarbonParser.parse(" + context.arguments[0] + ")";}
+}
+#end if
+
+#if platform.header
+relative nativeCarboniteParsers {
+	fixed native inline Carbonite.ParserOutput PreParse(string input)
+	{return "CarbonitePreprocessor.parse(" + context.arguments[0] + ")";}
+
+	fixed native inline Carbonite.ParserOutput CarbonParse(string input)
+	{return "CarboniteCarbonParser.parse(" + context.arguments[0] + ")";}
+}
+#end if
+
+
+#if platform.php
+relative nativeCarboniteParsers {
+	fixed native inline Carbonite.ParserOutput PreParse(string input)
+	{return "CarbonitePreprocessor::parse(" + context.arguments[0] + ")";}
+
+	fixed native inline Carbonite.ParserOutput CarbonParse(string input)
+	{return "CarboniteCarbonParser::parse(" + context.arguments[0] + ")";}
+}
+#end if
+
+class Carbonite.Parsers {
+	fixed public <Carbonite.ParserOutput>function PreParse(string input) {
+		return nativeCarboniteParsers.PreParse(input);
+	}
+
+	fixed public <Carbonite.ParserOutput>function CarbonParse(string input) {
+		return nativeCarboniteParsers.CarbonParse(input);
+	}
+}
+
+class Carbonite.ParserLocation inherits object {
+	bound public int offset = 0;
+	bound public int line = 1;
+	bound public int column = 0;
+
+	fixed public <Carbonite.ParserLocation>function @construct(int offset, int line, int column) {
+		this.offset = offset; this.line = line; this.column = column;
+	}
+}
+
+class Carbonite.ParserError inherits Carbonite.ParserLocation {
+	bound public int code = 0;
+	bound public string found = "";
+	bound public string expected = "";
+	bound public int vested = 0;
+}
+
+class Carbonite.ParserOutput inherits object {
+	fixed public <Carbonite.ParserOutput>function @construct(bool hadError, Carbonite.ParserError error, map data) {this.hadError = hadError; this.error = error; this.data = data;}
+	bound public Carbonite.ParserError error = empty;
+	bound public bool hadError = false;
+	bound public map data = new map();
+}

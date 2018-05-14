@@ -1,0 +1,50 @@
+class Carbide.Virtual.Expression {
+	bound public map data = empty;
+	bound public <Carbide.Virtual.Sub>array subs = new <Carbide.Virtual.Sub>array();
+	bound public Carbide.Virtual.Statement parent = empty;
+
+	bound public <void>function build() {
+		
+	}
+
+	bound public <void>function setParent() {
+		
+	}
+
+	bound public <void>function buildSubs() {
+		/*var <map>array subs = this.data["subs"];
+		for (var int i in subs) {
+			var Carbide.Virtual.Sub sub = new Carbide.Virtual.Sub(this.parent, subs[i]);
+			this.subs.push(sub);
+		}*/
+	}
+
+	bound public <Carbide.Virtual.Value>function runSubs(Carbide.Virtual.Value on, Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Value last = on;
+		for (var int i in this.subs) {
+			var Carbide.Virtual.Sub sub = this.subs[i];
+			last = sub.run(last, scope);
+		}
+		return last;
+	}
+
+	bound public <Carbide.Virtual.Value>function runSubsTo(Carbide.Virtual.Value on, Carbide.Virtual.Scope scope, int to) {
+		var Carbide.Virtual.Value last = on;
+		for (var int i in this.subs) {
+			var Carbide.Virtual.Sub sub = this.subs[i];
+			last = sub.run(last, scope);
+
+			if (to == i)
+				break;
+		}
+		return last;
+	}
+
+	bound public <Carbide.Virtual.Value>function run(Carbide.Virtual.Scope scope) {
+		
+	}
+
+	bound public <Carbide.Virtual.Value>function runTo(Carbide.Virtual.Scope scope, int to) {
+		
+	}
+}

@@ -1,0 +1,68 @@
+class Carbonite.Notice inherits object {
+	bound public Carbonite.Location start = empty;
+	bound public Carbonite.Location end = empty;
+	bound public string message = "";
+	bound public int level = 0;
+	bound public string module = "Carbon";
+	bound public string found = "";
+	bound public string expected = "";
+	bound public string type = "Build";
+	bound public Carbonite.Source source = empty;
+
+	fixed public <Carbonite.Notice>function @construct(string message) {
+		this.message = message;
+	}
+
+	bound public <string>function stringify() {
+		var string level = "";
+		if (this.level == 1) {
+			level = "Info";
+		}else if (this.level == 2) {
+			level = "Notice";
+		}else if (this.level == 3) {
+			level = "Warning";
+		}else if (this.level == 4) {
+			level = "Error";
+		}
+
+		if (this.start == null)
+			this.start = new Carbonite.Location(0, 0, 0);
+
+		if (this.end == null)
+			this.end = new Carbonite.Location(0, 1, 1);
+
+		if (this.type == "Parse") {
+			return  this.type + "." + level + ": Found '" + this.found + "' expected '" + this.expected + "' at " + this.source.file + ":" + this.start.line + ":" + this.start.column + " in " + this.module + ".";
+		}else{
+			return  this.type + "." + level + ": " + this.message + " at " + this.source.file + ":" +  this.start.line + ":" + this.start.column  + " in " + this.module + ".";
+		}
+	}
+
+	fixed public <Carbonite.Notice>function fromParser(Carbonite.Source source, <map>CarbonitePreprocessorOutput po) {
+		var <string>array message = ["Expected '", po.error.expected, "' but found '", po.error.found, "'"];
+		var Carbonite.Notice notice = new Carbonite.Notice(message.join(""));
+		notice.level = 4;
+		notice.module = "Parser";
+		notice.type = "Parse";
+		notice.source = source;
+		notice.found = po.error.found;
+		notice.expected = po.error.expected;
+		notice.start = new Carbonite.Location(po.error.line, po.error.column, po.error.offset);
+		notice.end = new Carbonite.Location(po.error.line, po.error.column, po.error.offset + 1);
+		return notice;
+	}
+
+	fixed public <Carbonite.Notice>function fromParser(Carbonite.Source source, <map>CarboniteCarbonParserOutput po) {
+		var <string>array message = ["Expected '", po.error.expected, "' but found '", po.error.found, "'"];
+		var Carbonite.Notice notice = new Carbonite.Notice(message.join(""));
+		notice.level = 4;
+		notice.module = "Parser";
+		notice.type = "Parse";
+		notice.source = source;
+		notice.found = po.error.found;
+		notice.expected = po.error.expected;
+		notice.start = new Carbonite.Location(po.error.line, po.error.column, po.error.offset);
+		notice.end = new Carbonite.Location(po.error.line, po.error.column, po.error.offset + 1);
+		return notice;
+	}
+}

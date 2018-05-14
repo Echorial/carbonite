@@ -1,0 +1,49 @@
+class Carbonite.Pre.Statements.Script inherits Carbonite.Pre.Statement {
+	bound public string language = "";
+	bound public Carbide.Virtual.Block block = empty;
+	bound public string code = "";
+
+	bound public override <void>function build() {
+		this.language = this.data["language"];
+		var <map>array content = this.data["content"];
+		if (content.length > 1) {
+			//TODO: Status.Notice that any pre code will not be executed inside of script blocks
+		}
+		if ((content.length > 0) and (content[0]["type"] == "raw")) {
+			this.code = content[0]["content"];
+			Exception.try();
+			if ((this.language.toLower() == "carbon") or (this.language == "")) {
+				this.block = Carbide.Languages.Carbon.virtualizeIntoProcessor(this.parent.parent.source.file + " embedded carbon script", this.code, this.parent.parent.source.parent.buildScript);
+			}else if (this.language.toLower() == "calcium") { //TODO: Add full support for calcium
+				this.block = Carbide.Languages.Calcium.virtualizeIntoProcessor(this.parent.parent.source.file + " embedded calcium script", this.code, this.parent.parent.source.parent.buildScript);
+			}
+			Exception.endTry();
+		}
+	}
+
+	bound public override <void>function clear() {
+
+	}
+
+	bound public override <void>function run() {
+		var proc = this.parent.parent.source.parent.buildScript;
+		this.parent.parent.source.parent.scripts.push(this.data);
+
+		if (this.block != null) {
+			Exception.try();
+			this.block.run(proc.scope);
+			Exception.endTry();
+		}
+		if (proc.hadError) {
+			var baseNotice = proc.notices[0];
+			var notice = new Carbonite.Notice(baseNotice.message);
+			notice.start = new Carbonite.Location(0, 0, baseNotice.start);
+			notice.end = new Carbonite.Location(0, 0, baseNotice.end);
+			notice.module = "Script";
+			notice.type = "Runtime";
+			notice.source = this.parent.parent.source;
+			this.parent.parent.source.parent.status.give(notice);
+			Exception.throw("Execution error");
+		}
+	}
+}

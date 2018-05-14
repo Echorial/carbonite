@@ -1,0 +1,27 @@
+class Carbide.Virtual.Expressions.Raw inherits Carbide.Virtual.Expression {
+	bound public Carbide.Virtual.Value value = empty;
+
+	fixed public <Carbide.Virtual.Expressions.Raw>function @construct(Carbide.Virtual.Value val) {
+		this.value = val;
+	}
+
+	bound public override <void>function build() {
+		this.value = Carbide.Virtual.Value.make(this.data, this.parent.parent.parent);
+	}
+
+	bound public <Carbide.Virtual.Value>function runTo(Carbide.Virtual.Scope scope, int to) {
+		if (this.value.type == "function") {
+			var Carbide.Virtual.Values.Function cast = this.value;
+			cast.closure = scope;
+		}
+		return this.value.duplicate();
+	}
+
+	bound public override <Carbide.Virtual.Value>function run(Carbide.Virtual.Scope scope) {
+		if (this.value.type == "function") {
+			var Carbide.Virtual.Values.Function cast = this.value;
+			cast.closure = scope;
+		}
+		return this.value.duplicate();
+	}
+}

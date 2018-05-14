@@ -1,0 +1,37 @@
+class Carbonite.Function {
+	Carbonite.Expression parent = null;
+	Carbonite.Type output = null;
+	Carbonite.Body body = null;
+	int blockIndex = 0;
+
+	map raw = null;
+	<Carbonite.Argument>array arguments = new <Carbonite.Argument>array();
+
+	void @construct(Carbonite.Expression parent, map raw) {
+		this.raw = raw;
+		this.parent = parent;
+		this.blockIndex = this.parent.relativeParent.blockIndex;
+
+		this.body = new Carbonite.Body(this.parent.container.parent, this.raw["body"]);
+		this.body.scope.parent = this.parent.container.scope;
+		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
+		this.output.loadFromRaw(this.raw["output"]);
+		this.body.relativeOutput = this.output;
+		
+		var <map>array arguments = this.raw["parameters"];
+		for (var int i in arguments) {
+			var map argument = arguments[i];
+			this.arguments.push(new Carbonite.Argument(this.parent.parent.compiler, this.parent.parent, this.body, argument));
+		}
+
+		this.body.build();
+
+		this.parent.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
+		this.parent.output.loadFromName("function", this.raw);
+		this.parent.output.templates.push(this.output);
+
+		for (var int i in this.arguments) {
+			this.parent.output.templates.push(this.arguments[i].type);
+		}
+	}
+}

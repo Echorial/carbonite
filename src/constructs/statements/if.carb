@@ -1,0 +1,42 @@
+class Carbonite.Statements.If inherits Carbonite.Statement {
+	fixed public override string type = "if";
+	
+	bound public Carbonite.Expression check = empty;
+	bound public Carbonite.Body body = empty;
+	bound public <Carbonite.Statements.IfAlternative>array alternatives = new <Carbonite.Statements.IfAlternative>array();
+
+	bound public override <void>function build(map raw, Carbonite.Body container) {
+		this.check = new Carbonite.Expression(container.parent.parent, container);
+		this.check.loadFromRaw(raw["check"]["expression"]);
+		
+		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body.inherit(container);
+		this.body.build();
+
+		var <map>array alternatives = raw["alternatives"];
+
+		for (var int i in alternatives) {
+			this.alternatives.push(new Carbonite.Statements.IfAlternative(this, alternatives[i]));
+		}
+	}
+}
+
+class Carbonite.Statements.IfAlternative inherits Carbonite.Range {
+	bound public Carbonite.Body body = empty;
+	bound public Carbonite.Expression check = empty;
+	bound public Carbonite.Statements.If parent = empty;
+	bound public bool doCheck = false;
+
+	fixed public <Carbonite.Statements.IfAlternative>function @construct(Carbonite.Statements.If parent, map raw) {
+		var string type = raw["type"];
+		this.parent = parent;
+		if (type == "elseif") {
+			this.doCheck = true;
+			this.check = new Carbonite.Expression(parent.container.parent.parent, parent.container);
+			this.check.loadFromRaw(raw["check"]["expression"]);
+		}
+		this.body = new Carbonite.Body(parent.container.parent, raw["body"]);
+		this.body.inherit(parent.container);
+		this.body.build();
+	}
+}

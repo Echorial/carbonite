@@ -1,0 +1,9 @@
+platform = "php.source"
+
+output = $output
+
+entry = "carbonite.carb"
+
+type = "package"
+
+autoCache = true

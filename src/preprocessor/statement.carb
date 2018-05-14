@@ -1,0 +1,58 @@
+class Carbonite.Pre.Statement {
+	bound public map data = new map();
+	bound public Carbonite.Pre.Block parent = empty;
+	bound public Carbonite.Pre.Block topParent = empty;
+	bound public Carbonite.Pre.Scope scope = empty;
+	bound public string type = "";
+
+	fixed public <Carbonite.Pre.Block>function @construct(Carbonite.Pre.Block parent, map data) {
+		this.parent = parent;
+		this.topParent = this.parent.parent.root;
+		this.data = data;
+	}
+
+	fixed public <Carbonite.Pre.Statement>function make(Carbonite.Pre.Block block, map data) {
+		var Carbonite.Pre.Statement rtn = empty;
+		var string type = data["type"];
+		if (type == "define") {
+			rtn = new Carbonite.Pre.Statements.Define(block, data);
+		}else if (type == "if") {
+			rtn = new Carbonite.Pre.Statements.If(block, data);
+		}else if (type == "include") {
+			rtn = new Carbonite.Pre.Statements.Include(block, data);
+		}else if (type == "raw") {
+			rtn = new Carbonite.Pre.Statements.Raw(block, data);
+		}else if (type == "function") {
+			rtn = new Carbonite.Pre.Statements.Function(block, data);
+		}else if (type == "for") {
+			rtn = new Carbonite.Pre.Statements.For(block, data);
+		}else if (type == "forin") {
+			rtn = new Carbonite.Pre.Statements.For(block, data);
+		}else if (type == "lost") {
+			rtn = new Carbonite.Pre.Statements.Lost(block, data);
+		}else if (type == "var") {
+			rtn = new Carbonite.Pre.Statements.Var(block, data);
+		}else if (type == "return") {
+			rtn = new Carbonite.Pre.Statements.Return(block, data);
+		}else if (type == "output") {
+			rtn = new Carbonite.Pre.Statements.Out(block, data);
+		}else if (type == "script") {
+			rtn = new Carbonite.Pre.Statements.Script(block, data);
+		}
+		rtn.type = type;
+
+		return rtn;
+	}
+
+	bound public <void>function build() {
+		
+	}
+
+	bound public <void>function run() {
+		
+	}
+
+	bound public <void>function clear() {
+		
+	}
+}

@@ -1,0 +1,61 @@
+class Carbonite.Pre.Values.String inherits Carbonite.Pre.Value {
+	bound public override string type = "string";
+	bound public override string value = "";
+
+	bound public override <void>function setValue(map raw) {
+		this.value = raw["value"];
+	}
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	fixed public override <Carbonite.Pre.Values.String>function create(string val) {
+		var map m = new map();
+		var Carbonite.Pre.Values.String value = new Carbonite.Pre.Values.String(m);
+		value.value = val;
+		return value;
+	}
+
+	bound public override <void>function iterate(Carbonite.Pre.Variable vKey, Carbonite.Pre.Variable v, Carbonite.Pre.Block code) {
+		for (var int i in this.value) {
+			vKey.value.value = i;
+			v.value = Carbonite.Pre.Values.String.create(this.value[i]);
+			code.run();
+		}
+	}
+
+	bound public override <Carbonite.Pre.Value>function property(string name) {
+		if (name == "length") {
+			var float len = this.value.length();
+			return Carbonite.Pre.Values.Number.create(len);
+		}
+	}
+
+	bound public override <Carbonite.Pre.Value>function method(string name, <Carbonite.Pre.Value>array input) {
+		return Carbonite.Pre.Values.Null.create();
+	}
+
+	bound public override <Carbonite.Pre.Value>function operate(string operator, Carbonite.Pre.Value value) {
+		var Carbonite.Pre.Value v = empty;
+		var Carbonite.Pre.Values.String cast = value;
+		if (operator == "=") {
+			this.value = cast.value;
+			v = Carbonite.Pre.Values.Null.create();
+		}else if (operator == "==") {
+			v = Carbonite.Pre.Values.Bool.create(this.value == cast.value);
+		}else if (operator == "!=") {
+			v = Carbonite.Pre.Values.Bool.create(this.value != cast.value);
+		}else if (operator == "+") {
+			v = Carbonite.Pre.Values.String.create(this.value + cast.value);
+		}else if (operator == "+=") {
+			this.value += cast.value;
+			v = Carbonite.Pre.Values.Null.create();
+		}
+		return v;
+	}
+}

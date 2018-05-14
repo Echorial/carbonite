@@ -1,0 +1,36 @@
+class Carbonite.NamedHack inherits object, Carbonite.Range {
+	
+}
+
+class Carbonite.Named inherits Carbonite.Range {
+	bound public string route = "";
+	bound public string name = "";
+	bound public bool leveled = false;
+	bound public Carbonite.Compiler compiler = empty;
+
+	bound public <Carbonite.Named>array children = new <Carbonite.Named>array();
+	bound public Carbonite.Named parent = empty;
+
+	bound public <Carbonite.Named>function getChild(string name) {
+		var Carbonite.Named cast = this;
+		for (var int i in cast.children) {
+			var Carbonite.Named child = cast.children[i];
+			if (child.name == name) {
+				return child;
+			}
+		}
+		var Carbonite.Named emp = empty;
+		return emp;
+	}
+
+	bound public <bool>function hasChild(string name) {
+		var Carbonite.Named cast = this;
+		for (var int i in cast.children) {
+			var Carbonite.Named child = cast.children[i];
+			if (child.name == name) {
+				return true;
+			}
+		}
+		return false;
+	}
+}

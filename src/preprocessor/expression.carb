@@ -1,0 +1,52 @@
+class Carbonite.Pre.Expression {
+	bound public map data = empty;
+	bound public <Carbonite.Pre.Sub>array subs = new <Carbonite.Pre.Expression>array();
+	bound public Carbonite.Pre.Statement parent = empty;
+	fixed public <Carbonite.Pre.Expression>function @construct(Carbonite.Pre.Statement parent, map raw) {
+		this.data = raw;
+		this.parent = parent;
+	}
+
+	fixed public <Carbonite.Pre.Expression>function make(Carbonite.Pre.Statement parent, map data) {
+		var Carbonite.Pre.Expression rtn = empty;
+		var string type = data["type"];
+		if (type == "operation") {
+			rtn = new Carbonite.Pre.Expressions.Operation(parent, data);
+		}else if (type == "constant") {
+			rtn = new Carbonite.Pre.Expressions.Reference(parent, data);
+		}else if (type == "call") {
+			rtn = new Carbonite.Pre.Expressions.Call(parent, data);
+		}else{
+			rtn = new Carbonite.Pre.Expressions.Raw(parent, data);
+		}
+
+		return rtn;
+	}
+
+	bound public <void>function build() {
+		
+	}
+
+	bound public <void>function buildSubs() {
+		if ("subs" in this.data) {
+			var <map>array subs = this.data["subs"];
+			for (var int i in subs) {
+				var Carbonite.Pre.Sub sub = new Carbonite.Pre.Sub(this.parent, subs[i]);
+				this.subs.push(sub);
+			}
+		}
+	}
+
+	bound public <Carbonite.Pre.Value>function runSubs(Carbonite.Pre.Value on) {
+		var Carbonite.Pre.Value last = on;
+		for (var int i in this.subs) {
+			var Carbonite.Pre.Sub sub = this.subs[i];
+			last = sub.run(last);
+		}
+		return last;
+	}
+
+	bound public <Carbonite.Pre.Value>function run() {
+		
+	}
+}

@@ -1,0 +1,20 @@
+class Carbonite.Pre.Statements.Out inherits Carbonite.Pre.Statement {
+	bound public Carbonite.Pre.Block code = empty;
+
+	bound public override <void>function build() {
+		var <map>array content = this.data["content"];
+		this.code = new Carbonite.Pre.Block(this.topParent.parent, content);
+		this.code.canOutput = true;
+		this.code.scope = this.scope;
+		this.code.build();
+	}
+
+	bound public override <void>function run() {
+		this.code.run();
+	}
+
+	bound public override <void>function clear() {
+		this.scope.clear();
+		this.code.clear();
+	}
+}

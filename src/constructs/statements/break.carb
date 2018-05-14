@@ -1,0 +1,3 @@
+class Carbonite.Statements.Break inherits Carbonite.Statement {
+	fixed public override string type = "break";
+}

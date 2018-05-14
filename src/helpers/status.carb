@@ -1,0 +1,42 @@
+class Carbonite.Status inherits object {
+	bound public bool hadError = false;
+	bound public int errorCount = 0;
+	bound public Carbonite.Notice firstError = empty;
+	bound public <Carbonite.Notice>array notices = new <Carbonite.Notice>array();
+
+	fixed public <Carbonite.Status>function @construct() {
+		
+	}
+
+	bound public <string>function stringify() {
+		var <string>array notices = new <string>array();
+
+		for (var int i in this.notices) {
+			var Carbonite.Notice notice = this.notices[i];
+			notices.push(notice.stringify());
+		}
+		if (notices.length() == 0) {
+			return "Ok";
+		}else{
+			return notices.join("\n\n");
+		}
+	}
+
+	bound public <void>function give(Carbonite.Notice notice) {
+		this.notices.push(notice);
+		if (notice.level > 3) {
+			if (this.hadError == false) {
+				this.hadError = true;
+				this.firstError = notice;
+			}
+			this.errorCount++;
+		}
+	}
+
+	bound public <void>function inherit(Carbonite.Status from) {
+		for (var int i in from.notices) {
+			var Carbonite.Notice notice = from.notices[i];
+			this.give(notice);
+		}
+	}
+}

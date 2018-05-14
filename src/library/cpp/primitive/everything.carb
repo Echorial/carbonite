@@ -1,0 +1,26 @@
+relative everything {
+	[operator = "=", order = 10]
+	native inline void set(everything what) {
+		return context.instance + " = " + context.arguments[0];
+	}
+
+	[operator = "==", order = 10]
+	native inline bool equals(everything what) {
+		return context.instance + " == " + context.arguments[0];
+	}
+
+	[operator = "!=", order = 10]
+	native inline bool equals(everything what) {
+		return context.instance + " != " + context.arguments[0];
+	}
+
+	[operator = "!==", order = 10]
+	native inline bool equals(everything what) {
+		return context.instance + " !== " + context.arguments[0];
+	}
+
+	[operator = "===", order = 10]
+	native inline bool equals(everything what) {
+		return context.instance + " === " + context.arguments[0];
+	}
+}

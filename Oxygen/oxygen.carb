@@ -1,0 +1,12 @@
+#if platform.javascript
+	#include "src/javascript/fileSystem/"
+#end if
+
+#if platform.php
+	#include "src/php/fileSystem/"
+#end if
+
+
+namespace Oxygen {
+	
+}

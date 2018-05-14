@@ -1,0 +1,81 @@
+class Carbonite.Pre.Value {
+	bound public string type = "null";
+	bound public int value = 0;
+	bound public map raw = empty;
+
+	fixed public <Carbonite.Pre.Value>function @construct(map raw) {
+		this.raw = raw;
+	}
+
+	fixed public <Carbonite.Pre.Value>function create(map value) {
+		return Carbonite.Pre.Values.Map.create(value);
+	}
+
+	fixed public <Carbonite.Pre.Value>function create(<Carbonite.Pre.Value>array value) {
+		return Carbonite.Pre.Values.Array.create(value);
+	}
+
+	fixed public <Carbonite.Pre.Value>function create(string value) {
+		return Carbonite.Pre.Values.String.create(value);
+	}
+
+	fixed public <Carbonite.Pre.Value>function create(float value) {
+		return Carbonite.Pre.Values.Number.create(value);
+	}
+
+	fixed public <Carbonite.Pre.Value>function create(int value) {
+		var float cast = value;
+		return Carbonite.Pre.Values.Number.create(cast);
+	}
+
+	fixed public <Carbonite.Pre.Value>function create(bool value) {
+		return Carbonite.Pre.Values.Bool.create(value);
+	}
+
+	fixed public <Carbonite.Pre.Value>function make(map data) {
+		var Carbonite.Pre.Value rtn = empty;
+		var string type = data["type"];
+		if (type == "string") {
+			rtn = new Carbonite.Pre.Values.String(data);
+		}else if (type == "map") {
+			rtn = new Carbonite.Pre.Values.Map(data);
+		}else if (type == "number") {
+			rtn = new Carbonite.Pre.Values.Number(data);
+		}else if (type == "bool") {
+			rtn = new Carbonite.Pre.Values.Bool(data);
+		}else if (type == "array") {
+			rtn = new Carbonite.Pre.Values.Array(data);
+		}
+		rtn.setValue(data);
+
+		return rtn;
+	}
+
+	fixed public <Carbonite.Pre.Value>function create(int value) {
+
+	}
+
+	bound public <void>function setValue(map raw) {
+		
+	}
+
+	bound public <bool>function compare(map raw) {
+		
+	}
+
+	bound public <Carbonite.Pre.Value>function property(string name) {
+		return Carbonite.Pre.Values.Null.create();
+	}
+
+	bound public <Carbonite.Pre.Value>function method(string name, <Carbonite.Pre.Value>array input) {
+		return Carbonite.Pre.Values.Null.create();
+	}
+
+	bound public <Carbonite.Pre.Value>function operate(string operator, Carbonite.Pre.Value value) {
+
+	}
+
+	bound public <void>function iterate(Carbonite.Pre.Variable variableKey, Carbonite.Pre.Variable variable, Carbonite.Pre.Block code) {
+
+	}
+}

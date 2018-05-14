@@ -1,0 +1,71 @@
+class Carbide.Virtual.Values.Map inherits Carbide.Virtual.Value {
+	bound public override string type = "map";
+	bound public override <Carbide.Virtual.Value>map value = null;
+
+	bound public override <void>function setValue(map raw) {
+		this.value = raw["value"];
+	}
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	fixed public override <Carbide.Virtual.Values.Map>function create(map val) {
+		var map m = new map();
+		var Carbide.Virtual.Values.Map value = new Carbide.Virtual.Values.Map(m);
+		value.value = val;
+		return value;
+	}
+
+	bound public override <void>function iterate(Carbide.Virtual.Variable vKey, Carbide.Virtual.Variable v, Carbide.Virtual.Block code, Carbide.Virtual.Scope scope) {
+		for (var string key in this.value) {
+			var Carbide.Virtual.Values.String cast = vKey.value;
+			cast.value = key; //Warn
+			v.value = this.value[key];
+			code.run(scope);
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function property(string name, Carbide.Virtual.Scope scope) {
+		var f = this.value[name];
+		if (f != null) {
+			var Carbide.Virtual.Value rtn = this.value[name];
+			return rtn;
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	bound public override <Carbide.Virtual.Value>function method(string name, <Carbide.Virtual.Value>array input, Carbide.Virtual.Scope scope) {
+		if (name == "set") {
+			var Carbide.Virtual.Values.String key = input[0];
+			var Carbide.Virtual.Value ind = input[1];
+			this.value[key.value] = ind;
+		}else if (name == "index") {
+			var Carbide.Virtual.Values.String ind = input[0];
+			if (this.value[ind.value] != null) {
+				var Carbide.Virtual.Value found = this.value[ind.value];
+				return found;
+			}
+		}else{
+			var Carbide.Virtual.Value ind = input[0];
+			var Carbide.Virtual.Value found = this.value[name];
+			return found.call(input, scope, this);
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	bound public override <Carbide.Virtual.Value>function dotSet(string prop, Carbide.Virtual.Value value,  Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Value v = empty;
+		this.value[prop] = value;
+		v = Carbide.Virtual.Values.Null.create();
+		return v;
+	}
+
+	bound public override <Carbide.Virtual.Value>function duplicate() {
+		return Carbide.Virtual.Values.Map.create(new map());
+	}
+}

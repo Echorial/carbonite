@@ -1,0 +1,3 @@
+class Carbonite.Statements.Continue inherits Carbonite.Statement {
+	fixed public override string type = "continue";
+}

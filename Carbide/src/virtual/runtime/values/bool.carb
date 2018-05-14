@@ -1,0 +1,37 @@
+class Carbide.Virtual.Values.Bool inherits Carbide.Virtual.Value {
+	bound public override string type = "bool";
+	bound public override bool value = false;
+
+	bound public override <void>function setValue(map raw) {
+		this.value = raw["value"];
+	}
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	fixed public override <Carbide.Virtual.Values.Bool>function create(bool val) {
+		var map m = new map();
+		var Carbide.Virtual.Values.Bool value = new Carbide.Virtual.Values.Bool(m);
+		value.value = val;
+		return value;
+	}
+
+	bound public override <Carbide.Virtual.Value>function operate(string operator, Carbide.Virtual.Values.Bool value,  Carbide.Virtual.Scope scope) {
+		if (operator == "=") {
+			this.value = value.value;
+		}else if (operator == "==") {
+			return Carbide.Virtual.Values.Bool.create(this.value == value.value);
+		}else if (operator == "!=") {
+			return Carbide.Virtual.Values.Bool.create(this.value != value.value);
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function duplicate() {
+		return Carbide.Virtual.Values.Bool.create(this.value);
+	}
+}

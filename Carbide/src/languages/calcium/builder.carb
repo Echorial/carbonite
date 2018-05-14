@@ -1,0 +1,136 @@
+class Carbide.Languages.Calcium inherits Carbide.Language {
+	fixed public <Carbide.Virtual.Processor>function virtualize(string input) {
+		var <map>CarbideCalciumParserOutput po = CarbideCalciumParser.parse(input);
+		var map ast = po.data;
+		var Carbide.Virtual.Block root = empty;
+		var Carbide.Virtual.Processor proc = new Carbide.Virtual.Processor(root);
+		var <map>array exps = ast["document"]["expressions"];
+		root = Carbide.Languages.Calcium.buildBlock(proc, exps);
+		return proc;
+	}
+
+	fixed public <Carbide.Virtual.Block>function virtualizeIntoProcessor(string label, string input, Carbide.Virtual.Processor processor) {
+		var <map>CarbideCalciumParserOutput po = CarbideCalciumParser.parse(input);
+		var map ast = po.data;
+		var Carbide.Virtual.Block root = empty;
+		var <map>array exps = ast["document"]["expressions"];
+		root = Carbide.Languages.Calcium.buildBlock(processor, exps);
+		root.label = label;
+		processor.addBlock(root);
+		return root;
+	}
+
+	fixed public <Carbide.Virtual.Block>function buildBlock(Carbide.Virtual.Processor parent, <map>array code) {
+		var Carbide.Virtual.Block rtn = new Carbide.Virtual.Block(parent);
+		if (parent.root == empty) {
+			parent.root = rtn;
+			parent.root.scope = parent.scope;
+		}
+		for (var int i in code) {
+			var map exp = code[i];
+			var Carbide.Virtual.Statement state = empty;
+			var string type = exp["type"];
+			if (type == "let") {
+				var string litType = exp["value"]["type"];
+				if (litType == "function") {
+					var <string>array args = exp["value"]["parameters"];
+					var <map>array exps = exp["value"]["body"];
+					state = new Carbide.Virtual.Statements.Function(rtn, exp["name"], args, Carbide.Languages.Calcium.buildBlock(parent, exps));
+				}else{
+					state = new Carbide.Virtual.Statements.Var(rtn, exp["name"], Carbide.Languages.Calcium.buildExpression(exp["value"], parent));
+				}
+			}else if (type == "set") {
+				var string litType = exp["value"]["type"];
+				if (litType == "function") {
+					var <string>array args = exp["value"]["parameters"];
+					var <map>array exps = exp["value"]["body"];
+					state = new Carbide.Virtual.Statements.Function(rtn, exp["name"], args, Carbide.Languages.Calcium.buildBlock(parent, exps));
+				}else{
+					var string name = exp["name"];
+					var splits = name.split(".");
+					if (splits.length == 1) {
+						state = new Carbide.Virtual.Statements.Define(rtn, name, Carbide.Languages.Calcium.buildExpression(exp["value"], parent));
+					}else{
+						state = new Carbide.Virtual.Statements.Lost(rtn, new Carbide.Virtual.Expressions.Operation("=", Carbide.Languages.Calcium.buildSub(exp["name"]), Carbide.Languages.Calcium.buildExpression(exp["value"], parent)));
+					}
+				}
+			}else if (type == "if") {
+				var <map>array exps = exp["body"];
+				var <Carbide.Virtual.Expression>array checks = new <Carbide.Virtual.Expression>array();
+				checks.push(Carbide.Languages.Calcium.buildExpression(exp["check"], parent));
+				state = new Carbide.Virtual.Statements.If(rtn, checks, Carbide.Languages.Calcium.buildBlock(parent, exps));
+			}else if (type == "for") {
+				var <map>array exps = exp["body"];
+				var Carbide.Virtual.Expression refer = new Carbide.Virtual.Expressions.Reference(exp["name"]);
+				var float one = 1;
+				var Carbide.Virtual.Expression numb = new Carbide.Virtual.Expressions.Raw(Carbide.Virtual.Values.Number.create(one));
+				var Carbide.Virtual.Expression operation = new Carbide.Virtual.Expressions.Operation("+" + "=", refer, numb);
+				state = new Carbide.Virtual.Statements.For(rtn, exp["name"], Carbide.Languages.Calcium.buildExpression(exp["from"], parent),
+					Carbide.Languages.Calcium.buildExpression(exp["check"], parent),
+					operation,
+					Carbide.Languages.Calcium.buildBlock(parent, exps));
+			}else if (type == "return") {
+				state = new Carbide.Virtual.Statements.Return(rtn, Carbide.Languages.Calcium.buildExpression(exp["value"], parent));
+			}else{
+				state = new Carbide.Virtual.Statements.Lost(rtn, Carbide.Languages.Calcium.buildExpression(exp, parent));
+			}
+			state.scope = new Carbide.Virtual.Scope(parent);
+			rtn.statements.push(state);
+		}
+		return rtn;
+	}
+
+	fixed public <Carbide.Virtual.Expression>function buildSub(string name) {
+		var splits = name.split(".");
+		var rtn = new Carbide.Virtual.Expressions.Reference(splits[0]);
+		if (splits.length > 1) {
+			for (var int s = 1; s < splits.length; s++) {
+				var sub = new Carbide.Virtual.Sub(null);
+				sub.type = 1;
+				sub.property = splits[s];
+				rtn.subs.push(sub);
+			}
+		}
+		return rtn;
+	}
+
+	fixed public <Carbide.Virtual.Expression>function buildExpression(map exp, Carbide.Virtual.Processor proc) {
+		var string type = exp["type"];
+		var Carbide.Virtual.Expression rtn = empty;
+		if (type == "literal") {
+			var Carbide.Virtual.Value val = empty;
+			var string litType = exp["literalType"];
+			if (litType == "number") {
+				var float rVal = exp["value"];
+				val = Carbide.Virtual.Values.Number.create(rVal);
+			}else if (litType == "boolean") {
+				var bool rVal = exp["value"];
+				val = Carbide.Virtual.Values.Bool.create(rVal);
+			}else if (litType == "string") {
+				var string rVal = exp["value"];
+				val = Carbide.Virtual.Values.String.create(rVal);
+			}else if (litType == "map") {
+				val = Carbide.Virtual.Values.Map.create(new map());
+			}else if (litType == "array") {
+				val = Carbide.Virtual.Values.Array.create(new <Carbide.Virtual.Value>array());
+			}
+			rtn = new Carbide.Virtual.Expressions.Raw(val);
+		}else if (type == "function") {
+			var map rVal = exp;
+			rtn = new Carbide.Virtual.Expressions.Raw(Carbide.Virtual.Values.Function.create(rVal["parameters"], Carbide.Languages.Calcium.buildBlock(proc, rVal["body"])));
+		}else if (type == "operation") {
+			rtn = new Carbide.Virtual.Expressions.Operation(exp["operator"], Carbide.Languages.Calcium.buildExpression(exp["head"], proc), Carbide.Languages.Calcium.buildExpression(exp["tail"], proc));
+		}else if (type == "call") {
+			var <Carbide.Virtual.Expression>array args = new <Carbide.Virtual.Expression>array();
+			var <map>array rawArgs = exp["arguments"];
+			for (var int i in rawArgs) {
+				var map rawArg = rawArgs[i];
+				args.push(Carbide.Languages.Calcium.buildExpression(rawArg, proc));
+			}
+			rtn = new Carbide.Virtual.Expressions.Call(args, exp["name"]);
+		}else if (type == "constant") {
+			return Carbide.Languages.Calcium.buildSub(exp["name"]);
+		}
+		return rtn;
+	}
+}

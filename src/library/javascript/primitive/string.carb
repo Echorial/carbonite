@@ -1,0 +1,36 @@
+relative string inherits primitive {
+	native inline void @construct() {return '""';}
+
+	[operator="=", order = 10] native inline void set(string what) {return context.instance + " = " + context.arguments[0];}
+	[operator="+"] native inline string concat(string what) {return context.instance + " + " + context.arguments[0];}
+	[operator="+="] native inline string concatTo(string what) {return context.instance + " += " + context.arguments[0];}
+	[operator="==", order=5] native inline bool equal(string compare) {return context.instance + " == " + context.arguments[0];}
+	[operator="!=", order=5] native inline bool notEqual(string compare) {return context.instance + " != " + context.arguments[0];}
+	native inline string @index(int index) {return context.instance + "[" + context.arguments[0] + "]";}
+	
+	native inline property int length() {return context.instance + ".length";}
+
+	native inline int charCodeAt(int index) {return context.instance + ".charCodeAt(" + context.arguments[0] + ")";}
+	native inline bool contains(string what) {return context.instance + ".includes(" + context.arguments[0] + ")";}
+	
+	native inline string replace(string regex, string with) {return context.instance + ".replace(new RegExp(" + context.arguments[0] + ".replace(/[\\-\\[\\]\\/\\{\\}\\(\\)\\*\\+\\?\\.\\\\\\^\\$\\|]/g, '\\\\$&'), 'g'), " + context.arguments[1] + ")";}
+
+	fixed native inline string fromCharCode(int code) {return "String.fromCharCode(" + context.arguments[0] + ")";}	
+
+	fixed native inline float parseFloat(string value) {return "parseFloat(" + context.arguments[0] + ")";}
+	fixed native inline float parseInt(string value) {return "parseInt(" + context.arguments[0] + ")";}
+
+	native inline <string>array split(string at) {return context.instance + ".split(" + context.arguments[0] + ")";}
+
+	native inline string toLower() {return context.instance + ".toLowerCase()";}
+	native inline string toUpper() {return context.instance + ".toUpperCase()";}
+	native inline string trimWhitespace() {return context.instance + ".trim()";}
+
+	native inline string escape() {return context.instance + ".replace(/([\"\\n\\r])/g,function (char) {if (char == '\"') return '\\\\\"'; else return \"\\\\n\";})";}
+
+	native inline <string>array match(string regex) {return context.instance + ".match(new RegExp(" + context.arguments[0] + ", 'g'))";}
+	native inline bool test(string regex) {return "(new RegExp(" + context.arguments[0] + ")).test(" + context.instance + ")";}
+	native inline string substr(int start, int end) {return context.instance + ".substr(" + context.arguments[0] + "," + context.arguments[1] + ")";}
+	
+	[operator = "in", order = 5] native inline bool in(map what) {return context.instance + " in " + context.arguments[0];}
+}

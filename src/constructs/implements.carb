@@ -1,0 +1,9 @@
+class Carbonite.Implements inherits Carbonite.Range {
+	string implementer = "";
+	string implements = "";
+
+	void @construct(map data) {
+		this.implementer = data["implementer"];
+		this.implements = data["implements"];
+	}
+}

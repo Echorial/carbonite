@@ -1,0 +1,19 @@
+class Carbonite.Doc inherits Carbonite.Range {
+	<string>array raw = new <string>array();
+
+	void @construct(<string>array raw) {
+		if (raw != null)
+			for (var int i in raw) {
+				this.raw.push(raw[i]); //TODO: Build these into formated language(markdown, custom?)
+			}
+	}
+
+	string docDynamic() {
+		var output = "";
+		
+		for (var int i in this.raw)
+			output += this.raw[i].escape();
+
+		return output;
+	}
+}

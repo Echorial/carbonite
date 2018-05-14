@@ -1,0 +1,40 @@
+class Carbonite.Assembler inherits object {
+	bound public Carbonite.Compiler compiler = empty;
+	bound public map options = empty;
+
+	fixed public <Carbonite.Assembler>function @construct(Carbonite.Compiler compiler, map options) {
+		this.compiler = compiler;
+		this.options = options;
+	}
+
+	bound public <string>function build() {
+
+	}
+}
+
+class Carbonite.Assemblers.Loose inherits Carbonite.Assembler {
+	bound public override <string>function build() {
+		var string rtn = "";
+		for (var int i in this.compiler.roots) {
+			var Carbonite.Class root = this.compiler.roots[i];
+			rtn += this.root(root);
+		}
+		return rtn;
+	}
+
+	bound public <string>function root(Carbonite.Class root) {
+		
+	}
+
+	bound public <string>function method(Carbonite.Members.Method method) {
+		
+	}
+
+	bound public <string>function property(Carbonite.Members.Property property) {
+		
+	}
+
+	bound public <string>function expression(Carbonite.Expression expression) {
+		
+	}
+}

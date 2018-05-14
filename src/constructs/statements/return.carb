@@ -1,0 +1,23 @@
+class Carbonite.Statements.Return inherits Carbonite.Statement {
+	fixed public override string type = "return";
+
+	bound public Carbonite.Expression expression = empty;
+
+	bound public override <void>function build(map raw, Carbonite.Body container) {
+		this.expression = new Carbonite.Expression(container.parent.parent, container);
+		this.expression.loadFromRaw(raw["expression"]);
+
+		if (container.parent != empty) {
+			if (container.parent.hasFlag("native") == false) {
+				if (container.parent.output.late == false) {
+					var check = container.parent.output;
+					if (container.relativeOutput != null)
+						check = container.relativeOutput;
+					if (check.check(this.expression.output) == false) {
+						this.buildError("Invalid return type '" + this.expression.output.reference.name + "' in statement");
+					}
+				}
+			}
+		}
+	}
+}

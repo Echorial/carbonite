@@ -1,0 +1,18 @@
+class Carbonite.Pre.Expressions.Operation inherits Carbonite.Pre.Expression {
+	bound public Carbonite.Pre.Expression head = empty;
+	bound public Carbonite.Pre.Expression tail = empty;
+
+	bound public override <void>function build() {
+		this.buildSubs();
+		this.head = Carbonite.Pre.Expression.make(this.parent, this.data["head"]);
+		this.tail = Carbonite.Pre.Expression.make(this.parent, this.data["tail"]);
+		this.head.build();
+		this.tail.build();
+	}
+
+	bound public override <Carbonite.Pre.Value>function run() {
+		var Carbonite.Pre.Value head = this.head.run();
+		var Carbonite.Pre.Value tail = this.tail.run();
+		return head.operate(this.data["operator"], tail);
+	}
+}

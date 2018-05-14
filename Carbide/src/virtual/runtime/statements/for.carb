@@ -1,0 +1,61 @@
+class Carbide.Virtual.Statements.For inherits Carbide.Virtual.Statement {
+	bound public string itName = "";
+	bound public Carbide.Virtual.Expression initial = empty;
+	bound public Carbide.Virtual.Expression to = empty;
+	bound public Carbide.Virtual.Expression iterate = empty;
+	
+	bound public Carbide.Virtual.Block code = empty;
+	bound public bool in = false;
+
+	fixed public <Carbide.Virtual.Statements.For>function @construct(Carbide.Virtual.Block parent, string name, Carbide.Virtual.Expression initial, Carbide.Virtual.Expression suchThat, Carbide.Virtual.Expression iterate, Carbide.Virtual.Block code) {
+		this.parent = parent;
+		this.itName = name;
+		this.topParent = this.parent.parent.root;
+		this.initial = initial;
+		this.initial.parent = this;
+		this.initial.setParent();
+		this.to = suchThat;
+		this.to.parent = this;
+		this.to.setParent();
+		this.iterate = iterate;
+		this.iterate.parent = this;
+		this.iterate.setParent();
+		this.code = code;
+	}
+
+	fixed public <Carbide.Virtual.Statements.For>function In(Carbide.Virtual.Block parent, string name, Carbide.Virtual.Expression what, Carbide.Virtual.Block code) {
+		var Carbide.Virtual.Expression emp = empty;
+		var Carbide.Virtual.Statements.For rtn = new Carbide.Virtual.Statements.For(parent, name, emp, emp, emp, code);
+		rtn.to = what;
+		this.to.parent = this;
+		rtn.in = true;
+		rtn.code = code;
+		rtn.code.scope = rtn.scope;
+		return rtn;
+	}
+
+	bound public override <void>function run(Carbide.Virtual.Scope scope) {
+		if (this.in) {
+			var Carbide.Virtual.Value to = this.to.run(scope);
+			var Carbide.Virtual.Variable it = new Carbide.Virtual.Variable(this.itName, Carbide.Virtual.Values.Null.create());
+			var Carbide.Virtual.Variable itKey = new Carbide.Virtual.Variable(this.itName, Carbide.Virtual.Values.Null.create());
+			scope.addVariable(it);
+			to.iterate(itKey, it, this.code, scope);
+		}else{
+			var Carbide.Virtual.Variable it = new Carbide.Virtual.Variable(this.itName, this.initial.run(scope));
+			scope.addVariable(it);
+			var float start = it.value.value;
+			var Carbide.Virtual.Values.Bool to = this.to.run(scope);
+			while (to.value) {
+				this.code.run(scope);
+				this.iterate.run(scope);
+				to = this.to.run(scope);
+			}
+		}
+	}
+
+	bound public override <void>function clear() {
+		this.scope.clear();
+		this.code.clear();
+	}
+}

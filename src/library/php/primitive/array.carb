@@ -1,0 +1,35 @@
+relative <class T = primitive>array inherits primitive {
+	[operator="==", order=5] native inline bool equal(<T>array compare) {return context.instance + " == " + context.arguments[0];}
+	[operator="!=", order=5] native inline bool notEqual(<T>array compare) {return context.instance + " != " + context.arguments[0];}
+
+	native inline void @construct() {return "[]";}
+
+	native inline property int length() {return "count(" + context.instance + ")";}
+	native inline void pop() {return "array_pop(" + context.instance + ")";}
+	native inline int push(T element) {return "array_push(" + context.instance + ", " + context.arguments[0] + ")";}
+	native inline string join(string with) {return "implode(" + context.arguments[0] + ", " + context.instance + ")";}
+	native inline void remove(int index) {return "array_splice(" + context.instance + ", " + context.arguments[0] + ", 1)";}
+	native inline void unshift(T item) {return "array_unshift(" + context.instance + ", " + context.arguments[0] + ")";}
+	native inline void shift() {return "array_shift(" + context.instance + ")";}
+	native inline void empty() {return context.instance + " = []";}
+
+	phpNoRef native inline <T>array split(int index) {return "array_slice(" + context.instance + ", " + context.arguments[0] + ")";}
+	phpNoRef native inline <T>array splice(int index) {return "array_splice(" + context.instance + ", " + context.arguments[0] + ")";}
+	phpNoRef native inline <T>array clone() {return "array_values(" + context.instance + ")";}
+	native inline <T>array concat(<everything>array with) {return "array_merge(" + context.instance + ", " + context.arguments[0] + ")";}
+
+	native inline T @index(int index) {return "_c_lib__arrUtils::readIndex(" + context.instance + ", " + context.arguments[0] + ")";}
+	
+	native inline T @setIndex(string index, T value) {return context.instance + "[" + context.arguments[0] + "] = " + context.arguments[1];}
+
+	native inline T @actIndex(string index) {return context.instance + "[" + context.arguments[0] + "]";}
+
+	phpNoRef native inline <T>array highToLow()
+	{return "rsort(" + context.instance + ")";}
+}
+
+core class _c_lib__arrUtils {
+	[rawFront = "static function &readIndex(&$args, $key) {", rawBack = "}"]
+	raw fixed native everything readIndex(<everything>array data, int key)
+	{return "$nll = null; if (isset($args[$key])) return $args[$key]; else return $nll;";}
+}

@@ -1,0 +1,25 @@
+var Player = map (string name) => {
+	var p = {};
+	p.name = name;
+	p.health = 100;
+	p.damage = bool (int amount) => {
+		this.health -= amount;
+		if (this.health <= 0)
+			return true;
+		return false;
+	};
+	
+	p.display = null () => {
+		var isDead = "";
+		if (this.health <= 0)
+			isDead = " (Dead)";
+		print(this.name + isDead);
+		print(this.health);
+	};
+	
+	return p;
+};
+
+var myPlayer = Player("My player name");
+var dead = myPlayer.damage(89);
+myPlayer.display();

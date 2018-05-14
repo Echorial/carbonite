@@ -1,0 +1,262 @@
+class Carbonite.Type inherits Carbonite.Range {
+	bound public Carbonite.Class reference = empty;
+
+	bound public bool late = false;
+	bound public Carbonite.Template lateReference = empty;
+
+	bound public bool magic = false;
+	bound public int magicType = 0;
+
+	bound public bool autoCast = false;
+	bound public Carbonite.Class castTo = null;
+
+	bound public <Carbonite.Type>array templates = new <Carbonite.Type>array();
+	bound public Carbonite.Compiler compiler = empty;
+	bound public Carbonite.Class parent = empty;
+	bound public map raw = empty;
+
+	fixed public <Carbonite.Type>function @construct(Carbonite.Compiler compiler, Carbonite.Class parent) {
+		this.compiler = compiler;
+		this.parent = parent;
+		this.source = this.parent.source;
+	}
+
+	bound public <void>function setReference(Carbonite.Class reference) {
+		this.reference = reference;
+		if (this.reference.link != null) {
+			this.setReference(this.reference.link);
+		}
+	}
+
+	bound public <void>function loadFromName(string className, map raw) {
+		this.raw = raw;
+		this.startOffset = this.raw["start"];
+		this.endOffset = this.raw["end"];
+		this.setReference(this.compiler.findClass(className, this));
+		for (var int i in this.reference.templates) {
+			var Carbonite.Template template = this.reference.templates[i];
+			if (i >= this.templates.length()) {
+				if (template.optional) {
+					this.templates.push(template.default);
+				}else{
+					//this.buildError("Type '" + this.reference.name + "' requires " + this.reference.templates.length() + " templates, " + this.templates.length() + " provided");
+				}
+			}
+		}
+	}
+
+	bound public <void>function loadFromRaw(map raw) {
+		this.raw = raw;
+		if ("start" in raw)
+			this.loadLocation(this.parent, raw);
+
+		var string name = this.raw["name"];
+
+		if (name == "this") {
+			name = this.parent.route;
+		}
+		
+		if (name[0] == "@") {
+			this.magic = true;
+			if (name == "@self") {
+				this.magicType = 1;
+				this.setReference(this.parent);
+			}else{
+				this.buildError("Illegal magic type " + name);
+			}
+		}else if (this.parent.hasTemplate(name)) {
+			this.late = true;
+			this.lateReference = this.parent.getTemplate(name);
+		}else{
+			this.setReference(this.compiler.findClass(this.raw["name"], this));
+		}
+		if ("template" in this.raw) {
+			var pTemp = this.raw["template"];
+			if (pTemp.typeAsString() != "boolean") {
+				var <map>array templates = pTemp;
+
+				for (var int i in templates) {
+					var Carbonite.Type type = new Carbonite.Type(this.compiler, this.parent);
+					type.loadFromRaw(templates[i]);
+					this.templates.push(type);
+				}
+			}
+		}
+		if ((this.late == false) and (this.reference.route != "function") and (this.magicType != 1)) {
+			for (var int i in this.reference.templates) {
+				var Carbonite.Template template = this.reference.templates[i];
+				if (i >= this.templates.length()) {
+					if (template.optional) {
+						this.templates.push(template.default);
+					}else{
+						this.buildError("Type '" + this.reference.name + "' requires " + this.reference.templates.length() + " templates, " + this.templates.length() + " provided");
+					}
+				}
+			}
+		}
+
+		this.startOffset = this.raw["start"];
+		this.endOffset = this.raw["end"];
+	}
+
+	bound public <bool>function check(Carbonite.Type what) {
+		if (what.reference.route == "null" or this.reference.route == "null") {
+			return true;
+		}
+		if (what.reference.route == "empty") {
+			return true;
+		}
+		if (what.reference.descendantOf(this.reference)) {
+			return true;
+		}
+		if (this.reference.descendantOf(what.reference)) {
+			return true;
+		}
+		if (what.reference.canCast(this.reference)) {
+			what.autoCast = true;
+			what.castTo = this.reference;
+			return true;
+		}
+		if (this.reference.route != what.reference.route) {
+			return false;
+		}
+		if (this.templates.length() > what.templates.length()) {
+			return false;
+		}
+		for (var int i in this.templates) {
+			var Carbonite.Type template = this.templates[i];
+			var Carbonite.Type whatTemplate = what.templates[i];
+			if (whatTemplate.late) {
+
+			}else{
+				if (template.check(whatTemplate) == false) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	bound public <Carbonite.Class>function getClassParent(Carbonite.Class cls) {
+		if (cls.inherits.length() > 0) {
+			var Carbonite.Class cast = cls.inherits[0];
+			return cast;
+		}else{
+			return cls;
+		}
+	}
+
+	bound public <string>function lookPretty() {
+		var string beg = "";
+		if (this.templates.length() > 0) {
+			var <string>array temps = new <string>array();
+			for (var int i in this.templates) {
+				var Carbonite.Type cast = this.templates[i];
+				temps.push(cast.lookPretty());
+			}
+			beg = "<" + temps.join(", ") + ">";
+		}
+		var string route = "";
+		if (this.late) {
+			route = this.raw["name"];
+		}else{
+			route = this.reference.route;
+		}
+		return beg + route;
+	}
+
+	bound public <bool>function checkAsSibling(Carbonite.Type what) {
+		if (what.reference.name == "null") {
+			return true;
+		}
+
+		var Carbonite.Class first = this.getClassParent(this.reference);
+		var Carbonite.Class against = this.getClassParent(what.reference);
+		if (first.route != against.route) {
+			return false;
+		}
+
+		if (this.templates.length() > what.templates.length()) {
+			return false;
+		}
+
+		for (var int i in this.templates) {
+			var Carbonite.Type template = this.templates[i];
+			var Carbonite.Type whatTemplate = what.templates[i];
+			if (template.check(whatTemplate) == false) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bound public <Carbonite.ReferenceType>function getWithContext(Carbonite.Type context) {
+		var Carbonite.ReferenceType rtn = new Carbonite.ReferenceType(this, context);
+		return rtn;
+	}
+
+	bound public <bool>function checkWithContext(Carbonite.Type context, Carbonite.Type what) {
+		if (what.reference.name == "null") {
+			return true;
+		}
+
+		if (this.late == false) {
+			return this.check(what);
+		}
+		var Carbonite.Type realReference = context.templates[this.lateReference.index];
+		if (what.reference.descendantOf(realReference.reference)) {
+			return true;
+		}
+		if (realReference.reference.descendantOf(what.reference)) {
+			return true;
+		}
+		if (realReference.reference.route != what.reference.route) {
+			return false;
+		}
+		if (realReference.templates.length() > what.templates.length()) {
+			return false;
+		}
+		for (var int i in realReference.templates) {
+			var Carbonite.Type template = realReference.templates[i];
+			var Carbonite.Type whatTemplate = what.templates[i];
+			if (template.checkWithContext(context, whatTemplate) == false) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	string toHeader() {
+		var <string>array templates = new <string>array();
+
+		for (var int i in this.templates) {
+			var template = this.templates[i];
+			templates.push(template.toHeader());
+		}
+
+		return '{"name": "' + this.reference.route + '", "template": [' + templates.join(", ") + ']}';
+	}
+}
+
+class Carbonite.ReferenceType inherits Carbonite.Type {
+	bound public Carbonite.Type context = empty;
+	bound public Carbonite.Type typeReference = empty;
+
+	fixed public override <Carbonite.ReferenceType>function @construct(Carbonite.Type type, Carbonite.Type context) {
+		this.context = context;
+		this.typeReference = type;
+		if (type.late == true) {
+			var Carbonite.Type cast = context.templates[type.lateReference.index];
+			this.setReference(cast.reference);
+			this.templates = cast.templates;
+		}else{
+			this.setReference(type.reference);
+			this.templates = type.templates;
+		}
+	}
+
+	bound public override <bool>function check(Carbonite.Type against) {
+		this.typeReference.checkWithContext(this.context, against);
+	}
+}

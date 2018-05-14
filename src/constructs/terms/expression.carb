@@ -1,0 +1,12 @@
+class Carbonite.Terms.Expression inherits Carbonite.Term {
+	bound public Carbonite.Expression expression = empty;
+	bound public Carbonite.Expression parentExpression = empty;
+	bound public override string type = "expression";
+
+	bound public override <void>function build(Carbonite.Expression parent, Carbonite.Body container) {
+		if (this.expression == empty) {
+			this.expression = new Carbonite.Expression(parent.parent, container);
+		}
+		this.parentExpression = parent;
+	}
+}

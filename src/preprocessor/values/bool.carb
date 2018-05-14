@@ -1,0 +1,23 @@
+class Carbonite.Pre.Values.Bool inherits Carbonite.Pre.Value {
+	bound public override string type = "bool";
+	bound public override bool value = false;
+
+	bound public override <void>function setValue(map raw) {
+		this.value = raw["value"];
+	}
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	fixed public override <Carbonite.Pre.Values.Bool>function create(bool val) {
+		var map m = new map();
+		var Carbonite.Pre.Values.Bool value = new Carbonite.Pre.Values.Bool(m);
+		value.value = val;
+		return value;
+	}
+}

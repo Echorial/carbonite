@@ -1,0 +1,23 @@
+class Carbonite.Pre.Values.Null inherits Carbonite.Pre.Value {
+	bound public override string type = "null";
+	bound public override bool value = false;
+
+	bound public override <void>function setValue(map raw) {
+		this.value = raw["value"];
+	}
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	fixed public override <Carbonite.Pre.Values.Null>function create() {
+		var map m = new map();
+		var Carbonite.Pre.Values.Null value = new Carbonite.Pre.Values.Null(m);
+		value.value = empty;
+		return value;
+	}
+}

@@ -1,0 +1,51 @@
+class Carbide.Virtual.Statements.Function inherits Carbide.Virtual.Statement {
+	bound public <string>array arguments = new <string>array();
+	bound public string name = "";
+	bound public Carbide.Virtual.Block code = empty;
+
+	fixed public <Carbide.Virtual.Statements.Function>function @construct(Carbide.Virtual.Block parent, string name, <string>array arguments, Carbide.Virtual.Block code) {
+		this.parent = parent;
+		this.topParent = this.parent.parent.root;
+		this.name = name;
+		this.arguments = arguments;
+		this.code = code;
+		this.scope = new Carbide.Virtual.Scope(parent.parent);
+		this.code.scope = this.scope;
+		this.topParent.parent.addFunction(this);
+	}
+
+	bound public <Carbide.Virtual.Value>function call(<Carbide.Virtual.Expression>array args, Carbide.Virtual.Scope scope) {
+		if (args.length() != this.arguments.length()) {
+			var location = "anon";
+			if (this.code.topBlock != null)
+				location = this.code.topBlock.label;
+			this.topParent.parent.runtimeError("Call to function '" + this.name + "' invalid argument count " + args.length(), location, 0, 0);
+		}
+
+		this.clear();
+		var Carbide.Virtual.Scope funcScope = new Carbide.Virtual.Scope(this.parent.parent);
+		for (var int i in this.arguments) {
+			var Carbide.Virtual.Expression value = args[i];
+			var string name = this.arguments[i];
+			funcScope.addVariable(new Carbide.Virtual.Variable(name, value.run(scope)));
+		}
+		funcScope.setParentScope(scope);
+		this.code.run(funcScope);
+		var Carbide.Virtual.Variable rtn = funcScope.search("functionReturn");
+		if (rtn == empty) {
+			var Carbide.Virtual.Value retu = Carbide.Virtual.Values.Null.create();
+			return retu;
+		}else{
+			return rtn.value;
+		}
+	}
+
+	bound public override <void>function clear() {
+		this.scope.clear();
+		this.code.clear();
+	}
+
+	bound public override <void>function run() {
+		
+	}
+}

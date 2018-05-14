@@ -1,0 +1,66 @@
+class Carbide.Virtual.Expressions.Call inherits Carbide.Virtual.Expression {
+	bound public string name = "";
+	bound public <Carbide.Virtual.Expression>array arguments = new <Carbide.Virtual.Expression>array();
+
+	fixed public <Carbide.Virtual.Expression>function @construct(<Carbide.Virtual.Expression>array arguments, string name) {
+		this.name = name;
+		this.arguments = arguments;
+	}
+
+	bound public override <void>function setParent() {
+		for (var int i in this.arguments) {
+			var Carbide.Virtual.Expression arg = this.arguments[i];
+			arg.parent = this.parent;
+			arg.setParent();
+		}
+	}
+
+	bound public <Carbide.Virtual.Value>function runTo(Carbide.Virtual.Scope scope, int to) {
+		return this.run(scope);
+	}
+
+	bound public override <Carbide.Virtual.Value>function run(Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Statements.Function call = this.parent.topParent.parent.searchFunction(this.name);
+		if (call != empty) {
+			return this.runSubs(call.call(this.arguments, scope), scope);
+		}else{
+			/*
+			if (this.parent.topParent.parent.interface != empty) {
+				var <Carbide.Virtual.Value>array arguments = new <Carbide.Virtual.Value>array();
+				for (var int i in this.arguments) {
+					var Carbide.Virtual.Expression arg = this.arguments[i];
+					arguments.push(arg.run(scope));
+				}
+				var Carbide.Virtual.Value rtn = this.parent.topParent.parent.interface.call(this.name, arguments);
+				if (rtn != empty) {
+					return rtn;
+				}
+			}
+			*/
+			var splits = this.name.split(".");
+			var string root = splits[0];
+			var Carbide.Virtual.Variable val = scope.search(root);
+			if (val != empty) {
+				var realValue = val.value;
+				if (splits.length > 2)
+					for (var int i = 1; i < splits.length - 1; i++) {
+						realValue = realValue.property(splits[i], scope);
+					}
+				var <Carbide.Virtual.Value>array args = new <Carbide.Virtual.Value>array();
+				for (var int i in this.arguments) {
+					var Carbide.Virtual.Expression arg = this.arguments[i];
+					args.push(arg.run(scope));
+				}
+				if (splits.length > 1)
+					return realValue.method(splits[splits.length - 1], args, scope);
+				else
+					return realValue.call(args, scope);
+			}else{
+				var location = "anon";
+				if (this.parent.parent.topBlock != null)
+					location = this.parent.parent.topBlock.label;
+				this.parent.topParent.parent.runtimeError("Unknown function '" + this.name + "'", location, 0, 0);
+			}
+		}
+	}
+}

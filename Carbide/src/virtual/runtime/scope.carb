@@ -1,0 +1,50 @@
+class Carbide.Virtual.Scope {
+	bound public Carbide.Virtual.Scope parentScope = empty;
+	bound public Carbide.Virtual.Processor parent = empty;
+
+	bound public <Carbide.Virtual.Variable>array data = new <Carbide.Virtual.Variable>array();
+
+	fixed public <Carbide.Virtual.Block>function @construct(Carbide.Virtual.Processor parent) {
+		this.parent = parent;
+	}
+
+	bound public <void>function setParentScope(Carbide.Virtual.Scope scope) {
+		this.parentScope = scope;
+	}
+
+	bound public <void>function setVariable(Carbide.Virtual.Variable variable) {
+		for (var int i in this.data) {
+			var Carbide.Virtual.Variable dat = this.data[i];
+			if (dat.name == variable.name) {
+				dat.value = variable.value;
+				return null;
+			}
+		}
+		this.addVariable(variable);
+	}
+
+	bound public <void>function addVariable(Carbide.Virtual.Variable variable) {
+		this.data.push(variable);
+	}
+
+	bound public <void>function clear() {
+		for (var int i = this.data.length(); i > 0; i--) {
+			this.data.pop();
+		}
+	}
+
+	bound public <Carbide.Virtual.Variable>function search(string name) {
+		for (var int i in this.data) {
+			var Carbide.Virtual.Variable variable = this.data[i];
+			if (variable.name == name) {
+				return variable;
+			}
+		}
+
+		if (this.parentScope != empty) {
+			return this.parentScope.search(name);
+		}
+		var Carbide.Virtual.Variable emp = empty;
+		return emp;
+	}
+}

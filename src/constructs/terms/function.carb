@@ -1,0 +1,11 @@
+class Carbonite.Terms.Function inherits Carbonite.Term {
+	bound public Carbonite.Function function = empty;
+	bound public Carbonite.Expression parentExpression = empty;
+	bound public override string type = "function";
+
+	bound public override <void>function build(Carbonite.Expression parent, Carbonite.Body container) {
+		this.function = new Carbonite.Function(parent, this.raw);
+		this.parentExpression = parent;
+		this.output = parent.output;
+	}
+}

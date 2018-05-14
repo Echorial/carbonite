@@ -1,0 +1,45 @@
+class Carbonite.Natives.Array inherits Carbonite.Native {
+	bound public <Carbonite.Natives.ArrayItem>array value = new <Carbonite.Natives.ArrayItem>array();
+	bound public override string type = "array";
+	
+	bound public override <void>function build() {
+		var <map>array arr = this.raw["value"];
+		var Carbonite.Type arrayType = empty;
+		for (var int i in arr) {
+			var map rawItem = arr[i];
+			var Carbonite.Expression item = new Carbonite.Expression(this.parent.parent, this.parent.container);
+			item.loadFromRaw(rawItem);
+			var Carbonite.Natives.ArrayItem aItem = new Carbonite.Natives.ArrayItem(i, item);
+			this.value.push(aItem);
+			if (arrayType == empty) {
+				arrayType = item.output;
+			}else{
+				if (arrayType.checkAsSibling(item.output) == false) {
+					this.buildError("Illegal mixed type array, mixing '" + arrayType.reference.name + "' with '" + item.output.reference.name + "'");
+				}
+			}
+		}
+
+		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
+		this.output.loadFromName("array", this.raw);
+		var Carbonite.Type tempType = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
+		var string nme = "";
+		if (arrayType != empty) {
+			nme = arrayType.getClassParent(arrayType.reference).name;
+		}else{
+			nme = "primitive";
+		}
+		tempType.loadFromName(nme, this.raw);
+		this.output.templates.push(tempType);
+	}
+}
+
+class Carbonite.Natives.ArrayItem inherits object, Carbonite.Range {
+	bound public int index = 0;
+	bound public Carbonite.Expression value = empty;
+	
+	fixed public <Carbonite.Natives.ArrayItem>function @construct(int index, Carbonite.Expression value) {
+		this.index = index;
+		this.value = value;
+	}
+}

@@ -1,0 +1,8 @@
+relative bool inherits primitive {
+	[operator="=", order = 10] native inline void set(bool what) {return context.instance + " = " + context.arguments[0];}
+	[operator="==", order=5] native inline bool equal(bool compare) {return context.instance + " == " + context.arguments[0];}
+	[operator="!=", order=5] native inline bool notEqual(bool compare) {return context.instance + " != " + context.arguments[0];}
+
+	[operator="and", order=7] native inline bool and(bool compare) {return context.instance + " && " + context.arguments[0];}
+	[operator="or", order=7] native inline bool and(bool compare) {return context.instance + " || " + context.arguments[0];}
+}

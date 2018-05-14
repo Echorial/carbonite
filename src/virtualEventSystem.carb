@@ -1,0 +1,50 @@
+class VirtualEventSystem {
+	<VirtualEvent>array events = new <VirtualEvent>array();
+	Carbide.Virtual.Processor processor = null;
+
+	void @construct(Carbide.Virtual.Processor proc) {
+		this.processor = proc;
+	}
+
+	VirtualEvent get(string name) {
+		for (var int i in this.events) {
+			if (this.events[i].name == name)
+				return this.events[i];
+		}
+		return null;
+	}
+
+	bool emit(string name, <Carbide.Virtual.Value>array args) {
+		var event = this.get(name);
+		if (event != null)
+			return event.emit(this.processor, args);
+		return false;
+	}
+
+	void on(string name, Carbide.Virtual.Values.Function func) {
+		var event = this.get(name);
+		if (event == null) {
+			var newEvent = new VirtualEvent(name);
+			newEvent.listeners.push(func);
+			this.events.push(newEvent);
+		}else{
+			event.listeners.push(func);
+		}
+	}
+}
+
+class VirtualEvent {
+	string name = "";
+	<Carbide.Virtual.Values.Function>array listeners = new <Carbide.Virtual.Values.Function>array();
+
+	void @construct(string name) {
+		this.name = name;
+	}
+
+	bool emit(Carbide.Virtual.Processor proc, <Carbide.Virtual.Value>array args) {
+		for (var int i in this.listeners) {
+			this.listeners[i].call(args, proc.scope, null); //TODO: Implement cancel
+		}
+		return false;
+	}
+}

@@ -1,0 +1,68 @@
+class Carbonite.Members.Property inherits Carbonite.Member {
+	bound public Carbonite.Expression default = empty;
+
+	fixed public <Carbonite.Members.Property>function evaluate(string raw, Carbonite.Class parent) {
+		var output = CarboniteCarbonParser.parse("Any_Member", raw);
+
+		if (output.hadError) {
+			parent.compiler.status.give(Carbonite.Notice.fromParser(parent.source, output));
+		}else{
+			var property = Carbonite.Member.make(parent, output.data["data"]);
+			parent.members.push(property);
+			return property;
+		}
+	}
+
+	bound public override <void>function buildDefault() {
+		var string type = this.raw["value"]["type"];
+		if (type == "interface") {
+			this.abstract = true;
+		}else{
+			this.default = new Carbonite.Expression(this.parent, this.parent.propertyContext);
+			
+			this.default.loadFromRaw(this.raw["value"]["value"]);
+		}
+	}
+
+	bound public override <void>function build() {
+		
+	}
+
+	override bound public <string>function docDynamic() {
+		return '{"type": "property", "name": "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "output": "' + this.output.lookPretty() + '"}';
+	}
+
+	string toHeader() {
+		return '{"type": "property", "binding": "' + this.binding + '", "name": "' + this.name + '", ' + this.getHeaderFlags() + ' "output": ' + this.output.toHeader() + '}';
+	}
+
+	override fixed Carbonite.Member fromHeader(Carbonite.Class parent, map data) {
+		var property = new Carbonite.Members.Property(parent, null);
+		property.type = "property";
+		property.name = data["name"];
+		property.binding = data["binding"];
+
+		if ("flags" in data) {
+			var <string>array flags = data["flags"];
+			for (var int i in flags)
+				property.flags.push(flags[i]);
+		}
+
+		property.output = new Carbonite.Type(parent.compiler, parent);
+		property.output.loadFromRaw(data["output"]);
+
+		return property;
+	}
+}
+
+class Carbonite.Members.ReferenceProperty inherits Carbonite.ReferenceMember {
+	bound public Carbonite.Members.Property reference = empty;
+	bound public Carbonite.Type context = empty;
+
+	fixed public <Carbonite.Members.ReferenceMethod>function @construct(Carbonite.Members.Property reference, Carbonite.Type context) {
+		this.reference = reference;
+		this.context = context;
+		this.output = this.reference.output.getWithContext(context);
+		this.type = reference.type;
+	}
+}

@@ -1,0 +1,84 @@
+class VirtualArguments inherits Carbide.Virtual.Value {
+	bound public override string type = "array";
+	bound public override <Carbonite.Argument>array value = null;
+
+	fixed override VirtualArguments create(<Carbonite.Argument>array val) {
+		var map m = new map();
+		var VirtualArguments value = new VirtualArguments(m);
+		value.value = val;
+		return value;
+	}
+
+	bound public override <void>function iterate(Carbide.Virtual.Variable vKey, Carbide.Virtual.Variable v, Carbide.Virtual.Block code, Carbide.Virtual.Scope scope) {
+		for (var int i in this.value) {
+			vKey.value.value = i;
+			v.value = VirtualArgument.create(this.value[i]);
+			code.run(scope);
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function property(string name, Carbide.Virtual.Scope scope) {
+		if (name == "length") {
+			var float cast = this.value.length;
+			var Carbide.Virtual.Values.Number rtn = Carbide.Virtual.Values.Number.create(cast);
+			return rtn;
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	bound public override <Carbide.Virtual.Value>function method(string name, <Carbide.Virtual.Value>array input, Carbide.Virtual.Scope scope) {
+		if (name == "length") {
+			var float len = this.value.length();
+			return Carbide.Virtual.Values.Number.create(len);
+		}else if (name == "index") {
+			var Carbide.Virtual.Value ind = input[0];
+			var Carbide.Virtual.Value found = VirtualArgument.create(this.value[ind.value]);
+			return found;
+		}else if (name == "push") {
+			var Carbide.Virtual.Value ind = input[0];
+			var Carbonite.Argument cast = ind.value;
+			var Carbide.Virtual.Value found = this.value.push(cast);
+		}else if (name == "pop") {
+			this.value.pop();
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+class VirtualArgument inherits Carbide.Virtual.Value {
+	override string type = "Carbon.Argument";
+	override Carbonite.Argument value = null;
+
+	fixed override VirtualArgument create(Carbonite.Argument val) {
+		var map m = new map();
+		var value = new VirtualArgument(m);
+		value.value = val;
+		return value;
+	}
+
+	override <Carbide.Virtual.Value>function property(string name, Carbide.Virtual.Scope scope) {
+		if (name == "type") {
+			return VirtualType.create(this.value.type);
+		}else if (name == "name") {
+			return Carbide.Virtual.Values.String.create(this.value.name);
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	override <Carbide.Virtual.Value>function method(string name, <Carbide.Virtual.Value>array input, Carbide.Virtual.Scope scope) {
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	override <Carbide.Virtual.Value>function dotSet(string prop, Carbide.Virtual.Value value,  Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Value v = empty;
+		if (prop == "type") {
+			var VirtualType cast = value;
+			this.value.type = cast.value;
+		}else if (prop == "name") {
+			var Carbide.Virtual.Values.String cast = value;
+			this.value.name = cast.value;
+		}
+		v = Carbide.Virtual.Values.Null.create();
+		return v;
+	}
+}

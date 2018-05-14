@@ -1,0 +1,11 @@
+class Carbonite.Location inherits object {
+	bound public int line = 0;
+	bound public int column = 0;
+	bound public int offset = 0;
+
+	fixed public <Carbonite.Location>function @construct(int line, int column, int offset) {
+		this.line = line;
+		this.column = column;
+		this.offset = offset;
+	}
+}

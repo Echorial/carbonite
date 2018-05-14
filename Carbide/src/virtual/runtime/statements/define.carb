@@ -1,0 +1,22 @@
+class Carbide.Virtual.Statements.Define inherits Carbide.Virtual.Statement {
+	bound public string name = "";
+	bound public Carbide.Virtual.Expression value = empty;
+
+	fixed public <Carbide.Virtual.Statements.Define>function @construct(Carbide.Virtual.Block parent, string name, Carbide.Virtual.Expression value) {
+		this.parent = parent;
+		this.topParent = this.parent.parent.root;
+		this.name = name;
+		this.value = value;
+		this.value.parent = this;
+		this.value.setParent();
+	}
+
+	bound public override <void>function build() {
+
+	}
+
+	bound public override <void>function run(Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Variable variable = new Carbide.Virtual.Variable(this.name, this.value.run(scope));
+		this.topParent.scope.addVariable(variable);
+	}
+}

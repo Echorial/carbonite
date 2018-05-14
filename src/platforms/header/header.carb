@@ -1,0 +1,48 @@
+class Carbonite.Platforms.Header inherits Carbonite.Platform {
+	<bool>map exports = new <bool>map();
+	<string>array outputs = new <string>array();
+
+	void add(string name) {
+		var pipeline = this.compiler.getPipelineSource();
+		var cls = this.compiler.getClass(name);
+		if (cls == null) {
+			var notice = new Carbonite.Notice("Unable to find export class '" + name + "'");
+			notice.level = 4;
+			notice.source = pipeline;
+			this.compiler.status.give(notice);
+		}else{
+			var done = this.exports[name];
+			if (done == null)
+				this.outputs.push(cls.toHeader());
+
+			this.exports[name] = true;
+
+			for (var int i in cls.children)
+				this.add(cls.children[i].route);
+		}
+	}
+
+	override void build() {
+		var <string>array scripts = new <string>array();
+		var string exports = this.compiler.pipeConfig["exports"];
+		var <string>array roots = exports.split(",");
+
+		var pipeline = this.compiler.getPipelineSource();
+		if (roots == null) {
+			var notice = new Carbonite.Notice("No exports header config found in pipeline. Example: exports = \"Class1,Class2,Namespace3\"");
+			notice.level = 4;
+			notice.source = pipeline;
+			this.compiler.status.give(notice);
+		}else{
+			for (var int i in roots) {
+				var name = roots[i];
+				this.add(name);
+			}
+
+			for (var int i in this.compiler.scripts)
+				scripts.push(this.compiler.scripts[i].toJson());
+
+			this.compiler.rawOutput = '{"roots": [' + this.outputs.join(",") + '], "scripts": [' + scripts.join(",") + ']}';
+		}
+	}
+}

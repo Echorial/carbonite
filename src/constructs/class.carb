@@ -1,0 +1,595 @@
+class Carbonite.Class inherits Carbonite.Named {
+	bound public map raw = empty;
+	bound public map headerData = null;
+	bound public bool isFromHeader = false;
+
+	bound public <Carbonite.Member>array members = new <Carbonite.Member>array();
+	bound public <Carbonite.Class>array inherits = new <Carbonite.Class>array();
+	bound public <Carbonite.Class>array headerInherits = new <Carbonite.Class>array();
+
+	bound public <Carbonite.Template>array templates = new <Carbonite.Template>array();
+	bound public <Carbonite.Class>array descendants = new <Carbonite.Class>array();
+	bound public <map>array attributes = empty;
+	bound public string reroute = "";
+
+	bound public Carbonite.Body propertyContext = empty;
+
+	`When set, types will route to the link class instead of this one. This property can be used as a way to build alias classes.`
+	bound public Carbonite.Class link = null;
+
+	bound public bool alreadyBuilt = false;
+	bound public bool codeBuilt = false;
+	bound public bool inherited = false;
+	bound public Carbonite.Doc doc = null;
+
+	bound public string base = "";
+	bound public <string>array flags = null;
+
+	fixed public <Carbonite.Class>function @construct()	{
+		var map hackMap = new map();
+		var map emp = empty;
+		var Carbonite.Member hack = new Carbonite.Member(this, emp);
+		hack.name = "propertyContext";
+		this.propertyContext = new Carbonite.Body(hack, hackMap);
+	}
+
+	fixed public <Carbonite.Class>function evaluate(string raw, Carbonite.Source parent) {
+		var output = CarboniteCarbonParser.parse("Root", raw);
+
+		if (output.hadError) {
+			parent.parent.status.give(Carbonite.Notice.fromParser(parent, output));
+		}else{
+			var cls = new Carbonite.Class();
+			cls.loadFromRaw(output.data["data"]);
+			cls.source = parent;
+			parent.parent.roots.push(cls);
+			var temp = new <Carbonite.Class>array();
+			temp.push(cls);
+			parent.parent.router.bake(parent, temp);
+			parent.parent.buildClassToCurrentLevel(cls, parent.parent.roots.length - 1);
+			return cls;
+		}
+	}
+
+	bound public string getRoute() {
+		if (this.reroute != "")
+			return this.reroute;
+		return this.route;
+	}
+
+	bound public bool doExport() {
+		if (this.compiler.noCore)
+			if (this.hasFlag("core"))
+				return false;
+
+		for (var int i in this.compiler.noExports) {
+			var Carbonite.Class cls = this.compiler.getClass(this.compiler.noExports[i]);
+			if (cls.route == this.route or this.childOf(cls))
+				return false;
+		}
+		return true;
+	}
+
+	bound public <bool>function descendantOf(Carbonite.Class of) {
+		for (var int i in this.inherits) {
+			var Carbonite.Class inh = this.inherits[i];
+			if (of.route == inh.route) {
+				return true;
+			}else if (inh.descendantOf(of)) {
+				return true;
+			}
+		}
+		
+		if (this.isFromHeader) { //TODO: Clean up
+			for (var int i in this.headerInherits) {
+				var Carbonite.Class inh = this.headerInherits[i];
+				if (of.route == inh.route) {
+					return true;
+				}else if (inh.descendantOf(of)) {
+					return true;
+				}
+			}
+		}
+
+		if (of.parent != empty) {
+			var Carbonite.Class parent = of.parent;
+			return this.descendantOf(parent);
+		}
+		return false;
+	}
+
+	bound public <bool>function childOf(Carbonite.Class of) {
+		if (this.parent == null)
+			return false;
+		
+		if (this.parent.route == of.route)
+			return true;
+			
+		var Carbonite.Class cast = this.parent;
+		return cast.childOf(of);
+	}
+
+	bound public <Carbonite.Member>function dotMember(string name, Carbonite.Range req) {
+		this.executeInherits();
+		for (var int i in this.members) {
+			var Carbonite.Member member = this.members[i];
+			if (member.name == name) {
+				return member;
+			}
+		}
+		var <Carbonite.Members.Method>array dots = this.getMethods("@dot");
+		if (dots.length() > 0) {
+			var Carbonite.Members.Method dot = dots[0];
+			return dot;
+		}
+		req.source.error(req, "No member named '" + name + "' in class '" + this.name + "'");
+		Exception.throw("Build error");
+	}
+
+	bound public <<Carbonite.Members.Method>array>function getMethods(string name) {
+		var <Carbonite.Members.Method>array rtn = new <Carbonite.Member>array();
+		for (var int i in this.members) {
+			var Carbonite.Member member = this.members[i];
+			if (member.name == name) {
+				if (member.type != "property") {
+					rtn.push(member);
+				}
+			}
+		}
+		return rtn;
+	}
+
+	bound public <string>function makeArgumentsPretty(string name, <Carbonite.Type>array arguments) {
+		var <string>array types = new <string>array();
+		for (var int i in arguments) {
+			var Carbonite.Type arg = arguments[i];
+			types.push(arg.lookPretty());
+		}
+		return "Unable to overload for method or operator " + this.route + "." + name + "(" + types.join(", ") + ")";
+	}
+
+	bound public <Carbonite.Members.Method>function overload(string name, <Carbonite.Type>array arguments, Carbonite.Range req) {
+		this.executeInherits();
+		var <Carbonite.Members.Method>array methods = this.getMethods(name);
+		for (var int i in methods) {
+			var Carbonite.Members.Method method = methods[i];
+
+			if (method.check(arguments)) {
+				return method;
+			}
+		}
+		
+		req.source.error(req, this.makeArgumentsPretty(name, arguments));
+		Exception.throw("Build error");
+	}
+
+	bound public <Carbonite.Members.Method>function overloadWithContext(string name, <Carbonite.Type>array arguments, Carbonite.Type context, Carbonite.Range req) {
+		var <Carbonite.Members.Method>array methods = this.getMethods(name);
+		for (var int i in methods) {
+			var Carbonite.Members.Method method = methods[i];
+
+			if (method.checkWithContext(arguments, context)) {
+				return method;
+			}
+		}
+
+		req.source.error(req, this.makeArgumentsPretty(name, arguments));
+		Exception.throw("Build error");
+	}
+
+	bound public <void>function loadFromRaw(map raw) {
+		this.raw = raw;
+		this.route = this.raw["name"];
+		this.base = this.raw["type"];
+		this.flags = this.raw["flags"];
+		this.startOffset = this.raw["start"];
+		this.endOffset = this.raw["end"];
+		this.attributes = raw["attribute"];
+		if (this.attributes == empty) {
+			this.attributes = new <map>array();
+		}
+		this.doc = new Carbonite.Doc(this.raw["doc"]);
+	}
+
+	bound public <map>function getAttribute(<map>array attrs, string name) {
+		if (attrs == null)
+			return null;
+			
+		for (var int i in attrs) {
+			var map a = attrs[i];
+			if (a["key"] == name) {
+				return a;
+			}
+		}
+		var map emp = empty;
+		return emp;
+	}
+
+	bool hasFlag(string name) {
+		for (var int i in this.flags)
+			if (this.flags[i] == name)
+				return true;
+		return false;
+	}
+
+	bound public <void>function findParent() {
+		var <string>array splits = this.route.split(".");
+		if (splits.length() > 1) {
+			splits.pop();
+			var string parentRoute = splits.join(".");
+			var Carbonite.Class parent = this.compiler.findClass(parentRoute, this);
+			this.parent = parent;
+			this.parent.children.push(this);
+		}
+	}
+
+	bound public <void>function executeInherits() {
+		if (this.inherited) {
+
+		}else{
+			if (this.route != "everything") {
+				this.inherits.push(this.compiler.findClass("everything", this));
+			}
+
+			for (var int i in this.inherits) {
+				var Carbonite.Class cls = this.inherits[i];
+				cls.executeInherits();
+				this.inherit(cls);
+				cls.descendants.push(this);
+			}
+			this.inherited = true;
+		}
+	}
+
+	bound public <void>function buildCode() {
+		this.executeInherits();
+		for (var int i in this.members) {
+			var Carbonite.Member member = this.members[i];
+
+			if (member.raw == null) //Header
+				continue;
+
+			if (member.type != "property") {
+				var Carbonite.Members.Method method = member;
+				method.buildBody();
+			}else{
+				var Carbonite.Members.Property property = member;
+				property.buildDefault();
+			}
+		}
+	}
+
+	bound public <Carbonite.Member>function makeMember(map mem) {
+		if (mem["attribute"] != empty) {
+			var <map>array cst = mem["attribute"];
+			var map attr = this.getAttribute(cst, "operator");
+			if (attr != empty) {
+				var Carbonite.Members.Operator member = new Carbonite.Members.Operator(this, mem);
+				var <map>array op = member.getAttributes("operator");
+				var map cAttr = op[0];
+				member.operator = cAttr["value"];
+				member.realName = member.name;
+				member.name = member.operator;
+				var <map>array order = member.getAttributes("order");
+				if (order.length() > 0) {
+					var map mainOrder = order[0];
+					member.order = mainOrder["value"];
+				}
+				return member;
+			}else{
+				return Carbonite.Member.make(this, mem);
+			}
+		}else{
+			return Carbonite.Member.make(this, mem);
+		}
+	}
+
+	bound public <void>function buildMembers() {
+		var <map>array members = this.raw["members"];
+		for (var int i = members.length() - 1; i >= 0; i--) {
+			var map mem = members[i];
+			if (mem["attribute"] != empty) {
+				var <map>array cst = mem["attribute"];
+				var map attr = this.getAttribute(cst, "operator");
+				if (attr != empty) {
+					var Carbonite.Members.Operator member = new Carbonite.Members.Operator(this, mem);
+					var <map>array op = member.getAttributes("operator");
+					var map cAttr = op[0];
+					member.operator = cAttr["value"];
+					member.realName = member.name;
+					member.name = member.operator;
+					var <map>array order = member.getAttributes("order");
+					if (order.length() > 0) {
+						var map mainOrder = order[0];
+						member.order = mainOrder["value"];
+					}
+					this.compiler.operatorOrders[member.operator] = member.order;
+					this.members.push(member);
+				}
+			}
+		}
+		for (var int i in members) {
+			var map mem = members[i];
+			var <map>array cst = mem["attribute"];
+			var map attr = null;
+			if (cst != null) this.getAttribute(cst, "operator");
+			if (attr == null) {
+				var Carbonite.Member member = Carbonite.Member.make(this, members[i]);
+				this.members.push(member);
+			}
+		}
+
+		var arr = new <Carbide.Virtual.Value>array();
+		arr.push(VirtualClass.create(this));
+		this.compiler.virtualEvents.emit("members.end", arr);
+	}
+
+	bound public <void>function buildTemplates() {
+		var <map>array temp = this.raw["templates"];
+		if (temp.length() != 0) {
+			var <map>array templates = this.raw["templates"][0]["templates"];
+			for (var int i in templates) {
+				var Carbonite.Template template = new Carbonite.Template(this);
+				template.index = i;
+				template.loadFromRaw(templates[i]);
+				this.templates.push(template);
+			}
+		}
+	}
+
+	bound public <void>function buildInheritance() {
+		if (this.raw["inherits"] != empty) {
+			var <map>array inherits = this.raw["inherits"]["types"];
+			for (var int i in inherits) {
+				var map inherit = inherits[i];
+				var string name = inherit["name"];
+				var Carbonite.Class cls = this.compiler.findClass(name, this);
+				this.inherits.push(cls);
+			}
+		}
+	}
+
+	bound public <Carbonite.Member>function getMember(string name) {
+		for (var int i in this.members) {
+			var Carbonite.Member member = this.members[i];
+			if (member.name == name) {
+				return member;
+			}
+		}
+		var Carbonite.Member emp = empty;
+		return emp;
+	}
+
+	bool hasMember(string name) {
+		for (var int i in this.members)
+			if (this.members[i].name == name)
+				return true;
+
+		return false;
+	}
+
+	bound public <void>function inherit(Carbonite.Class from) {
+		//Make sure the class is not a header
+		if (from.isFromHeader)
+			if (from.raw == null)
+				this.buildError("Class '" + this.route + "' is not allowed to inherit a non exported header class '" + from.route + "'");
+
+		if (from.hasFlag("header"))
+			this.flags.push("header");
+
+		var <Carbide.Virtual.Value>array arr = new <Carbide.Virtual.Value>array();
+		arr.push(VirtualClass.create(from));
+		arr.push(VirtualClass.create(this));
+		this.compiler.virtualEvents.emit("inherits." + from.route, arr); //MEM: Owned by the Carbide heap
+		for (var int i in from.members) {
+			var Carbonite.Member mem = from.members[i];
+			var bool notImplemented = true;
+			var Carbonite.Member check = this.getMember(mem.name);
+			if (check != empty) {
+				if (check.hasFlag("override") or mem.abstract) {
+					notImplemented = false;
+				}
+			}
+			if (notImplemented) {
+				if (mem.abstract) {
+					this.buildError("Class '" + this.route + "' must implement the abstract member '" + mem.name + "'"); //Force abstract members to be implemented
+				}else{
+					var Carbonite.Member member = this.makeMember(mem.raw);
+					member.inheritedFrom = from;
+
+					if (from.route == "everything") { //WARN: Hack for header inherits. TODO: Add check for its simpleNative
+						var Carbonite.Members.Method castMethod = member;
+						castMethod.simpleNative = true;
+					}
+					
+					this.members.push(member);
+				}
+			}else{
+				if (mem.abstract) { //Make sure this member follows the abstract
+					if (mem.type != check.type)
+						this.buildError("Abstract " + check.type + " '" + check.name + "' must be a " + mem.type + " in class '" + this.route + "'");
+					
+					if (mem.output.check(check.output) == false)
+						this.buildError("Invalid output type for abstract member '" + check.name + "' in class '" + this.route + "'");
+					
+					if (mem.type == "method") {
+						var Carbonite.Members.Method memCast = mem;
+						var Carbonite.Members.Method checkCast = check;
+						var <Carbonite.Type>array checks = new <Carbonite.Type>array();
+						for (var int c in checkCast.arguments) {
+							checks.push(checkCast.arguments[c].type);
+						}
+
+						if (memCast.check(checks) == false)
+							this.buildError("Invalid argument type(s) for abstract method '" + check.name + "' in class '" + this.route + "'");
+					}
+				}
+			}
+		}
+	}
+
+	bound public <void>function buildDefaultTemplates() {
+		for (var int i in this.templates) {
+			var Carbonite.Template template = this.templates[i];
+			template.build();
+		}
+		this.buildInheritance();
+	}
+
+	bound public <void>function extend(Carbonite.Class from) {
+		this.inherit(from);
+	}
+
+	bound public override <bool>function hasTemplate(string name) {
+		for (var int i in this.templates) {
+			var Carbonite.Template template = this.templates[i];
+			if (template.name == name) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	bound public override <Carbonite.Template>function getTemplate(string name) {
+		for (var int i in this.templates) {
+			var Carbonite.Template template = this.templates[i];
+			if (template.name == name) {
+				return template;
+			}
+		}
+		var Carbonite.Template emp = empty;
+		return emp;
+	}
+
+	bound public override <Carbonite.Named>function getChild(string name) {
+		var Carbonite.Named cast = this;
+		for (var int i in cast.children) {
+			var Carbonite.Named child = cast.children[i];
+			if (child.name == name) {
+				return child;
+			}
+		}
+		var Carbonite.Named emp = empty;
+		return emp;
+	}
+
+	bound public override <bool>function hasChild(string name) {
+		var Carbonite.Named cast = this;
+		for (var int i in cast.children) {
+			var Carbonite.Named child = cast.children[i];
+			if (child.name == name) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bound public <string>function docDynamic() {
+		var <string>array inherits = new <string>array();
+		for (var int i in this.inherits)
+			inherits.push('"' + this.inherits[i].route + '"');
+
+		var <string>array members = new <string>array();
+		for (var int i in this.members)
+			members.push(this.members[i].docDynamic());
+		
+
+		var output = '{"type": "class", route: "' + this.route + '", name: "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "inherits": [' + inherits.join(",") + '], "members": [' + members.join(",") + ']}';
+
+		return output;
+	}
+
+	bool canCast(Carbonite.Class to) {
+		for (var int i in this.members) {
+			if (this.members[i].name == "@cast") {
+				if (this.members[i].output.reference.route == to.route)
+					return true;
+			}
+		}
+		return false;
+	}
+
+	void fillFromHeader() {
+		if ("raw" in this.headerData) //Already loaded from raw in Carbonite.Class.fromHeader
+			return null;
+
+		var <map>array members = this.headerData["members"];
+		var <string>array inherits = this.headerData["inherits"];
+
+		for (var int i in members) {
+			this.members.push(Carbonite.Member.fromHeader(this, members[i]));
+		}
+
+		for (var int i in inherits) {
+			var inheritClass = this.compiler.getClass(inherits[i]); //TODO: Change to findClass with error
+			if (inheritClass.isFromHeader == false) {
+				this.inherits.push(inheritClass);
+			}else{
+				inheritClass.descendants.push(this);
+				this.headerInherits.push(inheritClass);
+			}
+		}
+	}
+
+	fixed Carbonite.Class fromHeader(Carbonite.Compiler compiler, map data) {
+		var cls = new Carbonite.Class();
+		var <map>array templates = data["templates"]; //TODO: Add template headers
+		
+		cls.flags = data["flags"];
+		cls.flags.push("relative");
+		cls.base = data["base"];
+		cls.route = data["route"];
+		cls.name = data["name"];
+		
+		if ("raw" in data) {
+			cls.loadFromRaw(data["raw"]);
+			cls.isFromHeader = true;
+			cls.headerData = data;
+			cls.compiler = compiler;
+		}else{
+			cls.headerData = data;
+			cls.compiler = compiler;
+			cls.isFromHeader = true;
+		}
+
+		return cls;
+	}
+
+	string toHeader() {
+		var <string>array inherits = new <string>array();
+		for (var int i in this.inherits)
+			inherits.push('"' + this.inherits[i].route + '"');
+
+		var <string>array members = new <string>array();
+		for (var int i in this.members) {
+			//Hack to prevent the class everything from exporting operators.
+			if (this.members[i].inheritedFrom != null)
+				if (this.members[i].inheritedFrom.route == "everything")
+					continue;
+			
+			members.push(this.members[i].toHeader());
+		}
+
+		var string raw = "";
+		if (this.hasFlag("header"))
+			raw = ', "raw": ' + this.raw.toJson();
+
+		var <string>array flags = new <string>array();
+		for (var int i in this.flags)
+			flags.push('"' + this.flags[i] + '"');
+
+		var <string>array temps = new <string>array();
+		for (var int i in this.templates) {
+			var def = "";
+			if (this.templates[i].default != null) {
+				var temp = this.templates[i];
+				def = ', "default": ' + temp.default.toHeader();
+			}
+
+			temps.push('{"name": "' + this.templates[i].name + '"' + def + '}');
+		}
+
+		return '{"type": "class", "base": "' + this.base + '", "flags": [' + flags.join(",") + '], "templates": [' + temps.join(",") + '], "route": "' + this.route + '", "name": "' + this.name + '", "inherits": [' + inherits.join(",") + '], "members": [' + members.join(",") + ']' + raw + '}';
+	}
+}

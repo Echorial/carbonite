@@ -1,0 +1,24 @@
+class Carbonite.SourceCache {
+	string path = "";
+	uint64 timeStamp = 0;
+	<map>array parsed = new <map>array();
+
+	void @construct(string path, uint64 timeStamp, <map>array parsed) {
+		this.path = path;
+		this.timeStamp = timeStamp;
+		this.parsed = parsed;
+	}
+
+	string serialize() {
+		var <string>array out = new <string>array();
+		for (var int i in this.parsed) {
+			out.push(this.parsed[i].toJson());
+		}
+		return '{"timeStamp": ' + this.timeStamp + ', "path": "' + this.path.replace("\\", "\\\\") + '", "parsed": [' + out.join(", ") + ']}'; //MEM: \\\\ only works in js due to regex
+	}//Warn
+
+	void update(uint64 timeStamp, <map>array raw) {
+		this.timeStamp = timeStamp;
+		this.parsed = raw;
+	}
+}

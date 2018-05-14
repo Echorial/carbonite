@@ -1,0 +1,38 @@
+class Carbonite.Pre.Statements.If inherits Carbonite.Pre.Statement {
+	bound public <Carbonite.Pre.Expression>array checks = new <Carbonite.Pre.Expression>array();
+	bound public Carbonite.Pre.Block code = empty;
+
+	bound public override <void>function build() {
+		var <map>array content = this.data["content"];
+		this.code = new Carbonite.Pre.Block(this.topParent.parent, content);
+		this.code.canOutput = this.parent.canOutput;
+		this.code.scope = this.scope;
+		this.code.build();
+		var <map>array checks = this.data["checks"];
+		for (var int i in checks) {
+			var map check = checks[i];
+			var Carbonite.Pre.Expression checkExpression = Carbonite.Pre.Expression.make(this, check);
+			this.checks.push(checkExpression);
+			checkExpression.build();
+		}
+	}
+
+	bound public override <void>function run() {
+		var bool ok = true;
+		for (var int i in this.checks) {
+			var Carbonite.Pre.Expression check = this.checks[i];
+			var Carbonite.Pre.Values.Bool v = check.run();
+			if (v.value == false) {
+				ok = false;
+			}
+		}
+		if (ok) {
+			this.code.run();
+		}
+	}
+
+	bound public override <void>function clear() {
+		this.scope.clear();
+		this.code.clear();
+	}
+}

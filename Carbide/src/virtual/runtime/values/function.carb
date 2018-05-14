@@ -1,0 +1,78 @@
+class Carbide.Virtual.Values.Function inherits Carbide.Virtual.Value {
+	bound public override string type = "function";
+	bound public override <Carbide.Virtual.Value, <Carbide.Virtual.Value>array>function value = empty;
+	
+	bound public <string>array arguments = new <string>array();
+	bound public Carbide.Virtual.Block code = null;
+	bound public Carbide.Virtual.Scope closure = null;
+
+
+	bound public override <void>function setValue(map raw) {
+		
+	}
+
+	bound public override <bool>function compare(map raw) {
+		return false;
+	}
+
+	fixed public override <Carbide.Virtual.Values.Function>function create(<Carbide.Virtual.Value, <Carbide.Virtual.Value>array>function func) {
+		var map m = new map();
+		var Carbide.Virtual.Values.Function value = new Carbide.Virtual.Values.Function(m);
+		var everything castValue = func;
+		value.value = castValue;
+		return value;
+	}
+
+	fixed public override <Carbide.Virtual.Values.Function>function create(<Carbide.Virtual.Value, <Carbide.Virtual.Value>array>function func) {
+		var map m = new map();
+		var Carbide.Virtual.Values.Function value = new Carbide.Virtual.Values.Function(m);
+		var everything castValue = func;
+		value.value = castValue;
+		return value;
+	}
+
+	fixed public override <Carbide.Virtual.Values.Function>function create(<string>array args, Carbide.Virtual.Block code) {
+		var map m = new map();
+		var Carbide.Virtual.Values.Function value = new Carbide.Virtual.Values.Function(m);
+		value.arguments = args;
+		value.code = code;
+		return value;
+	}
+
+	bound public override <Carbide.Virtual.Value>function call(<Carbide.Virtual.Value>array args, Carbide.Virtual.Scope scope) {
+		return this.call(args, scope, null);
+	}
+
+	bound public override <Carbide.Virtual.Value>function call(<Carbide.Virtual.Value>array args, Carbide.Virtual.Scope scope, Carbide.Virtual.Value context) {
+		if (this.value != null) {
+			var <Carbide.Virtual.Value, <Carbide.Virtual.Value>array>function cast = this.value;
+			return cast(args);
+		}else{
+			if (args.length() != this.arguments.length()) {
+				
+			}
+
+			this.code.clear();
+			var Carbide.Virtual.Scope funcScope = new Carbide.Virtual.Scope(scope.parent);
+			for (var int i in this.arguments) {
+				var Carbide.Virtual.Value value = args[i];
+				var string name = this.arguments[i];
+				funcScope.addVariable(new Carbide.Virtual.Variable(name, value));
+			}
+			if (context != null) {
+				funcScope.addVariable(new Carbide.Virtual.Variable("this", context));
+			}
+			if (this.closure != null)
+				funcScope.setParentScope(this.closure);
+				
+			this.code.run(funcScope);
+			var Carbide.Virtual.Variable rtn = funcScope.search("functionReturn");
+			if (rtn == empty) {
+				var Carbide.Virtual.Value retu = Carbide.Virtual.Values.Null.create();
+				return retu;
+			}else{
+				return rtn.value;
+			}
+		}
+	}
+}

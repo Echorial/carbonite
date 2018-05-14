@@ -1,0 +1,21 @@
+class Carbide.Virtual.Values.Reference inherits Carbide.Virtual.Value {
+	bound public override string type = "null";
+	bound public int id = -1;
+	bound public Carbide.Virtual.Processor processor = empty;
+
+	bound public override <Carbide.Virtual.Value>function getValue() {
+		return this.processor.findOnHeap(this.id).value;
+	}
+
+	bound public override <void>function setValue(map raw) {
+		
+	}
+
+	bound public override <bool>function compare(map raw) {
+		
+	}
+
+	fixed public override <Carbide.Virtual.Values.Reference>function create() {
+		return null;
+	}
+}

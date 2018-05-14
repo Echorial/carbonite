@@ -1,0 +1,12 @@
+namespace Carbonite {}
+namespace Carbonite.Pre {}
+namespace Carbonite.Pre.Statements {}
+namespace Carbonite.Pre.Values {}
+namespace Carbonite.Pre.Expressions {}
+namespace Carbonite.Members {}
+namespace Carbonite.Statements {}
+namespace Carbonite.Terms {}
+namespace Carbonite.Natives {}
+namespace Carbonite.Parts {}
+namespace Carbonite.Assemblers {}
+namespace Carbonite.Platforms {}

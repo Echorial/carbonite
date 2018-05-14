@@ -1,0 +1,42 @@
+class Carbonite.Statements.For inherits Carbonite.Statement {
+	fixed public override string type = "for";
+
+	bound public Carbonite.Expression check = empty;
+	bound public Carbonite.Expression iterate = empty;
+	bound public Carbonite.Define define = empty;
+	bound public Carbonite.Body body = empty;
+
+	bound public override <void>function build(map raw, Carbonite.Body container) {
+		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body.inherit(container);
+
+		this.define = Carbonite.Define.make(raw["define"], this.body);
+		this.check = new Carbonite.Expression(container.parent.parent, this.body);
+		this.check.loadFromRaw(raw["check"]);
+
+		this.iterate = new Carbonite.Expression(container.parent.parent, this.body);
+		this.iterate.loadFromRaw(raw["iterate"]);
+
+		
+		this.body.build();
+	}
+}
+
+class Carbonite.Statements.ForIn inherits Carbonite.Statement {
+	fixed public override string type = "forin";
+
+	bound public Carbonite.Expression iterate = empty;
+	bound public Carbonite.Define define = empty;
+	bound public Carbonite.Body body = empty;
+
+	bound public override <void>function build(map raw, Carbonite.Body container) {
+		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body.inherit(container);
+		this.define = Carbonite.Define.make(raw["define"], this.body);
+
+		this.iterate = new Carbonite.Expression(container.parent.parent, this.body);
+		this.iterate.loadFromRaw(raw["iterate"]);
+
+		this.body.build();
+	}
+}

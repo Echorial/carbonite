@@ -1,0 +1,33 @@
+relative Console {
+	fixed native inline void log(string msg) {return "console.log(" + context.arguments[0] + ")";}
+}
+
+class Carbonite.Pre.Expressions.Call inherits Carbonite.Pre.Expression {
+	bound public string name = "";
+	bound public <Carbonite.Pre.Expression>array arguments = new <Carbonite.Pre.Expression>array();
+
+	bound public override <void>function build() {
+		this.buildSubs();
+		this.name = this.data["term"]["value"];
+		var <map>array args = this.data["args"];
+		for (var int i in args) {
+			var Carbonite.Pre.Expression argument = Carbonite.Pre.Expression.make(this.parent, args[i]);
+			this.arguments.push(argument);
+			argument.build();
+		}
+	}
+
+	bound public override <Carbonite.Pre.Value>function run() {
+		var Carbonite.Pre.Statements.Function call = this.parent.topParent.parent.searchFunction(this.name);
+		if (call != empty) {
+			return this.runSubs(call.call(this.arguments));
+		}else{
+			if (this.name == "log") {
+				var Carbonite.Pre.Values.String msg = this.arguments[0].run();
+				Console.log(msg.value);
+			}else{
+				this.parent.topParent.parent.runtimeError(this.data["startOffset"], this.data["offset"], "Unknown function '" + this.name + "'");
+			}
+		}
+	}
+}

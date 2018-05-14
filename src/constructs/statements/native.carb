@@ -1,0 +1,11 @@
+class Carbonite.Statements.Native inherits Carbonite.Statement {
+	fixed public override string type = "native";
+
+	bound public string platform = "";
+	bound public string content = "";
+
+	bound public override <void>function build(map raw, Carbonite.Body container) {
+		this.platform = raw["platform"];
+		this.content = raw["content"];
+	}
+}

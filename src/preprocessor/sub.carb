@@ -1,0 +1,50 @@
+class Carbonite.Pre.Sub {
+	bound public map data = new map();
+	bound public Carbonite.Pre.Statement parent = empty;
+	bound public int type = 0;
+	bound public string property = "";
+	bound public <Carbonite.Pre.Expression>array arguments = new <Carbonite.Pre.Expression>array();
+
+	fixed public <Carbonite.Pre.Expression>function @construct(Carbonite.Pre.Statement parent, map raw) {
+		this.data = raw;
+		this.parent = parent;
+
+		var string type = this.data["type"];
+
+		if (type == "constant") {
+			this.type = 1;
+			this.property = this.data["value"];
+		}else if (type == "call"){
+			this.type = 2;
+			this.property = this.data["term"]["value"];
+			var <map>array args = this.data["args"];
+			for (var int i in args) {
+				var Carbonite.Pre.Expression argument = Carbonite.Pre.Expression.make(this.parent, args[i]);
+				this.arguments.push(argument);
+				argument.build();
+			}
+		}else if (type == "array"){
+			this.type = 2;
+			this.property = "index";
+			var <map>array args = this.data["value"];
+			for (var int i in args) {
+				var Carbonite.Pre.Expression argument = Carbonite.Pre.Expression.make(this.parent, args[i]);
+				this.arguments.push(argument);
+				argument.build();
+			}
+		}
+	}
+
+	bound public <Carbonite.Pre.Value>function run(Carbonite.Pre.Value on) {
+		if (this.type == 1) {
+			return on.property(this.property);
+		}else{
+			var <Carbonite.Pre.Value>array args = new <Carbonite.Pre.Value>array();
+			for (var int i in this.arguments) {
+				var Carbonite.Pre.Expression arg = this.arguments[i];
+				args.push(arg.run());
+			}
+			return on.method(this.property, args);
+		}
+	}
+}

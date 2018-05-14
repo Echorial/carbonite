@@ -1,0 +1,397 @@
+`The main object used in Carbonite
+@note Carbonite.Compiler`
+class Carbonite.Compiler {
+	fixed public string version = "1.0.0";
+
+	bound public Carbonite.Pre.Scope scope = empty;
+	bound public <Carbonite.Pre.Statements.Function>array functionScope = new <Carbonite.Pre.Statements.Function>array();
+
+	bound public string rawOutput = "";
+
+	`If true core libs will not be exported into the rawOutput`
+	bound public bool noCore = false;
+
+	bound public <string>array noExports = new <string>array();
+
+	bound public Carbonite.Router router = empty;
+	bound public <Carbonite.Source>array sources = new <Carbonite.Source>array();
+	bound public <Carbonite.Named>array roots = new <Carbonite.Named>array();
+
+	bound public <int>map operatorOrders = new <int>map();
+
+	bound public VirtualEventSystem virtualEvents = null;
+
+	bound public Carbide.Virtual.Processor buildScript = null;
+	bound public <map>array scripts = new <map>array();
+
+	bound public Carbonite.Status status = new Carbonite.Status();
+
+	bound public map pipeReference = new map();
+
+	bound public map pipeConfig = new map();
+
+	bound public bool autoCache = false;
+	bound public <Carbonite.SourceCache>array sourceCaches = null;
+
+	bound public bool implemented = false;
+	bound public <Carbonite.Implements>array implements = new <Carbonite.Implements>array();
+
+	bound public int currentLevel = 0;
+
+	bound public int sourceIndex = 0;
+
+	fixed public <Carbonite.Compiler>function @construct() {
+		var Carbonite.Pre.Processor emp = empty;
+		this.scope = new Carbonite.Pre.Scope(emp);
+		this.router = new Carbonite.Router(this);
+		this.buildScript = new Carbide.Virtual.Processor(null);
+		this.virtualEvents = new VirtualEventSystem(this.buildScript);
+		
+		this.buildScript.setVar("print", Carbide.Virtual.Value (<Carbide.Virtual.Value>array args) => {
+			//Javascript/php only hack. Needs fixing
+			Console.log(args[0].value);
+			/*if (args[0].type == "string") { //Normal non hack
+				var Carbide.Virtual.Values.String val = args[0];
+				Console.log(val.value);
+			}*/
+		});
+
+		var compiler = Carbide.Virtual.Values.Map.create(new map());
+		var that = this;
+		compiler.value["on"] = Carbide.Virtual.Values.Function.create(Carbide.Virtual.Value (<Carbide.Virtual.Value>array args) => {
+			if (args.length == 2) {
+				var Carbide.Virtual.Values.String cast = args[0];
+				that.virtualEvents.on(cast.value, args[1]);
+			}
+		});
+		compiler.value["emit"] = Carbide.Virtual.Values.Function.create(Carbide.Virtual.Value (<Carbide.Virtual.Value>array args) => {
+			if (args.length == 2) {
+				var Carbide.Virtual.Values.String cast = args[0];
+				var Carbide.Virtual.Values.Array argsCast = args[1];
+				that.virtualEvents.emit(cast.value, argsCast.value);
+			}
+		});
+
+		compiler.value["findClass"] = Carbide.Virtual.Values.Function.create(Carbide.Virtual.Value (<Carbide.Virtual.Value>array args) => {
+			if (args.length == 1) {
+				var Carbide.Virtual.Values.String cast = args[0];
+				var rtn = that.getClass(cast.value);
+				if (rtn != null) {
+					return VirtualClass.create(rtn);
+				}
+			}
+		});
+
+		compiler.value["Method"] = Carbide.Virtual.Values.Map.create(new map());
+		var Carbide.Virtual.Values.Map method = compiler.value["Method"];
+		method.value["eval"] = Carbide.Virtual.Values.Function.create(Carbide.Virtual.Value (<Carbide.Virtual.Value>array args) => {
+			if (args.length == 2) {
+				var string raw = args[0].value;
+				var Carbonite.Class cls = args[1].value;
+				return VirtualMember.create(Carbonite.Members.Method.evaluate(raw, cls));
+			}
+		});
+
+		compiler.value["Property"] = Carbide.Virtual.Values.Map.create(new map());
+		var Carbide.Virtual.Values.Map property = compiler.value["Property"];
+		property.value["eval"] = Carbide.Virtual.Values.Function.create(Carbide.Virtual.Value (<Carbide.Virtual.Value>array args) => {
+			if (args.length == 2) {
+				var string raw = args[0].value;
+				var Carbonite.Class cls = args[1].value;
+				return VirtualMember.create(Carbonite.Members.Property.evaluate(raw, cls));
+			}
+		});
+
+		compiler.value["Class"] = Carbide.Virtual.Values.Map.create(new map());
+		var Carbide.Virtual.Values.Map cls = compiler.value["Class"];
+		cls.value["eval"] = Carbide.Virtual.Values.Function.create(Carbide.Virtual.Value (<Carbide.Virtual.Value>array args) => {
+			if (args.length == 1) {
+				var string raw = args[0].value;
+				return VirtualClass.create(Carbonite.Class.evaluate(raw, that.sources[0])); //TODO: Add source overload
+			}
+		});
+
+		this.buildScript.setValue("Carbon", compiler);
+	}
+
+	bound public <void>function buildTo(string platformPath, map options) {
+		var Carbonite.Platform platform = Carbonite.Platform.make(this, platformPath, options);
+		platform.build();
+	}
+
+	bound public <Carbonite.Class>function getClass(string name) {
+		for (var int i in this.roots) {
+			var Carbonite.Class root = this.roots[i];
+			if (root.route == name) {
+				if (root.base != "extend") {
+					return root;
+				}
+			}
+		}
+		var Carbonite.Class emp = empty;
+		return emp;
+	}
+
+	bound public <Carbonite.Class>function findClass(string name, Carbonite.Range req) {
+		for (var int i in this.roots) {
+			var Carbonite.Class root = this.roots[i];
+			if (root.route == name) {
+				if (root.base != "extend") {
+					return root;
+				}
+			}
+		}
+		req.source.error(req, "Unable to find class '" + name + "'");
+		Exception.throw("Build error");
+	}
+
+	bound public <primitive>function getPipeReference(string name) {
+		if (name in this.pipeReference)
+			return this.pipeReference[name];
+		return ""; //Empty string when no pipe var found
+	}
+
+	bound public <void>function pipe(map raw) {
+		var string type = raw["type"];
+
+		if (type == "rule") {
+			var primitive value = null;
+
+			if (raw["value"]["type"] == "literal")
+				value = raw["value"]["value"];
+			else if (raw["value"]["type"] == "reference")
+				value = this.getPipeReference(raw["value"]["name"]);
+
+			var string ruleName = raw["name"];
+			if (ruleName[0] == "$") {
+				if (ruleName.length > 1)
+					this.pipeReference[ruleName.substr(1, ruleName.length - 1)] = value;
+			}else{
+				this.pipeConfig[ruleName] = value;
+			}
+		}else if (type == "call") {
+
+		}
+	}
+
+	void loadHeader(map data) {
+		var <map>array roots = data["roots"];
+		var <map>array scripts = data["scripts"];
+		var <Carbonite.Named>array heads = new <Carbonite.Named>array();
+		for (var int i in roots) {
+			var cls = Carbonite.Class.fromHeader(this, roots[i]);
+			this.roots.push(cls);
+			heads.push(cls);
+		}
+		this.router.bake(null, heads);
+		for (var int i in scripts) {
+			var script = scripts[i];
+			//We can trust that the script.content will be full.
+			var block = Carbide.Languages.Carbon.virtualizeIntoProcessor("Header embedded carbon script", script["content"][0]["content"], this.buildScript);
+			block.run(this.buildScript.scope);
+		}
+	}
+
+	bound public <Carbonite.Source>function addSource(string name, string code) {
+		var Carbonite.Source source = new Carbonite.Source(name, code);
+		source.parent = this;
+		source.index = this.sourceIndex;
+		this.sourceIndex++;
+		this.sources.push(source);
+		return source;
+	}
+
+	bound public <Carbonite.Status>function build(string platformRoute, map options) {
+		var Carbonite.Platform platform = Carbonite.Platform.make(this, platformRoute, options);
+		var map platforms = new map();
+		var <string>array shivPlatforms = ["javascript", "cpp", "documentation", "php", "header"];
+
+		for (var int i in shivPlatforms) {
+			var string shivPlatform = shivPlatforms[i];
+			if (platform.platform == shivPlatform) {
+				platforms[shivPlatform] = true;
+			}else{
+				platforms[shivPlatform] = false;
+			}
+		}
+		var string varName = "platform";
+		var Carbonite.Pre.Variable platformInfo = new Carbonite.Pre.Variable(varName, Carbonite.Pre.Values.Map.create(platforms));
+		this.scope.addVariable(platformInfo);
+		for (var int i in this.sources) {
+			var Carbonite.Source source = this.sources[i];
+			if (source.alreadyBuilt == false) {
+				source.build();
+				this.status.inherit(source.status);
+				if (source.status.hadError) {
+					return source.status;
+				}
+				source.status = this.status;
+				source.alreadyBuilt = true;
+			}
+		}
+
+		Exception.try();
+			for (var int i in this.roots) {
+				var Carbonite.Class root = this.roots[i];
+				if (root.alreadyBuilt == false) {
+					root.compiler = this;
+					if (root.isFromHeader)
+						root.fillFromHeader();
+					else
+						root.buildTemplates();
+				}
+			}
+			if (this.implemented == false) {
+				this.implemented = true;
+
+				for (var int i in this.implements) {
+					var imp = this.implements[i];
+					
+					var base = this.findClass(imp.implements, imp);
+					var real = this.findClass(imp.implementer, imp);
+					base.link = real;
+					if (base.getAttribute(base.attributes, "Reroute") != null) {
+						real.reroute = base.route;
+						base.link = null;
+					}
+				}
+			}
+
+			this.currentLevel = 1;
+			for (var int i = this.roots.length() - 1; i >= 0; i--) {
+				var Carbonite.Class root = this.roots[i];
+				if (root.alreadyBuilt == false and root.raw != null) {
+					root.buildDefaultTemplates();
+				}
+			}
+
+			this.currentLevel = 2;
+			for (var int i = this.roots.length() - 1; i >= 0; i--) {
+				var Carbonite.Class root = this.roots[i];
+				if (root.alreadyBuilt == false and root.raw != null) {
+					root.buildMembers();
+					if (root.base == "extend") {
+						this.findClass(root.route, root).extend(root);
+						this.roots.remove(i);
+					}
+				}
+			}
+
+			this.currentLevel = 3;
+			for (var int i in this.roots) {
+				var Carbonite.Class root = this.roots[i];
+				if (root.alreadyBuilt == false and root.raw != null) {
+					root.executeInherits();
+				}
+			}
+
+			/*var clss = new <Carbide.Virtual.Value>array();
+			clss.push(VirutalClasses.create(this.roots));*/
+			this.virtualEvents.emit("classes.end", new <Carbide.Virtual.Value>array());
+
+			for (var int i in this.roots) {
+				var Carbonite.Class root = this.roots[i];
+				if (root.alreadyBuilt == false) {
+					root.buildCode();
+					root.alreadyBuilt = true;
+				}
+			}
+
+			this.currentLevel = 4;
+		Exception.endTry();
+		if (this.status.hadError == false) {
+			platform.build();
+		}
+
+		for (var int i in this.sources) {
+			var source = this.sources[i];
+			if (source.doCache)
+				source.parent.setCache(source.file, source.mtime, source.raw);
+		}
+
+		return this.status;
+	}
+
+	bound public bool doExport(string route) {
+		if ("restrict" in this.pipeConfig)
+			if (route != this.pipeConfig["restrict"])
+				return false;
+		return true;
+	}
+
+	bound public <void>function buildClassToCurrentLevel(Carbonite.Class root, int i) {
+		Exception.try();
+			if (this.currentLevel >= 0)
+				if (root.alreadyBuilt == false) {
+					root.compiler = this;
+					root.buildTemplates();
+				}
+
+			if (this.currentLevel >= 1)
+				if (root.alreadyBuilt == false)
+					root.buildDefaultTemplates();
+			
+			if (this.currentLevel >= 2)
+				if (root.alreadyBuilt == false) {
+					root.buildMembers();
+					if (root.base == "extend") {
+						this.findClass(root.route, root).extend(root);
+						this.roots.remove(i);
+					}
+				}
+			
+			if (this.currentLevel >= 3)
+				if (root.alreadyBuilt == false) {
+					root.buildCode();
+					root.alreadyBuilt = true;
+				}
+		Exception.endTry();
+	}
+
+	void loadCache(<map>array raw) {
+		for (var int i in raw) {
+			var <map>array parsed = raw[i]["parsed"];
+			var string path = raw[i]["path"];
+			var uint64 timeStamp = raw[i]["timeStamp"];
+			this.setCache(FileSystem.normalize(path), timeStamp, parsed);
+		}
+	}
+
+	Carbonite.SourceCache getCache(string path, uint64 timeStamp) {
+		if (this.sourceCaches == null)
+			return null;
+
+		for (var int i in this.sourceCaches) {
+			var iCache = this.sourceCaches[i];
+			if (iCache.path == path) {
+				if (iCache.timeStamp < timeStamp)
+					return null;
+				return iCache;
+			}
+		}
+	}
+
+	void setCache(string path, uint64 timeStamp, <map>array raw) {
+		if (this.sourceCaches == null)
+			this.sourceCaches = new <Carbonite.SourceCache>array();
+
+		for (var int i in this.sourceCaches) {
+			var iCache = this.sourceCaches[i];
+			if (iCache.path == path) {
+				iCache.update(timeStamp, raw);
+				return null;
+			}
+		}
+
+		var sCache = new Carbonite.SourceCache(path, timeStamp, raw);
+		this.sourceCaches.push(sCache);
+	}
+
+	Carbonite.Source getPipelineSource() {
+		for (var int i in this.sources) {
+			if (this.sources[i].pipeline)
+				return this.sources[i];
+		}
+		return null;
+	}
+}

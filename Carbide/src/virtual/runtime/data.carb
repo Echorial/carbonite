@@ -1,0 +1,10 @@
+class Carbide.Virtual.Data {
+	bound public int id = 0;
+	bound public int refs = 0;
+	bound public Carbide.Virtual.Value value = empty;
+
+	void @construct(int id, Carbide.Virtual.Value val) {
+		this.id = id;
+		this.value = val;
+	}
+}

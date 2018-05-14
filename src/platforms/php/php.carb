@@ -1,0 +1,19 @@
+class Carbonite.Platforms.Php inherits Carbonite.Platform {
+	bound public override <void>function build() {
+		var bool outputToFile = true;
+		for (var int i in this.root) {
+			var string r = this.root[i];
+			if (r == "memory") {
+				outputToFile = false;
+			}
+		}
+		var php = new Carbonite.Assemblers.Php(this.compiler, this.options);
+		var string source = php.build();
+		if (outputToFile == false) {
+			if (php.classPrefix == "")
+				this.compiler.rawOutput = "<?php\n" + source + "\n?>";
+			else
+				this.compiler.rawOutput = "<?php\nnamespace " + php.classPrefix + " {\n" + source + "\n}\n?>";
+		}
+	}
+}

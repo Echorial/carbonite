@@ -1,0 +1,39 @@
+class Carbonite.Pre.Scope {
+	bound public Carbonite.Pre.Scope parentScope = empty;
+	bound public Carbonite.Pre.Processor parent = empty;
+
+	bound public <Carbonite.Pre.Variable>array data = new <Carbonite.Pre.Variable>array();
+
+	fixed public <Carbonite.Pre.Block>function @construct(Carbonite.Pre.Processor parent) {
+		this.parent = parent;
+	}
+
+	bound public <void>function setParentScope(Carbonite.Pre.Scope scope) {
+		this.parentScope = scope;
+	}
+
+	bound public <void>function addVariable(Carbonite.Pre.Variable variable) {
+		this.data.push(variable);
+	}
+
+	bound public <void>function clear() {
+		for (var int i = this.data.length(); i > 0; i--) {
+			this.data.pop();
+		}
+	}
+
+	bound public <Carbonite.Pre.Variable>function search(string name) {
+		for (var int i in this.data) {
+			var Carbonite.Pre.Variable variable = this.data[i];
+			if (variable.name == name) {
+				return variable;
+			}
+		}
+
+		if (this.parentScope != empty) {
+			return this.parentScope.search(name);
+		}
+		var Carbonite.Pre.Variable emp = empty;
+		return emp;
+	}
+}

@@ -1,0 +1,105 @@
+class Carbonite.Source inherits object {
+	bound public Carbonite.Compiler parent = empty;
+
+	bound public string name = "";
+	bound public string file = "";
+	bound public string data = "";
+
+	bound public bool alreadyBuilt = false;
+
+	bound public string built = "";
+	
+	bound public <map>array raw = empty;
+
+	bound public int index = 0;
+	bound public Carbonite.Pre.Processor pre = empty;
+
+	bound public Carbonite.Status status = empty;
+
+	bound public bool pipeline = false;
+	bound public bool doc = false;
+
+	bound public bool doCache = false;
+	bound public uint64 mtime = 0;
+
+	fixed public <Carbonite.Source>function @construct(string name, string data) {
+		this.name = name;
+		this.data = data;
+		this.pre = new Carbonite.Pre.Processor(this);
+		this.status = this.pre.status;
+	}
+
+	bound public <Carbonite.Status>function process() {
+		this.pre.build();
+		this.parent.status.inherit(this.status);
+
+		if (this.pipeline)
+			this.build();
+	}
+
+	bound public <Carbonite.Status>function build() {
+		this.pre.run();
+		if (this.pipeline) {
+			var po = PipelineParser.parse(this.built);
+			if (po.hadError) {
+				//this.status.give(Carbonite.Notice.fromParser(this, po));
+			}else{
+				var <map>array rules = po.data["rules"];
+				for (var int i in rules)
+					this.parent.pipe(rules[i]);
+			}
+		}else{
+			if (this.raw == null) {
+				var <map>CarboniteCarbonParserOutput po = Carbonite.Parsers.CarbonParse(this.built);
+
+				if (po.hadError) {
+					this.status.give(Carbonite.Notice.fromParser(this, po));
+				}else{
+					this.raw = po.data["document"]["roots"];
+					
+					this.bake();
+				}
+			}else{
+				this.bake();
+			}
+		}
+
+		return this.status;
+	}
+
+	bound public <Carbonite.Class>function findClass(string name, Carbonite.Range req) {
+		return this.parent.findClass(name, req);
+	}
+
+	bound public <void>function bake() {
+		var <Carbonite.Named>array temp = new <Carbonite.Named>array();
+		for (var int i in this.raw) {
+			var map rawClass = this.raw[i];
+			var string type = rawClass["type"];
+			if (type == "implements") {
+				var imp = new Carbonite.Implements(rawClass);
+				imp.loadLocation(this, rawClass);
+				this.parent.implements.push(imp);
+			}else{
+				var Carbonite.Class cls = new Carbonite.Class();
+				cls.loadFromRaw(rawClass);
+				cls.source = this;
+				this.parent.roots.push(cls);
+				temp.push(cls);
+			}
+		}
+		this.parent.router.bake(this, temp);
+	}
+
+	bound public <Carbonite.Notice>function error(Carbonite.Range range, string message) {
+		var Carbonite.Notice notice = new Carbonite.Notice(message);
+		notice.level = 4;
+		notice.module = "Builder";
+		notice.type = "Build";
+		notice.source = this;
+		
+		notice.start = this.pre.getRealLocation(range.startOffset);
+		notice.end = this.pre.getRealLocation(range.endOffset);
+		this.status.give(notice);
+	}
+}

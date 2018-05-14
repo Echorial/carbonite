@@ -1,0 +1,45 @@
+class Carbonite.Pre.Block {
+	bound public <map>array data = new <map>array();
+	bound public <Carbonite.Pre.Statement>array statements = new <Carbonite.Pre.Statement>array();
+	bound public Carbonite.Pre.Processor parent = empty;
+	bound public Carbonite.Pre.Scope scope = empty;
+	bound public bool canOutput = false;
+	fixed public <Carbonite.Pre.Block>function @construct(Carbonite.Pre.Processor parent, <map>array data) {
+		this.parent = parent;
+		this.data = data;
+	}
+
+	bound public <void>function build() {
+		var <map>array data = this.data;
+		for (var int i in data) {
+			var map statementData = data[i];
+			var Carbonite.Pre.Statement state = Carbonite.Pre.Statement.make(this, statementData);
+			state.scope = new Carbonite.Pre.Scope(this.parent);
+			state.scope.setParentScope(this.scope);
+			state.build();
+			this.statements.push(state);
+		}
+	}
+
+	bound public <void>function run() {
+		for (var int i in this.statements) {
+			var Carbonite.Pre.Statement state = this.statements[i];
+			state.scope.setParentScope(this.scope);
+			state.run();
+		}
+	}
+
+	bound public <void>function clear() {
+		for (var int i in this.statements) {
+			var Carbonite.Pre.Statement state = this.statements[i];
+			state.clear();
+		}
+	}
+
+	bound public <void>function output(string data, int start, int end) {
+		if (this.canOutput) {
+			this.parent.map.push(new Carbonite.Pre.Map(this.parent.source.built.length(), start, end));
+			this.parent.source.built += data;
+		}
+	}
+}

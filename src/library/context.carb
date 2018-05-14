@@ -1,0 +1,11 @@
+relative Carbon {}
+
+relative Carbon.Context {
+	bound public string instance = "";
+	bound public <string>array arguments = null;
+	bound public <string>array templates = null;
+
+	void @construct(string instance, <string>array args, <string>array templates) {
+		
+	}
+}

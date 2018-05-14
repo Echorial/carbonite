@@ -1,0 +1,35 @@
+import WhiteSpace
+import String
+
+map|start = rules: (Rule / Call)*;
+
+map|Call = _ name: Safe_Name _ "(" _ values: Value*|"," _ ")" {type: "call", name: {$name}, arguments: {$values}, start: {startPos}, end: {charPos}};
+
+map|Rule = _ name: Safe_Name _ "=" _ value: Value {type: "rule", name: {$name}, value: {$value}, start: {startPos}, end: {charPos}};
+
+string|Safe_Name = name: [A-Za-z0-9_.@$!%^&*]++ {string|export = $name;};
+
+map|Value = _ val: (Literal / Reference) {map|export = $val;};
+
+map|Literal_Boolean = bool: (("true" {bool|~ = true;}) / ("false" {bool|~ = false;})) {type: "literal", literalType: "boolean", value: {$bool}};
+
+map|Literal_String = str: String {type: "literal", literalType: "string", value: {$str}};
+
+map|Literal_Number = num: [0-9.]++
+{map|
+	export["type"] = "literal";
+	export["literalType"] = "number";
+	
+	var float num = string.parseFloat($num);
+	export["value"] = num;
+	
+	if (num.isInteger()) {
+		export["integer"] = true;
+	}else{
+		export["integer"] = false;
+	}
+};
+
+map|Literal = l: (Literal_Number / Literal_Boolean / Literal_String) {map|export = $l;export["start"] = startPos;export["end"] = charPos;};
+
+map|Reference = "$" _ name: Safe_Name {type: "reference", name: {$name}, start: {startPos}, end: {charPos}};

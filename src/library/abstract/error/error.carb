@@ -1,0 +1,5 @@
+abstract relative Error {
+	void @construct(string message);
+
+	string message = "";
+}

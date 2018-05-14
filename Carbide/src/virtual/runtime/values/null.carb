@@ -1,0 +1,23 @@
+class Carbide.Virtual.Values.Null inherits Carbide.Virtual.Value {
+	bound public override string type = "null";
+	bound public override bool value = false;
+
+	bound public override <void>function setValue(map raw) {
+		this.value = raw["value"];
+	}
+
+	bound public override <bool>function compare(map raw) {
+		if (this.value == raw["value"]) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	fixed public override <Carbide.Virtual.Values.Null>function create() {
+		var map m = new map();
+		var Carbide.Virtual.Values.Null value = new Carbide.Virtual.Values.Null(m);
+		value.value = empty;
+		return value;
+	}
+}

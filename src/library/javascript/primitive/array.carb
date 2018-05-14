@@ -1,0 +1,25 @@
+relative <class T = primitive>array inherits primitive {
+	[operator="==", order=5] native inline bool equal(<T>array compare) {return context.instance + " == " + context.arguments[0];}
+	[operator="!=", order=5] native inline bool notEqual(<T>array compare) {return context.instance + " != " + context.arguments[0];}
+
+	native inline void @construct() {return "[]";}
+
+	native inline property int length() {return context.instance + ".length";}
+	native inline void pop() {return context.instance + ".pop()";}
+	native inline int push(T element) {return context.instance + ".push(" + context.arguments[0] + ")";}
+	native inline string join(string with) {return context.instance + ".join(" + context.arguments[0] + ")";}
+	native inline void remove(int index) {return context.instance + ".splice(" + context.arguments[0] + ", 1)";}
+	native inline void unshift(T item) {return context.instance + ".unshift(" + context.arguments[0] + ")";}
+	native inline void shift() {return context.instance + ".shift()";}
+	native inline void empty() {return context.instance + ".splice(0, " + context.instance + ".length)";}
+
+	native inline <T>array split(int index) {return context.instance + ".slice().splice(0, " + context.arguments[0] + ")";}
+	native inline <T>array splice(int index) {return context.instance + ".slice().splice(" + context.arguments[0] + ")";}
+	native inline <T>array clone() {return "JSON.parse(JSON.stringify(" + context.instance + "))";}
+	native inline <T>array concat(<everything>array with) {return context.instance + ".concat(" + context.arguments[0] + ")";}
+
+	native inline T @index(int index) {return context.instance + "[" + context.arguments[0] + "]";}
+
+	native inline <T>array highToLow()
+	{return context.instance + ".sort(function (a, b) {return b-a;})";}
+}

@@ -1,0 +1,11 @@
+relative primitive {
+	native inline primitive @index(int index) {return context.instance + "[" + context.arguments[0] + "]";}
+	native inline primitive @index(string index) {return context.instance + "[" + context.arguments[0] + "]";}
+
+	native inline string typeAsString() {return "(typeof " + context.instance + " == 'object' ? (Array.isArray(" + context.instance + ") ? 'array' : 'map') : (typeof " + context.instance + " == 'number' ? 'float' : typeof " + context.instance + "))";}
+
+	[operator="+"] native inline primitive add(primitive what) {return context.instance + " + " + context.arguments[0];}
+	[operator="+="] native inline primitive addTo(primitive what) {return context.instance + " += " + context.arguments[0];}
+}
+
+relative object {}

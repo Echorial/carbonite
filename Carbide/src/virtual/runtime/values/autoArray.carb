@@ -1,0 +1,54 @@
+class Carbide.Virtual.Values.AutoArray inherits Carbide.Virtual.Value {
+	bound public override string type = "array";
+	bound public override array value = null;
+
+	void @construct(array value) {
+		this.value = value;
+	}
+
+	bound public <Carbide.Virtual.Value>function castCarbideValue(int i) {
+		return Carbide.Virtual.Value.primitiveToValue(this.value[i]);
+	}
+
+	bound public override <void>function iterate(Carbide.Virtual.Variable vKey, Carbide.Virtual.Variable v, Carbide.Virtual.Block code, Carbide.Virtual.Scope scope) {
+		for (var int i in this.value) {
+			vKey.value.value = i; //Warn
+			v.value = this.castCarbideValue(i);
+			code.run(scope);
+		}
+	}
+
+	bound public override <Carbide.Virtual.Value>function property(string name, Carbide.Virtual.Scope scope) {
+		if (name == "length") {
+			var float cast = this.value.length;
+			var Carbide.Virtual.Values.Number rtn = Carbide.Virtual.Values.Number.create(cast);
+			return rtn;
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	bound public override <Carbide.Virtual.Value>function method(string name, <Carbide.Virtual.Value>array input, Carbide.Virtual.Scope scope) {
+		if (name == "length") {
+			var float len = this.value.length();
+			return Carbide.Virtual.Values.Number.create(len);
+		}else if (name == "index") {
+			var Carbide.Virtual.Value ind = input[0];
+			var Carbide.Virtual.Value found = this.castCarbideValue(ind.value);
+			return found;
+		}else if (name == "push") {
+			var Carbide.Virtual.Value ind = input[0];
+			var <everything>array cast = this.value; //TODO: Hack
+			cast.push(ind.value);
+		}else if (name == "pop") {
+			this.value.pop();
+		}
+		return Carbide.Virtual.Values.Null.create();
+	}
+
+	bound public override <Carbide.Virtual.Value>function dotSet(string prop, Carbide.Virtual.Value value,  Carbide.Virtual.Scope scope) {
+		var Carbide.Virtual.Value v = empty;
+		this.value[prop] = value.value; //TODO: Same as method "set" above
+		v = Carbide.Virtual.Values.Null.create();
+		return v;
+	}
+}

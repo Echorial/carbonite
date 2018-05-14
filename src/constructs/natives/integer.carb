@@ -1,0 +1,10 @@
+class Carbonite.Natives.Integer inherits Carbonite.Native {
+	bound public int value = 0;
+	bound public override string type = "integer";
+
+	bound public override <void>function build() {
+		this.value = this.raw["value"];
+		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
+		this.output.loadFromName("int", this.raw);
+	}
+}

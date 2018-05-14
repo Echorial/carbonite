@@ -1,0 +1,12 @@
+let x = function (num)
+	return function (times)
+		return function ()
+			return num * times
+		end
+	end
+end
+
+let f1 = x(4)
+let f2 = f1(2)
+let res = f2()
+print(res)

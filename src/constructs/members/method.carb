@@ -1,0 +1,286 @@
+class Carbonite.Members.Method inherits Carbonite.Member {
+	bound public Carbonite.Body body = empty;
+	bound public <Carbonite.Argument>array arguments = new <Carbonite.Argument>array();
+	bound public bool variatic = false;
+	bound public bool simpleNative = false;
+
+	bound public <Carbonite.Members.Method>function getReference() {
+		return this;
+	}
+
+	bound public bool hasOverload() {
+		return this.parent.getMethods(this.name).length > 1;
+	}
+
+	fixed public <Carbonite.Members.Method>function evaluate(string raw, Carbonite.Class parent) {
+		var output = CarboniteCarbonParser.parse("Any_Member", raw);
+
+		if (output.hadError) {
+			parent.compiler.status.give(Carbonite.Notice.fromParser(parent.source, output));
+		}else{
+			var method = Carbonite.Member.make(parent, output.data["data"]);
+			parent.members.push(method);
+			return method;
+		}
+	}
+
+	bound public override <bool>function checkExpressions(<Carbonite.Expression>array parameters) {
+		if (this.variatic == false) {
+			if (parameters.length() > this.arguments.length()) {
+				return false;
+			}
+		}
+		for (var int i in this.arguments) {
+			var Carbonite.Argument argument = this.arguments[i];
+			var Carbonite.Expression parameter = parameters[i];
+			if (argument.type.check(parameter.output) == false) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bound public override <bool>function check(<Carbonite.Type>array parameters) {
+		if (this.variatic == false) {
+			if (parameters.length() > this.arguments.length()) {
+				return false;
+			}
+			if (this.arguments.length() > parameters.length()) {
+				return false;
+			}
+		}
+		for (var int i in this.arguments) {
+			var Carbonite.Argument argument = this.arguments[i];
+			var Carbonite.Type parameter = parameters[i];
+			if (argument.type.check(parameter) == false) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bound public override <bool>function checkWithContext(<Carbonite.Type>array parameters, Carbonite.Type context) {
+		if (this.variatic == false) {
+			if (parameters.length() > this.arguments.length()) {
+				return false;
+			}
+			if (this.arguments.length() > parameters.length()) {
+				return false;
+			}
+		}
+		for (var int i in this.arguments) {
+			var Carbonite.Argument argument = this.arguments[i];
+			var Carbonite.Type parameter = parameters[i];
+			if (argument.type.checkWithContext(context, parameter) == false) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bound public override <void>function buildBody() {
+		if (this.abstract)
+			return null;
+
+		this.body.build();
+
+		if (this.hasFlag("native")) {
+			if (this.body.statements.length() == 1) {
+				var Carbonite.Statement state = this.body.statements[0];
+				if (state.type == "return") {
+					this.simpleNative = true;
+				}
+			}
+		}
+	}
+
+	bound public override <void>function build() {
+		var string type = this.raw["value"]["body"]["type"];
+
+		if (type == "interface") {
+			this.abstract = true;
+		}else{
+			this.body = new Carbonite.Body(this, this.raw["value"]["body"]);
+
+			var Carbonite.Type ownType = new Carbonite.Type(this.parent.compiler, this.parent);
+			ownType.loadFromName(this.parent.route, this.raw);
+			var string thisName = "this";
+			var Carbonite.Define defThis = new Carbonite.Define(thisName, ownType);
+			if ((this.binding == "fixed") and (this.name != "@construct"))
+				defThis.isConstantReference = true;
+
+			this.body.scope.add(defThis);
+			
+			if (this.hasFlag("native")) {
+				var Carbonite.Type cc = new Carbonite.Type(this.parent.compiler, this.parent);
+				cc.loadFromName("Carbon.Context", this.raw);
+				var string cStr = "context";
+				var Carbonite.Define context = new Carbonite.Define(cStr, cc);
+				this.body.scope.add(context);
+			}
+
+			if (this.name == "@index") {
+				var <map>array attrs = this.getAttributes("name");
+				if (attrs.length() == 0) {
+					var map nameAttr = new map();
+					nameAttr["key"] = "name";
+					nameAttr["value"] = "atIndex";
+					this.attributes.push(nameAttr);
+				}
+			}
+		}
+		
+		var <map>array arguments = this.raw["value"]["parameters"];
+		for (var int i in arguments) {
+			var map argument = arguments[i];
+			this.arguments.push(new Carbonite.Argument(this.parent.compiler, this.parent, this.body, argument));
+		}
+	}
+
+	bound public <string>function stringify(Carbonite.Context ctx, Carbonite.Term term) {
+		if (term.type == "expression") {
+			var Carbonite.Terms.Expression exp = term;
+			return this.concat(ctx, exp.expression.first, exp.expression.last);
+		}else if (term.type == "literal") {
+			var Carbonite.Terms.Literal lit = term;
+			var Carbonite.Natives.String native = lit.native;
+			return native.value;
+		}else if (term.type == "sequence") {
+			var Carbonite.Terms.Sequence seq = term;
+			var int level = 0;
+			for (var int i in seq.parts) {
+				var Carbonite.Part part = seq.parts[i];
+				if (part.type == "reference") {
+					var Carbonite.Parts.Reference c = part;
+					if (c.reference.name == "context") {
+						level = 1;
+					}
+				}else if (part.type == "dot") {
+					var Carbonite.Parts.Dot dot = part;
+					if (level == 1) {
+						if (dot.text == "instance") {
+							return ctx.instance;
+						}else if (dot.text == "arguments") {
+							level = 2;
+						}else if (dot.text == "templates") {
+							level = 3;
+						}
+					}
+				}else if (part.type == "index") {
+					if (level == 3) {
+						var Carbonite.Parts.Index idx = part;
+						var Carbonite.Terms.Literal lit = idx.argument.first;
+						var Carbonite.Natives.Integer it = lit.native;
+						var string str = ctx.templates[it.value];
+						return str;
+					}else{
+						var Carbonite.Parts.Index idx = part;
+						var Carbonite.Terms.Literal lit = idx.argument.first;
+						var Carbonite.Natives.Integer it = lit.native;
+						var string str = ctx.arguments[it.value];
+						return str;
+					}
+				}
+			}
+		}
+	}
+
+	bound public <string>function concat(Carbonite.Context ctx, Carbonite.Term head, Carbonite.Term tail) {
+		var string last = "";
+		if (tail != empty) {
+			last = this.stringify(ctx, tail);
+		}
+		return this.stringify(ctx, head) + last;
+	}
+
+	bound public <string>function generate(Carbonite.Context ctx) {
+		if (this.simpleNative) {
+			var Carbonite.Statements.Return ret = this.body.statements[0];
+			return this.concat(ctx, ret.expression.first, ret.expression.last);
+		}
+	}
+
+	bound public <string>function getRealName() {
+		if (this.name == "@index") {
+			var <map>array attrs = this.getAttributes("name");
+			var map key = attrs[0];
+			var string attr = key["value"];
+			return attr;
+		}
+		return this.name;
+	}
+
+	override bound public <string>function docDynamic() {
+		var args = new <string>array();
+		for (var int i in this.arguments) {
+			var arg = this.arguments[i];
+			args.push(arg.docDynamic());
+		}
+		return '{"type": "method", "name": "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "output": "' + this.output.lookPretty() + '", "arguments": [' + args.join(",") + ']}';
+	}
+
+	override fixed Carbonite.Member fromHeader(Carbonite.Class parent, map data) {
+		var method = new Carbonite.Members.Method(parent, null);
+		method.type = "method";
+		method.name = data["name"];
+		method.binding = data["binding"];
+
+		if ("flags" in data) {
+			var <string>array flags = data["flags"];
+			for (var int i in flags)
+				method.flags.push(flags[i]);
+		}
+
+		method.output = new Carbonite.Type(parent.compiler, parent);
+		method.output.loadFromRaw(data["output"]);
+
+		var <map>array args = data["arguments"];
+		for (var int i in args) {
+			method.arguments.push(Carbonite.Argument.fromHeader(parent, args[i]));
+		}
+
+		return method;
+	}
+
+	string toHeader() {
+		var args = new <string>array();
+		for (var int i in this.arguments) {
+			var arg = this.arguments[i];
+			args.push(arg.toHeader());
+		}
+
+		return '{"type": "method", "binding": "' + this.binding + '", "name": "' + this.name + '", ' + this.getHeaderFlags() + ' "output": ' + this.output.toHeader() + ', "arguments": [' + args.join(",") + ']}';
+	}
+}
+
+class Carbonite.Members.ReferenceMethod inherits Carbonite.ReferenceMember {
+	bound public Carbonite.Members.Method reference = empty;
+	bound public Carbonite.Type context = empty;
+
+	fixed public <Carbonite.Members.ReferenceMethod>function @construct(Carbonite.Members.Method reference, Carbonite.Type context) {
+		this.reference = reference;
+		this.output = this.reference.output.getWithContext(context);
+		this.context = context;
+		this.type = reference.type;
+	}
+
+	bound public override <Carbonite.Members.Method>function getReference() {
+		return this.reference;
+	}
+
+	bound public override <bool>function check(<Carbonite.Type>array parameters) {
+		if (this.reference.variatic == false) {
+			if (parameters.length() > this.reference.arguments.length()) {
+				return false;
+			}
+		}
+		for (var int i in this.reference.arguments) {
+			var Carbonite.Argument argument = this.reference.arguments[i];
+			var Carbonite.Type parameter = parameters[i];
+			if (argument.type.checkWithContext(this.context, parameter) == false) {
+				return false;
+			}
+		}
+		return true;
+	}
+}
