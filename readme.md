@@ -13,7 +13,7 @@ $ npm install carbonite-cli
 ```
 ## Library
 ```
-$ npm install carbonite
+$ npm install carbonite-compiler
 ```
 
 ## Building
@@ -25,3 +25,6 @@ Coming soon
 ```
 $ carbonite dev /absolute/path/to/carbonite.js
 ```
+## Platform support
+![https://www.echorial.com](https://img.shields.io/badge/php-limited-orange.svg?style=flat-square)
+![https://www.echorial.com](https://img.shields.io/badge/javascript-full-green.svg?style=flat-square)
