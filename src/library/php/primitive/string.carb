@@ -26,6 +26,8 @@ relative string inherits primitive {
 	
 	native inline string replace(string regex, string with) {return "preg_replace('/'." + context.arguments[0] + ".'/', " + context.arguments[1] + ", " + context.instance + ")";}
 
+	native inline string regularReplace(string regex, string with) {return "preg_replace('/'." + context.arguments[0] + ".'/', " + context.arguments[1] + ", " + context.instance + ")";}
+
 	fixed native inline string fromCharCode(int code) {return "chr(" + context.arguments[0] + ")";}	
 
 	fixed native inline float parseFloat(string value) {return "floatval(" + context.arguments[0] + ")";}

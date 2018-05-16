@@ -15,6 +15,8 @@ relative string inherits primitive {
 	
 	native inline string replace(string regex, string with) {return context.instance + ".replace(new RegExp(" + context.arguments[0] + ".replace(/[\\-\\[\\]\\/\\{\\}\\(\\)\\*\\+\\?\\.\\\\\\^\\$\\|]/g, '\\\\$&'), 'g'), " + context.arguments[1] + ")";}
 
+	native inline string regularReplace(string regex, string with) {return context.instance + ".replace(new RegExp(" + context.arguments[0] + ", 'g'), " + context.arguments[1] + ")";}
+
 	fixed native inline string fromCharCode(int code) {return "String.fromCharCode(" + context.arguments[0] + ")";}	
 
 	fixed native inline float parseFloat(string value) {return "parseFloat(" + context.arguments[0] + ")";}

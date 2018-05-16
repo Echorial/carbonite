@@ -13,12 +13,12 @@ $ npm install carbonite-cli
 ```
 ## Library
 ```
-$ npm install carbonite-compiler
+$ npm install carbonite
 ```
 
 ## Building
 ```
-$ carbonite pipe Project/javascript.pipeline output="file.js"
+$ carbonite pipe Project/javascript.pipeline output="dist/module.js"
 ```
 ## Development with carbonite-cli
 Coming soon

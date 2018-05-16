@@ -1,0 +1,20 @@
+{
+	"name": "carbonite",
+	"version": "0.1.0",
+	"description": "Carbon compile built in carbon",
+	"main": "dist/module.js",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Echorial/carbonite.git"
+	},
+	"keywords": [
+		"carbon",
+		"compiler"
+	],
+	"author": "Echorial",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/Echorial/carbonite/issues"
+	},
+	"homepage": "https://github.com/Echorial/carbonite#readme"
+}
