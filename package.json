@@ -1,6 +1,6 @@
 {
 	"name": "carbonite",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Carbon compile built in carbon",
 	"main": "dist/module.js",
 	"repository": {
