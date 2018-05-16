@@ -733,8 +733,8 @@ Carbonite.Compiler.prototype.addSource = function () {
 Carbonite.Compiler.prototype.addNativeLibrary = function () {
 	if (arguments.length == 0) {
 		
-			let base = path.resolve(__dirname, "../src/library/library.carb");
-			let native = c.addSource("Native", fs.readFileSync(base, "utf8"));
+			let base = require("path").resolve(__dirname, "../src/library/library.carb");
+			let native = this.addSource("Native", require("fs").readFileSync(base, "utf8"));
 			native.file = base;
 			native.process();
 		

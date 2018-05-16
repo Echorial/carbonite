@@ -205,8 +205,8 @@ class Carbonite.Compiler {
 	@note Only works with javascript`
 	bound public <Carbonite.Source>function addNativeLibrary() {
 		native javascript {
-			let base = path.resolve(__dirname, "../src/library/library.carb");
-			let native = c.addSource("Native", fs.readFileSync(base, "utf8"));
+			let base = require("path").resolve(__dirname, "../src/library/library.carb");
+			let native = this.addSource("Native", require("fs").readFileSync(base, "utf8"));
 			native.file = base;
 			native.process();
 		}
