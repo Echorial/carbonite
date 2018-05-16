@@ -618,7 +618,7 @@ Carbonite.Compiler = function () {
 	}
 
 }
-Carbonite.Compiler.prototype.version = "1.0.0";
+Carbonite.Compiler.prototype.version = "0.1.1";
 
 Carbonite.Compiler.prototype.buildTo = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
@@ -727,6 +727,17 @@ Carbonite.Compiler.prototype.addSource = function () {
 		this.sourceIndex++;
 		this.sources.push(source);
 		return source;
+	}
+}
+
+Carbonite.Compiler.prototype.addNativeLibrary = function () {
+	if (arguments.length == 0) {
+		
+			let base = path.resolve(__dirname, "../src/library/library.carb");
+			let native = c.addSource("Native", fs.readFileSync(base, "utf8"));
+			native.file = base;
+			native.process();
+		
 	}
 }
 

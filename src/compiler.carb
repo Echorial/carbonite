@@ -1,7 +1,7 @@
 `The main object used in Carbonite
 @note Carbonite.Compiler`
 class Carbonite.Compiler {
-	fixed public string version = "1.0.0";
+	fixed public string version = "0.1.1";
 
 	bound public Carbonite.Pre.Scope scope = empty;
 	bound public <Carbonite.Pre.Statements.Function>array functionScope = new <Carbonite.Pre.Statements.Function>array();
@@ -199,6 +199,17 @@ class Carbonite.Compiler {
 		this.sourceIndex++;
 		this.sources.push(source);
 		return source;
+	}
+
+	`Adds the /library code to this build
+	@note Only works with javascript`
+	bound public <Carbonite.Source>function addNativeLibrary() {
+		native javascript {
+			let base = path.resolve(__dirname, "../src/library/library.carb");
+			let native = c.addSource("Native", fs.readFileSync(base, "utf8"));
+			native.file = base;
+			native.process();
+		}
 	}
 
 	bound public <Carbonite.Status>function build(string platformRoute, map options) {
