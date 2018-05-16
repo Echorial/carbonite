@@ -21,6 +21,16 @@ $ npm install carbonite
 $ carbonite pipe Project/javascript.pipeline output="dist/module.js"
 ```
 ## Development with carbonite-cli
+carbonite/
+```
+$ npm link
+```
+carbonite-cli/
+```
+$ npm link carbonite
+```
+Now when rebuilding carbonite the cli will be using the new carbonite build.
+
 Coming soon
 ```
 $ carbonite dev /absolute/path/to/carbonite.js
