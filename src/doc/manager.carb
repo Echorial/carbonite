@@ -1,0 +1,31 @@
+class Carbonite.Docs {
+	<Carbonite.DocItem>array items = new <Carbonite.DocItem>array();
+
+	void @construct() {
+
+	}
+
+	Carbonite.DocItem addItem(string type, string name, string data) {
+		var docItem = new Carbonite.DocItem(type, name, data);
+		this.items.push(docItem);
+		return docItem;
+	}
+}
+
+`Generic documentation item (navLink, page, etc.)`
+class Carbonite.DocItem {
+	string type = "";
+	string name = "";
+	string data = "";
+
+	void @construct(string type, string name, string data) {
+		this.name = name;
+		this.data = data;
+		this.type = type;
+	}
+
+	`Serializes this item into a json formated string for use by the doc client`
+	string serialize() {
+		return '{"type": "' + this.type + '", "name": "' + this.name.escape() + '", "data": "' + this.data.escape() + '"}';
+	}
+}

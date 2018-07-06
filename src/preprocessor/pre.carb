@@ -12,6 +12,7 @@
 	#include "statements/include.carb"
 	#include "statements/out.carb"
 	#include "statements/script.carb"
+	#include "statements/doc.carb"
 #include "processor.carb"
 #include "value.carb"
 	#include "values/string.carb"

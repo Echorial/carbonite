@@ -38,6 +38,8 @@ class Carbonite.Pre.Statement {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 		}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+		}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 		}
 		rtn.type = type;
 

@@ -1,4 +1,174 @@
-.cdoc.theme-material .nav {
+.doc-nav {
 	height: 3em;
-	background: dodgerblue;
+	background: #3C72A7;
+	position: fixed;
+	width: 100%;
+	z-index: 100;
+}
+
+.doc-search {
+	display: inline-block;
+	color: white;
+	transition: .3s;
+	padding-left: .5em;
+	font-family: Arial;
+	text-decoration: none;
+	outline: none;
+	border: none;
+	background: #1F3952;
+}
+
+.doc-nav > .doc-search:not(:focus) {
+	font-family: 'Material Icons';
+	font-size: 24px;
+	line-height: 1;
+	font-weight: normal;
+	font-style: normal;
+	
+	letter-spacing: normal;
+	text-transform: none;
+	display: inline-block;
+	white-space: nowrap;
+	word-wrap: normal;
+	direction: ltr;
+	-webkit-font-feature-settings: 'liga';
+	-webkit-font-smoothing: antialiased;
+}
+
+.doc-nav > .doc-search {
+	position: absolute;
+	right: 0;
+	width: 1em;
+	padding: .5em .2em;
+	cursor: pointer;
+}
+
+.doc-drop {
+	position: absolute;
+	background: #1F3952;
+}
+
+.doc-drop > a {
+	display: block;
+	padding: 1em;
+	text-decoration: none;
+	color: white;
+}
+
+.doc-drop > a:hover {
+	background: #162839;
+}
+
+.doc-nav > .doc-search:focus {
+	width: 16em;
+	color: white;
+	cursor: text;
+	padding: 1.25em .6em;
+}
+
+.doc-search:hover {
+	background: #16293C;
+}
+
+.doc-nav > .link {
+	display: inline-block;
+	color: white;
+	transition: .3s;
+	text-align: center;
+	padding: 1em .6em;
+	font-family: Arial;
+	text-decoration: none;
+}
+
+.doc-nav > .link:hover {
+	background: rgba(0, 0, 0, 0.15);
+}
+
+.doc-side {
+	position: fixed;
+	top: 3em;
+	width: 20%;
+	bottom: 0px;
+	background: #264C71;
+	border-top: .2em solid #01579B;
+}
+
+.doc-mid {
+	position: absolute;
+	top: 3em;
+	width: 80%;
+	left: 20%;
+}
+
+.doc-mid h2 {
+	font-family: "Courier New", Courier, monospace;
+	background: #3C73A0;
+	padding: .5em;
+	margin: .5em;
+	margin-bottom: 0;
+	color: white;
+}
+
+.doc-class {
+	font-family: "Courier New", Courier, monospace;
+	background: #3C73A0;
+	padding: .5em;
+	margin: .5em;
+	margin-bottom: 0;
+	color: white;
+}
+
+.doc-mid h2 > label {
+	background: rgba(0, 0, 0, 0.20);
+	padding: 0 .3em;
+}
+
+.doc-mid > .doc-member a {
+	background: rgba(0, 0, 0, 0.20);
+	padding: .6em;
+	color: white;
+	font-size: 16px;
+}
+
+.doc-mid > .doc-member > label {
+	margin-left: .5em;
+	font-size: 1.3em;
+}
+
+.doc-mid > .doc-member {
+	background: #3D7CB1;
+	padding: 1em;
+	margin: .75em;
+	font-family: "Courier New", Courier, monospace;
+	color: white;
+}
+
+.doc-body {
+	background: rgba(0, 0, 0, 0.10);
+	white-space: pre-wrap;
+	padding: .5em;
+	border-radius: .2em;
+}
+
+.doc-note {
+	background: #E7E796;
+	padding: .4em;
+	border-radius: .2em;
+	color: black;
+	padding-left: 1em;
+	white-space: pre-wrap;
+}
+
+.doc-note::before {
+	content: "Note";
+	display: block;
+	font-weight: bold;
+	color: #3500FF;
+	position: relative;
+	left: -.4em;
+}
+
+body {
+	margin: 0;
+	background: #FFFFFF;
 }

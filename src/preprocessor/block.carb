@@ -3,6 +3,10 @@ class Carbonite.Pre.Block {
 	bound public <Carbonite.Pre.Statement>array statements = new <Carbonite.Pre.Statement>array();
 	bound public Carbonite.Pre.Processor parent = empty;
 	bound public Carbonite.Pre.Scope scope = empty;
+
+	`If can output is false any outputed data will be stored here without mapping.`
+	bound public string rawOutput = "";
+
 	bound public bool canOutput = false;
 	fixed public <Carbonite.Pre.Block>function @construct(Carbonite.Pre.Processor parent, <map>array data) {
 		this.parent = parent;
@@ -40,6 +44,8 @@ class Carbonite.Pre.Block {
 		if (this.canOutput) {
 			this.parent.map.push(new Carbonite.Pre.Map(this.parent.source.built.length(), start, end));
 			this.parent.source.built += data;
+		}else{
+			this.rawOutput += data;
 		}
 	}
 }

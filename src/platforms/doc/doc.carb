@@ -22,15 +22,21 @@ class Carbonite.Platforms.Doc inherits Carbonite.Platform {
 	}
 
 	string buildDynamic() {
-		var <string>array articles = new <string>array();
+		var articles = new <string>array();
+		var items = new <string>array();
 
 		for (var int i in this.compiler.roots) {
 			var Carbonite.Class root = this.compiler.roots[i];
 			articles.push(root.docDynamic());
 		}
 
-		var output = '{"version": "Unkown", "articles": [' + articles.join(",") + ']}';
+		for (var int i in this.compiler.docs.items) {
+			var item = this.compiler.docs.items[i];
+			items.push(item.serialize());
+		}
 
-		return "<!DOCTYPE html><html><head><script src='core.js'></script><script src='widget.js'></script><link rel='stylesheet' href='theme.css'></link></head><body><script>window.__cDoc = " + output + "; CarbonDoc.load(__cDoc);</script></body></html>";
+		var output = '{"version": "Unkown", "items": [' + items.join(", ") + '], "articles": [' + articles.join(",") + ']}';
+
+		return "window.__cDoc = " + output + "; CarbonDoc.load(__cDoc);";
 	}
 }

@@ -10151,7 +10151,7 @@ Carbonite.Platforms.Doc.prototype.buildDynamic = function () {
 			items.push(item.serialize());
 			}
 		var output = "{\"version\": \"Unkown\", \"items\": [" + items.join(", ") + "], \"articles\": [" + articles.join(",") + "]}";
-		return "<!DOCTYPE html><html><head><script src='core.js'></script><script src='widget.js'></script><link rel='stylesheet' href='theme.css'></link></head><body><script>window.__cDoc = " + output + "; CarbonDoc.load(__cDoc);</script></body></html>";
+		return "window.__cDoc = " + output + "; CarbonDoc.load(__cDoc);";
 	}
 }
 
@@ -28590,7 +28590,7 @@ Carbonite.Docs.prototype.addItem = function () {
 		var type = arguments[0];
 		var name = arguments[1];
 		var data = arguments[2];
-		var docItem = Carbonite.DocItem(type, name, data);
+		var docItem = new Carbonite.DocItem(type, name, data);
 		this.items.push(docItem);
 		return docItem;
 	}
@@ -28652,6 +28652,8 @@ Carbonite.Pre.Block = function () {
 
 	this.scope = null;
 
+	this.rawOutput = "";
+
 	this.canOutput = false;
 
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Processor) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
@@ -28704,6 +28706,8 @@ Carbonite.Pre.Block.prototype.output = function () {
 		if (this.canOutput) {
 			this.parent.map.push(new Carbonite.Pre.Map(this.parent.source.built.length, start, end));
 			this.parent.source.built += data;
+			}else{
+				this.rawOutput += data;
 			}
 	}
 }
@@ -29884,7 +29888,7 @@ Carbonite.Pre.Statements.Doc = function () {
 
 	this.arguments = "";
 
-	this.content = "";
+	this.content = null;
 
 	this.data = {};
 
@@ -29911,7 +29915,11 @@ Carbonite.Pre.Statements.Doc.prototype.build = function () {
 		this.type = this.data["name"];
 		this.arguments = this.data["arguments"];
 		if ("content" in this.data) {
-			this.content = this.data["content"];
+			var content = this.data["content"];
+			this.content = new Carbonite.Pre.Block(this.topParent.parent, content);
+			this.content.canOutput = false;
+			this.content.scope = this.scope;
+			this.content.build();
 			}
 	}
 }
@@ -29919,7 +29927,8 @@ Carbonite.Pre.Statements.Doc.prototype.build = function () {
 Carbonite.Pre.Statements.Doc.prototype.run = function () {
 	if (arguments.length == 0) {
 		var compiler = this.topParent.parent.source.parent;
-		compiler.docs.addItem(this.type, this.arguments, this.content);
+		this.content.run();
+		compiler.docs.addItem(this.type, this.arguments, this.content.rawOutput);
 	}
 }
 

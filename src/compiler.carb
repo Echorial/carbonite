@@ -21,6 +21,9 @@ class Carbonite.Compiler {
 
 	bound public VirtualEventSystem virtualEvents = null;
 
+	`Contains preprocessor docs until the doc platform can serialize them.`
+	bound public Carbonite.Docs docs = new Carbonite.Docs();
+
 	bound public Carbide.Virtual.Processor buildScript = null;
 	bound public <map>array scripts = new <map>array();
 

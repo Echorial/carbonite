@@ -1,0 +1,25 @@
+class Carbonite.Pre.Statements.Doc inherits Carbonite.Pre.Statement {
+	bound public string type = "";
+	bound public string arguments = "";
+	bound public Carbonite.Pre.Block content = empty;
+
+	bound public override <void>function build() {
+		this.type = this.data["name"];
+		this.arguments = this.data["arguments"];
+		
+		if ("content" in this.data) {
+			var <map>array content = this.data["content"];
+			this.content = new Carbonite.Pre.Block(this.topParent.parent, content);
+			this.content.canOutput = false;
+			this.content.scope = this.scope;
+			this.content.build();
+		}
+	}
+
+	bound public override <void>function run() {
+		var compiler = this.topParent.parent.source.parent;
+		this.content.run();
+
+		compiler.docs.addItem(this.type, this.arguments, this.content.rawOutput);
+	}
+}

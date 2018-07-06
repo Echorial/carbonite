@@ -71,5 +71,6 @@
 #include "Carbide/carbide.carb"
 #include "src/virtualEventSystem.carb"
 #include "src/virtual"
+#include "src/doc/manager.carb"
 
 #include "./Oxygen/oxygen.carb"
