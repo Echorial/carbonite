@@ -533,6 +533,8 @@ Carbonite.Compiler = function () {
 
 	this.virtualEvents = null;
 
+	this.docs = new Carbonite.Docs();
+
 	this.buildScript = null;
 
 	this.scripts = [];
@@ -8305,6 +8307,26 @@ Carbonite.Assemblers.Javascript.prototype.method = function () {
 	}
 }
 
+Carbonite.Assemblers.Javascript.prototype.escape = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var content = arguments[0];
+		var newString = "";
+		for (var i = 0;i < content.length;i++) {
+			var cur = content[i];
+			if (cur == "\"" || cur == "\\") {
+				newString += "\\" + cur;
+				}else if (cur == "\n") {
+				newString += "\\n";
+				}else if (cur == "\r") {
+				newString += "\\r";
+				}else{
+					newString += cur;
+				}
+			}
+		return newString;
+	}
+}
+
 Carbonite.Assemblers.Javascript.prototype.native = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Native || (arguments[0] instanceof Carbonite.Natives.Integer) || (arguments[0] instanceof Carbonite.Natives.Float) || (arguments[0] instanceof Carbonite.Natives.Boolean) || (arguments[0] instanceof Carbonite.Natives.String) || (arguments[0] instanceof Carbonite.Natives.Array)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var native = arguments[0];
@@ -8322,7 +8344,8 @@ Carbonite.Assemblers.Javascript.prototype.native = function () {
 			return "" + rtn;
 			}else if (native.type == "string") {
 			var cast = native;
-			return "\"" + cast.value.replace(new RegExp("\\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\r").replace(new RegExp("\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n") + "\"";
+			return "\"" + this.escape(cast.value) + "\"";
+			return "\"" + cast.value.replace(new RegExp("\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n").replace(new RegExp("\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\r") + "\"";
 			}else if (native.type == "array") {
 			var cast = native;
 			var expressions = [];
@@ -8815,7 +8838,7 @@ Carbonite.Assemblers.Cpp.prototype.native = function () {
 			return rtn;
 			}else if (native.type == "string") {
 			var cast = native;
-			return "\"" + cast.value.replace(new RegExp("\\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\r").replace(new RegExp("\\\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n") + "\"";
+			return "\"" + cast.value.replace(new RegExp("\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\r").replace(new RegExp("\\\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n") + "\"";
 			}else if (native.type == "array") {
 			var cast = native;
 			var expressions = [];
@@ -9468,7 +9491,7 @@ Carbonite.Assemblers.Php.prototype.native = function () {
 			return "" + rtn;
 			}else if (native.type == "string") {
 			var cast = native;
-			return "\"" + cast.value.replace(new RegExp("\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("$".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\$").replace(new RegExp("	".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\t").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n").replace(new RegExp("\\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\ r") + "\"";
+			return "\"" + cast.value.replace(new RegExp("\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("$".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\$").replace(new RegExp("	".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\t").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n").replace(new RegExp("\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\ r") + "\"";
 			}else if (native.type == "array") {
 			var cast = native;
 			var expressions = [];
@@ -10118,11 +10141,16 @@ Carbonite.Platforms.Doc.prototype.build = function () {
 Carbonite.Platforms.Doc.prototype.buildDynamic = function () {
 	if (arguments.length == 0) {
 		var articles = [];
+		var items = [];
 		for (var i = 0; i < this.compiler.roots.length; i++) {
 			var root = this.compiler.roots[i];
 			articles.push(root.docDynamic());
 			}
-		var output = "{\"version\": \"Unkown\", \"articles\": [" + articles.join(",") + "]}";
+		for (var i = 0; i < this.compiler.docs.items.length; i++) {
+			var item = this.compiler.docs.items[i];
+			items.push(item.serialize());
+			}
+		var output = "{\"version\": \"Unkown\", \"items\": [" + items.join(", ") + "], \"articles\": [" + articles.join(",") + "]}";
 		return "<!DOCTYPE html><html><head><script src='core.js'></script><script src='widget.js'></script><link rel='stylesheet' href='theme.css'></link></head><body><script>window.__cDoc = " + output + "; CarbonDoc.load(__cDoc);</script></body></html>";
 	}
 }
@@ -18594,7 +18622,7 @@ CarboniteCarbonParser.prototype.String_Tick = function () {
 		escapeCodes["n"] = "\n";
 		escapeCodes["b"] = "";
 		escapeCodes["f"] = "";
-		escapeCodes["r"] = "\\r";
+		escapeCodes["r"] = "\r";
 		escapeCodes["t"] = "	";
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
@@ -18774,7 +18802,7 @@ CarboniteCarbonParser.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \\r, \n", currentChar);
+								this.giveError(1, " , 	, \r, \r\n", currentChar);
 							}
 					}
 				}
@@ -18883,7 +18911,7 @@ CarboniteCarbonParser.prototype.String_Double = function () {
 		escapeCodes["n"] = "\n";
 		escapeCodes["b"] = "";
 		escapeCodes["f"] = "";
-		escapeCodes["r"] = "\\r";
+		escapeCodes["r"] = "\r";
 		escapeCodes["t"] = "	";
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
@@ -18974,7 +19002,7 @@ CarboniteCarbonParser.prototype.String_Single = function () {
 		escapeCodes["n"] = "\n";
 		escapeCodes["b"] = "";
 		escapeCodes["f"] = "";
-		escapeCodes["r"] = "\\r";
+		escapeCodes["r"] = "\r";
 		escapeCodes["t"] = "	";
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
@@ -20907,7 +20935,7 @@ CarbonitePreprocessor.prototype.RawLine = function () {
 						charPos--;
 						this.offset--;
 						}else{
-							this.giveError(1, "#, \n", currentChar);
+							this.giveError(1, "#, \r\n", currentChar);
 						}
 					this.error.vested++;
 					}else{
@@ -24530,7 +24558,7 @@ CarbonitePreprocessor.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \\r, \n", currentChar);
+								this.giveError(1, " , 	, \r, \r\n", currentChar);
 							}
 					}
 				}
@@ -24639,7 +24667,7 @@ CarbonitePreprocessor.prototype.String_Double = function () {
 		escapeCodes["n"] = "\n";
 		escapeCodes["b"] = "";
 		escapeCodes["f"] = "";
-		escapeCodes["r"] = "\\r";
+		escapeCodes["r"] = "\r";
 		escapeCodes["t"] = "	";
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
@@ -24730,7 +24758,7 @@ CarbonitePreprocessor.prototype.String_Single = function () {
 		escapeCodes["n"] = "\n";
 		escapeCodes["b"] = "";
 		escapeCodes["f"] = "";
-		escapeCodes["r"] = "\\r";
+		escapeCodes["r"] = "\r";
 		escapeCodes["t"] = "	";
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
@@ -26669,7 +26697,7 @@ PipelineParser.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \\r, \n", currentChar);
+								this.giveError(1, " , 	, \r, \r\n", currentChar);
 							}
 					}
 				}
@@ -26778,7 +26806,7 @@ PipelineParser.prototype.String_Double = function () {
 		escapeCodes["n"] = "\n";
 		escapeCodes["b"] = "";
 		escapeCodes["f"] = "";
-		escapeCodes["r"] = "\\r";
+		escapeCodes["r"] = "\r";
 		escapeCodes["t"] = "	";
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
@@ -26869,7 +26897,7 @@ PipelineParser.prototype.String_Single = function () {
 		escapeCodes["n"] = "\n";
 		escapeCodes["b"] = "";
 		escapeCodes["f"] = "";
-		escapeCodes["r"] = "\\r";
+		escapeCodes["r"] = "\r";
 		escapeCodes["t"] = "	";
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
@@ -28548,6 +28576,50 @@ VirtualType.prototype.iterate = function () {
 	}
 }
 
+Carbonite.Docs = function () {
+	this.items = [];
+
+	if (arguments.length == 0) {
+
+	}
+
+}
+
+Carbonite.Docs.prototype.addItem = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var type = arguments[0];
+		var name = arguments[1];
+		var data = arguments[2];
+		var docItem = Carbonite.DocItem(type, name, data);
+		this.items.push(docItem);
+		return docItem;
+	}
+}
+
+Carbonite.DocItem = function () {
+	this.type = "";
+
+	this.name = "";
+
+	this.data = "";
+
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var type = arguments[0];
+		var name = arguments[1];
+		var data = arguments[2];
+		this.name = name;
+		this.data = data;
+		this.type = type;
+	}
+
+}
+
+Carbonite.DocItem.prototype.serialize = function () {
+	if (arguments.length == 0) {
+		return "{\"type\": \"" + this.type + "\", \"name\": \"" + this.name.replace(/(["\n\r])/g,function (char) {if (char == '"') return '\\"'; else return "\\n";}) + "\", \"data\": \"" + this.data.replace(/(["\n\r])/g,function (char) {if (char == '"') return '\\"'; else return "\\n";}) + "\"}";
+	}
+}
+
 Oxygen = function () {
 
 
@@ -28687,6 +28759,8 @@ Carbonite.Pre.Statement.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -28781,6 +28855,8 @@ Carbonite.Pre.Statements.Define.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -28902,6 +28978,8 @@ Carbonite.Pre.Statements.Function.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -29003,6 +29081,8 @@ Carbonite.Pre.Statements.If.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -29119,6 +29199,8 @@ Carbonite.Pre.Statements.For.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -29198,6 +29280,8 @@ Carbonite.Pre.Statements.Raw.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -29290,6 +29374,8 @@ Carbonite.Pre.Statements.Lost.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -29378,6 +29464,8 @@ Carbonite.Pre.Statements.Var.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -29452,6 +29540,8 @@ Carbonite.Pre.Statements.Return.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -29577,6 +29667,8 @@ Carbonite.Pre.Statements.Include.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -29665,6 +29757,8 @@ Carbonite.Pre.Statements.Out.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
@@ -29777,9 +29871,99 @@ Carbonite.Pre.Statements.Script.make = function () {
 			rtn = new Carbonite.Pre.Statements.Out(block, data);
 			}else if (type == "script") {
 			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
 			}
 		rtn.type = type;
 		return rtn;
+	}
+}
+
+Carbonite.Pre.Statements.Doc = function () {
+	this.type = "";
+
+	this.arguments = "";
+
+	this.content = "";
+
+	this.data = {};
+
+	this.parent = null;
+
+	this.topParent = null;
+
+	this.scope = null;
+
+	this.type = "";
+
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Block) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var parent = arguments[0];
+		var data = arguments[1];
+		this.parent = parent;
+		this.topParent = this.parent.parent.root;
+		this.data = data;
+	}
+
+}
+
+Carbonite.Pre.Statements.Doc.prototype.build = function () {
+	if (arguments.length == 0) {
+		this.type = this.data["name"];
+		this.arguments = this.data["arguments"];
+		if ("content" in this.data) {
+			this.content = this.data["content"];
+			}
+	}
+}
+
+Carbonite.Pre.Statements.Doc.prototype.run = function () {
+	if (arguments.length == 0) {
+		var compiler = this.topParent.parent.source.parent;
+		compiler.docs.addItem(this.type, this.arguments, this.content);
+	}
+}
+
+Carbonite.Pre.Statements.Doc.make = function () {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Block) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var block = arguments[0];
+		var data = arguments[1];
+		var rtn = null;
+		var type = data["type"];
+		if (type == "define") {
+			rtn = new Carbonite.Pre.Statements.Define(block, data);
+			}else if (type == "if") {
+			rtn = new Carbonite.Pre.Statements.If(block, data);
+			}else if (type == "include") {
+			rtn = new Carbonite.Pre.Statements.Include(block, data);
+			}else if (type == "raw") {
+			rtn = new Carbonite.Pre.Statements.Raw(block, data);
+			}else if (type == "function") {
+			rtn = new Carbonite.Pre.Statements.Function(block, data);
+			}else if (type == "for") {
+			rtn = new Carbonite.Pre.Statements.For(block, data);
+			}else if (type == "forin") {
+			rtn = new Carbonite.Pre.Statements.For(block, data);
+			}else if (type == "lost") {
+			rtn = new Carbonite.Pre.Statements.Lost(block, data);
+			}else if (type == "var") {
+			rtn = new Carbonite.Pre.Statements.Var(block, data);
+			}else if (type == "return") {
+			rtn = new Carbonite.Pre.Statements.Return(block, data);
+			}else if (type == "output") {
+			rtn = new Carbonite.Pre.Statements.Out(block, data);
+			}else if (type == "script") {
+			rtn = new Carbonite.Pre.Statements.Script(block, data);
+			}else if (type == "doc") {
+			rtn = new Carbonite.Pre.Statements.Doc(block, data);
+			}
+		rtn.type = type;
+		return rtn;
+	}
+}
+
+Carbonite.Pre.Statements.Doc.prototype.clear = function () {
+	if (arguments.length == 0) {
+
 	}
 }
 
@@ -30777,7 +30961,7 @@ Carbonite.Pre.Sub = function () {
 
 	this.arguments = [];
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
 		this.data = raw;
@@ -30832,7 +31016,7 @@ Carbonite.Pre.Expression = function () {
 
 	this.parent = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
 		this.data = raw;
@@ -30842,7 +31026,7 @@ Carbonite.Pre.Expression = function () {
 }
 
 Carbonite.Pre.Expression.make = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
 		var rtn = null;
@@ -30907,7 +31091,7 @@ Carbonite.Pre.Expressions.Operation = function () {
 
 	this.parent = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
 		this.data = raw;
@@ -30935,7 +31119,7 @@ Carbonite.Pre.Expressions.Operation.prototype.run = function () {
 }
 
 Carbonite.Pre.Expressions.Operation.make = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
 		var rtn = null;
@@ -30989,7 +31173,7 @@ Carbonite.Pre.Expressions.Call = function () {
 
 	this.parent = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
 		this.data = raw;
@@ -31028,7 +31212,7 @@ Carbonite.Pre.Expressions.Call.prototype.run = function () {
 }
 
 Carbonite.Pre.Expressions.Call.make = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
 		var rtn = null;
@@ -31079,7 +31263,7 @@ Carbonite.Pre.Expressions.Raw = function () {
 
 	this.parent = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
 		this.data = raw;
@@ -31101,7 +31285,7 @@ Carbonite.Pre.Expressions.Raw.prototype.run = function () {
 }
 
 Carbonite.Pre.Expressions.Raw.make = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
 		var rtn = null;
@@ -31152,7 +31336,7 @@ Carbonite.Pre.Expressions.Reference = function () {
 
 	this.parent = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
 		this.data = raw;
@@ -31180,7 +31364,7 @@ Carbonite.Pre.Expressions.Reference.prototype.run = function () {
 }
 
 Carbonite.Pre.Expressions.Reference.make = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Statement || (arguments[0] instanceof Carbonite.Pre.Statements.Define) || (arguments[0] instanceof Carbonite.Pre.Statements.Function) || (arguments[0] instanceof Carbonite.Pre.Statements.If) || (arguments[0] instanceof Carbonite.Pre.Statements.For) || (arguments[0] instanceof Carbonite.Pre.Statements.Raw) || (arguments[0] instanceof Carbonite.Pre.Statements.Lost) || (arguments[0] instanceof Carbonite.Pre.Statements.Var) || (arguments[0] instanceof Carbonite.Pre.Statements.Return) || (arguments[0] instanceof Carbonite.Pre.Statements.Include) || (arguments[0] instanceof Carbonite.Pre.Statements.Out) || (arguments[0] instanceof Carbonite.Pre.Statements.Script) || (arguments[0] instanceof Carbonite.Pre.Statements.Doc)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
 		var rtn = null;
@@ -34438,7 +34622,7 @@ CarbideCalciumParser.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \n, \n", currentChar);
+								this.giveError(1, " , 	, \r\n, \r\n", currentChar);
 							}
 					}
 				}
@@ -34547,7 +34731,7 @@ CarbideCalciumParser.prototype.String_Double = function () {
 		escapeCodes["n"] = "\n";
 		escapeCodes["b"] = "";
 		escapeCodes["f"] = "";
-		escapeCodes["r"] = "\\r";
+		escapeCodes["r"] = "\r";
 		escapeCodes["t"] = "	";
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
@@ -34638,7 +34822,7 @@ CarbideCalciumParser.prototype.String_Single = function () {
 		escapeCodes["n"] = "\n";
 		escapeCodes["b"] = "";
 		escapeCodes["f"] = "";
-		escapeCodes["r"] = "\\r";
+		escapeCodes["r"] = "\r";
 		escapeCodes["t"] = "	";
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";

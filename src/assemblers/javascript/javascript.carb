@@ -275,6 +275,22 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		
 	}
 
+	bound public string escape(string content) {
+		var newString = "";
+		for (var int i = 0; i < content.length; i++) {
+			var cur = content[i];
+			if (cur == "\"" or cur == "\\") {
+				newString += "\\" + cur;
+			}else if (cur == "\n") {
+				newString += "\\n";
+			}else if (cur == "\r") {
+				newString += "\\r";
+			}else
+				newString += cur;
+		}
+		return newString;
+	}
+
 	bound public override <string>function native(Carbonite.Native native) {
 		if (native.type == "integer") {
 			var Carbonite.Natives.Integer cast = native;
@@ -290,7 +306,8 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 			return "" + rtn; //Hack until @cast
 		}else if (native.type == "string") {
 			var Carbonite.Natives.String cast = native;
-			return "\"" + cast.value.replace("\r", "\\r").replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\""; //Warn
+			return '"' + this.escape(cast.value) + '"';
+			return "\"" + cast.value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\""; //Warn
 		}else if (native.type == "array") {
 			var Carbonite.Natives.Array cast = native;
 			var <string>array expressions = new <string>array();
