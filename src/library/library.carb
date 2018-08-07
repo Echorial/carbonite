@@ -29,4 +29,5 @@
 
 #if platform.cpp
 	#include "cpp/primitive"
+	#include "cpp/primitive.carb"
 #end if

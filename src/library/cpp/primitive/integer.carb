@@ -22,3 +22,17 @@ relative int inherits primitive {
 
 	fixed native inline int parse(string value) {return "parseInt(" + context.arguments[0] + ")";}
 }
+
+relative uint inherits int {}
+
+relative uint8 inherits int {}
+relative int8 inherits int {}
+
+relative uint16 inherits int {}
+relative int16 inherits int {}
+
+relative uint32 inherits int {}
+relative int32 inherits int {}
+
+relative uint64 inherits int {}
+relative int64 inherits int {}

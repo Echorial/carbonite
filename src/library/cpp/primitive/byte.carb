@@ -1,0 +1,4 @@
+relative byte {
+	native inline void @construct(int num)
+	{return context.arguments[0];}
+}
