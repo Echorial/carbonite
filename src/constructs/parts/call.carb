@@ -74,6 +74,15 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 				this.functionCheck(cast.output);
 			}
 		}
+
+		for (var int i in this.arguments) {
+			var arg = this.arguments[i];
+
+			if (arg.output.owned and (arg.output.ownedUntil < this.parent.endOffset)) {
+				arg.output.ownedUntil = this.parent.endOffset;
+				arg.output.owned = false;
+			}
+		}
 	}
 
 	void functionCheck(Carbonite.Type func) {

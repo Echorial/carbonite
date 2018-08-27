@@ -1,3 +1,5 @@
+[Reroute = "nullptr"]
 relative null {}
+[Reroute = "nullptr"]
 relative empty {}
 relative void {}

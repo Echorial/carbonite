@@ -15,6 +15,13 @@ class Carbonite.Type inherits Carbonite.Range {
 	bound public Carbonite.Class parent = empty;
 	bound public map raw = empty;
 
+	bound public Carbonite.Define ownerDefine = null;
+	bound public Carbonite.Function ownerFunction = null;
+	bound public Carbonite.Members.Method ownerMethod = null;
+
+	bound public bool owned = false;
+	bound public int ownedUntil = -1;
+
 	fixed public <Carbonite.Type>function @construct(Carbonite.Compiler compiler, Carbonite.Class parent) {
 		this.compiler = compiler;
 		this.parent = parent;
@@ -26,6 +33,13 @@ class Carbonite.Type inherits Carbonite.Range {
 		if (this.reference.link != null) {
 			this.setReference(this.reference.link);
 		}
+	}
+
+	bound public bool isPrimitiveValue() {
+		if (this.reference != null)
+			return this.reference.primitiveValue;
+		else
+			return false; //TODO: Check for template value
 	}
 
 	bound public <void>function loadFromName(string className, map raw) {

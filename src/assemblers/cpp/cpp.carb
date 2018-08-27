@@ -18,19 +18,27 @@
 			for (var int i in root.children) {
 				var Carbonite.Class cls = root.children[i];
 				if (cls.base != "relative") {
-					children.push(cls.base + " " + cls.name);
+					children.push("class " + cls.name + ";\n");
 				}
 			}
 			body = "{\npublic:\n" + children.join("\n") + "\n};";
 		}else{
-			body = "{\npublic:\n" + this.properties(root) +  this.methods(root) + "\n};\n\n";
+			var <string>array children = new <string>array();
+			for (var int i in root.children) {
+				var Carbonite.Class cls = root.children[i];
+				if (cls.base != "relative") {
+					children.push("class " + cls.name + ";\n");
+				}
+			}
+			body = "{\npublic:\n" + children.join("\n") + this.properties(root) +  this.methods(root) + "\n};\n\n";
 		}
 
 		var string pref = "";
 		if (root.parent != null) {
-			pref = root.parent.route + "::";
+			var Carbonite.Class castParent = root.parent;
+			pref = castParent.getRoute() + "::";
 		}
-		return root.base + " " + pref + root.name + body;
+		return "class " + pref + root.name + body;
 	}
 
 	bound public <string>function properties(Carbonite.Class root) {
@@ -40,11 +48,19 @@
 			if (member.type == "property") {
 				var Carbonite.Members.Property prop = member;
 				var string route = this.route(prop.output);
+				var typeStr = route;
+				if (prop.output.isPrimitiveValue() == false) {
+					if (prop.reference == false) {
+						typeStr = "std::unique_ptr<" + route + ">";
+					}else{
+						typeStr = route + "*";
+					}
+				}
 				var string prefix = "";
 				if (prop.binding == "fixed") {
 					prefix = "static ";
 				}
-				rtn += prefix + route + " " + prop.name + " = " + this.expression(prop.default) + ";\n";
+				rtn += prefix + typeStr + " " + prop.name + " = " + this.expression(prop.default) + ";\n";
 			}
 		}
 		return rtn;
@@ -52,13 +68,13 @@
 
 	bound public <string>function route(Carbonite.Type what) {
 		if (what.reference.route == "array") {
-			return "vector<" + this.route(what.templates[0]) + ">";
+			return "std::vector<" + this.route(what.templates[0]) + ">";
 		}else if (what.reference.route == "map") {
-			return "map<std::string, " + this.route(what.templates[0]) + ">";
+			return "std::map<std::string, " + this.route(what.templates[0]) + ">";
 		}else if (what.reference.route == "string") {
 			return "std::string";
 		}
-		return what.reference.route;
+		return what.reference.getRoute();
 	}
 
 	bound public override <string>function methods(Carbonite.Class root) {
@@ -67,21 +83,38 @@
 			var Carbonite.Member member = root.members[i];
 			if (member.type != "property") {
 				if (member.hasFlag("inline") == false) {
-					if (member.name != "@construct") {
-						if (member.hasFlag("relative") == false) {
-							var Carbonite.Members.Method method = member;
-							var <string>array args = new <string>array();
-							for (var int a in method.arguments) {
-								var Carbonite.Argument arg = method.arguments[a];
-								args.push(this.route(arg.type) + " " + arg.name);
+					
+					if (member.hasFlag("relative") == false and member.abstract == false) {
+						var Carbonite.Members.Method method = member;
+						var <string>array args = new <string>array();
+						for (var int a in method.arguments) {
+							var Carbonite.Argument arg = method.arguments[a];
+							var typeStr = this.route(arg.type);
+							
+							if (arg.isByValue() == false) {
+								if (arg.reference) {
+									typeStr = typeStr + "*";
+								}else{
+									typeStr = "std::unique_ptr<" + typeStr + ">";
+								}
 							}
-							var string prefix = "";
-							if (method.binding == "fixed") {
-								prefix = "static ";
-							}
-							methods.push(prefix + this.route(method.output) + " " + method.name + "(" + args.join(", ") + ") {\n" + this.body(method.body) + "\n}");
+
+							args.push(typeStr + " " + arg.name);
 						}
+						var string prefix = "";
+						if (method.binding == "fixed") {
+							prefix = "static ";
+						}
+						var rte = this.route(method.output);
+						var nme = method.name;
+						if (member.name == "@construct") {
+							rte = "";
+							prefix = "";
+							nme = root.getRoute();
+						}
+						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ") {\n" + this.body(method.body) + "\n}");
 					}
+					
 				}
 			}
 		}
@@ -106,7 +139,11 @@
 		if (define.initializer != null) {
 			set = " = " + this.expression(define.initializer);
 		}
-		return this.route(define.output) + " " + define.name + set;
+		var typeStr = this.route(define.output);
+		if (define.output.isPrimitiveValue() == false) {
+			typeStr = "std::unique_ptr<" + typeStr + ">";
+		}
+		return typeStr + " " + define.name + set;
 	}
 
 	bound public override <string>function statement(Carbonite.Statement statement) {
@@ -201,14 +238,14 @@
 			return this.func(cast.function);
 		}else if (term.type == "prefix") {
 			var Carbonite.Terms.Prefix cast = term;
-			var string doNew = "";
+			var string doNew = "new ";
 			var <Carbonite.Members.Method>array cstrs = cast.expression.output.reference.getMethods("@construct");
 			var Carbonite.Members.Method cnstr = cstrs[0];
 			if (cnstr.hasFlag("inline")) {
 				doNew = "";
 			}
 			if (cast.prefix == "new") {
-				return doNew + this.expression(cast.expression);
+				return "std::unique_ptr<" + this.route(cast.expression.output) + ">(" + doNew + this.expression(cast.expression) + ")";
 			}
 		}else if (term.type == "sequence") {
 			var Carbonite.Terms.Sequence cast = term;
@@ -228,7 +265,7 @@
 						if (cast.constantReference.reference.name == "empty") {
 							rtn += "null";
 						}else{
-							rtn += cast.constantReference.reference.route;
+							rtn += cast.constantReference.reference.getRoute();
 						}
 					}else{
 						rtn += cast.constantReference.reference.name;
@@ -241,7 +278,7 @@
 				if (cast.reference != empty) {
 					if (cast.reference.type == "property") {
 						var Carbonite.Members.ReferenceProperty refCast = cast.reference;
-						var string access = ".";
+						var string access = "->";
 						if (refCast.reference.binding == "fixed") {
 							access = "::";
 						}
@@ -254,7 +291,7 @@
 						}
 					}else{
 						var Carbonite.Members.ReferenceMethod refMeth = cast.reference;
-						var string access = ".";
+						var string access = "->";
 						if (refMeth.reference.binding == "fixed") {
 							access = "::";
 						}
@@ -288,17 +325,34 @@
 					var Carbonite.Members.Method callOn = cast.reference.getReference();
 					var string methodName = "";
 					if (callOn.hasFlag("inline") == false) {
-						methodName = "." + callOn.name;
+						methodName = "->" + callOn.name;
 					}
 					if (callOn.hasFlag("native")) {
-						rtn = this.callMethod(callOn, cast.arguments, sequence.templates, rtn + methodName);
+						var seqTemps = sequence.templates;
+						if (sequence.templates.length == 0) {
+							if (sequence.parts.length > 0) {
+								var first = sequence.parts[0];
+								if (first.type == "reference") {
+									var Carbonite.Parts.Reference castFirst = first;
+									if (castFirst.isConstant and castFirst.constantReference.templates.length > 0) {
+										seqTemps = castFirst.constantReference.templates;
+									}
+								}
+							}
+						}
+						rtn = this.callMethod(callOn, cast.arguments, seqTemps, rtn + methodName);
 					}else{
 						rtn += this.callMethod(callOn, cast.arguments, sequence.templates, "");
 					}
 				}else{
 					var <string>array args = new <string>array();
 					for (var int a in cast.arguments) {
-						args.push(this.expression(cast.arguments[a]));
+						var arg = cast.arguments[a];
+						var exp = this.expression(cast.arguments[a]);
+						if (arg.output.isPrimitiveValue() == false)
+							exp = "std::move(" + exp + ")";
+
+						args.push(exp);
 					}
 					rtn += "(" + args.join(", ") + ")";
 				}
@@ -310,7 +364,7 @@
 					var <map>array attrs = callOn.getAttributes("name");
 					var map mp = attrs[0];
 					var string attr = mp["value"];
-					methodName = "." + attr;
+					methodName = "->" + attr;
 				}
 				var <Carbonite.Expression>array castArr = new <Carbonite.Expression>array();
 				castArr.push(cast.argument);
@@ -349,7 +403,11 @@
 		var <string>array args = new <string>array();
 		for (var int i in arguments) {
 			var Carbonite.Expression arg = arguments[i];
-			args.push(this.expression(arg));
+			var exp = this.expression(arg);
+			if (arg.output.isPrimitiveValue() == false)
+				exp = "std::move(" + exp + ")";
+
+			args.push(exp);
 		}
 		return this.callMethodWithStrings(method, args, templates, context);
 	}
@@ -369,16 +427,20 @@
 		if (expression.reference != empty) {
 			var <string>array args = new <string>array();
 			if (expression.last != empty) {
-				args.push(this.term(expression.last));
+				if (expression.last.output.isPrimitiveValue() == false)
+					args.push("std::move(" + this.term(expression.last) + ")");
+				else
+					args.push(this.term(expression.last));
 			}
 			var <Carbonite.Type>array temps = new <Carbonite.Type>array();
 			if (expression.reference.hasFlag("native")) {
 				return this.callMethodWithStrings(expression.reference, args, temps, first);
 			}else{
-				first += "." + expression.reference.getRealName() + this.callMethodWithStrings(expression.reference, args, temps, "");
+				first += "->" + expression.reference.getRealName() + this.callMethodWithStrings(expression.reference, args, temps, "");
 			}
 		}
 		rtn = first;
+		 /*or (expression.endOffset <= expression.output.ownedUntil) or (expression.output.owned and (expression.output.ownedUntil == -1))*/
 		if (expression.grouped)
 			return "(" + rtn + ")";
 		else

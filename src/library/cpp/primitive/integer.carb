@@ -23,16 +23,23 @@ relative int inherits primitive {
 	fixed native inline int parse(string value) {return "parseInt(" + context.arguments[0] + ")";}
 }
 
+[Reroute = "uint_t"]
 relative uint inherits int {}
 
+[Reroute = "uint8_t"]
 relative uint8 inherits int {}
+
+[Reroute = "int8_t"]
 relative int8 inherits int {}
 
+[Reroute = "uint16_t"]
 relative uint16 inherits int {}
+
+[Reroute = "int16_t"]
 relative int16 inherits int {}
 
-relative uint32 inherits int {}
-relative int32 inherits int {}
-
+[Reroute = "uint64_t"]
 relative uint64 inherits int {}
+
+[Reroute = "int64_t"]
 relative int64 inherits int {}

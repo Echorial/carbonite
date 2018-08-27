@@ -1,5 +1,6 @@
 class Carbonite.Members.Property inherits Carbonite.Member {
 	bound public Carbonite.Expression default = empty;
+	bound public bool reference = false;
 
 	fixed public <Carbonite.Members.Property>function evaluate(string raw, Carbonite.Class parent) {
 		var output = CarboniteCarbonParser.parse("Any_Member", raw);

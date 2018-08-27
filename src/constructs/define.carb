@@ -5,6 +5,10 @@ class Carbonite.Define inherits Carbonite.Range, object {
 	bound public Carbonite.Body container = empty;
 	bound public bool isConstantReference = false;
 	bound public int blockIndex = 0;
+
+	`If this define has been lost out of scope, used by cpp to determine stack vs heap allocation`
+	bound public bool outOfScope = true;
+	bound public bool reference = false;
 	
 	fixed public <Carbonite.Define>function @construct(string name, Carbonite.Type output) {
 		this.name = name;
@@ -35,6 +39,8 @@ class Carbonite.Define inherits Carbonite.Range, object {
 			rtn.buildError("'" + rtn.name + "' already defined");
 		}
 		container.scope.add(rtn);
+
+		rtn.output.ownerDefine = rtn;
 		return rtn;
 	}
 }

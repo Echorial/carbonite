@@ -4,6 +4,9 @@ class Carbonite.Natives.Integer inherits Carbonite.Native {
 
 	bound public override <void>function build() {
 		this.value = this.raw["value"];
+		if ("prefix" in this.raw and this.raw["prefix"] == "-") {
+			this.value = 0 - this.value; // HACK|BUG: 0 - 1 for negative until prefixes work
+		}
 		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
 		this.output.loadFromName("int", this.raw);
 	}

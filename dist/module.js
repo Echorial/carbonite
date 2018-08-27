@@ -778,6 +778,14 @@ Carbonite.Compiler.prototype.build = function () {
 			var root = this.roots[i];
 			if (root.alreadyBuilt == false) {
 				root.compiler = this;
+				if (root.getAttribute(root.attributes, "Reroute") != null) {
+					var mp = root.getAttribute(root.attributes, "Reroute");
+					if ((typeof mp["value"] == 'object' ? (Array.isArray(mp["value"]) ? 'array' : 'map') : (typeof mp["value"] == 'number' ? 'float' : typeof mp["value"])) == "boolean") {
+						root.autoReroute = mp["value"];
+						}else{
+							root.reroute = mp["value"];
+						}
+					}
 				if (root.isFromHeader) {
 					root.fillFromHeader();
 					}else{
@@ -1121,6 +1129,8 @@ Carbonite.Class = function () {
 
 	this.isFromHeader = false;
 
+	this.primitiveValue = false;
+
 	this.members = [];
 
 	this.inherits = [];
@@ -1134,6 +1144,8 @@ Carbonite.Class = function () {
 	this.attributes = null;
 
 	this.reroute = "";
+
+	this.autoReroute = false;
 
 	this.propertyContext = null;
 
@@ -1425,6 +1437,11 @@ Carbonite.Class.prototype.executeInherits = function () {
 					}
 				for (var i = 0; i < this.inherits.length; i++) {
 					var cls = this.inherits[i];
+					if (cls.route == "primitive" || cls.route == "int") {
+						if (this.route != "array" || this.route != "map") {
+							this.primitiveValue = true;
+							}
+						}
 					cls.executeInherits();
 					this.inherit(cls);
 					cls.descendants.push(this);
@@ -2760,6 +2777,8 @@ Carbonite.Members.ReferenceMethod.prototype.check = function () {
 Carbonite.Members.Property = function () {
 	this.default = null;
 
+	this.reference = false;
+
 	this.binding = "bound";
 
 	this.visibility = "public";
@@ -3630,6 +3649,10 @@ Carbonite.Define = function () {
 
 	this.blockIndex = 0;
 
+	this.outOfScope = true;
+
+	this.reference = false;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -3672,6 +3695,7 @@ Carbonite.Define.make = function () {
 			rtn.buildError("'" + rtn.name + "' already defined");
 			}
 		container.scope.add(rtn);
+		rtn.output.ownerDefine = rtn;
 		return rtn;
 	}
 }
@@ -5120,6 +5144,10 @@ Carbonite.Argument = function () {
 
 	this.doc = null;
 
+	this.reference = false;
+
+	this.byValue = false;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5162,6 +5190,12 @@ else 	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Compiler)
 			}
 	}
 
+}
+
+Carbonite.Argument.prototype.isByValue = function () {
+	if (arguments.length == 0) {
+		return this.type.isPrimitiveValue();
+	}
 }
 
 Carbonite.Argument.prototype.docDynamic = function () {
@@ -6181,6 +6215,9 @@ Carbonite.Terms.Prefix.prototype.build = function () {
 		this.output = this.expression.output;
 		this.parentExpression = parent;
 		this.prefix = this.raw["prefix"];
+		if (this.prefix == "new") {
+			this.output.owned = true;
+			}
 	}
 }
 
@@ -6389,6 +6426,16 @@ Carbonite.Type = function () {
 
 	this.raw = null;
 
+	this.ownerDefine = null;
+
+	this.ownerFunction = null;
+
+	this.ownerMethod = null;
+
+	this.owned = false;
+
+	this.ownedUntil = -1;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -6411,6 +6458,16 @@ Carbonite.Type.prototype.setReference = function () {
 		this.reference = reference;
 		if (this.reference.link != null) {
 			this.setReference(this.reference.link);
+			}
+	}
+}
+
+Carbonite.Type.prototype.isPrimitiveValue = function () {
+	if (arguments.length == 0) {
+		if (this.reference != null) {
+			return this.reference.primitiveValue;
+			}else{
+				return false;
 			}
 	}
 }
@@ -6693,6 +6750,16 @@ Carbonite.ReferenceType = function () {
 
 	this.raw = null;
 
+	this.ownerDefine = null;
+
+	this.ownerFunction = null;
+
+	this.ownerMethod = null;
+
+	this.owned = false;
+
+	this.ownedUntil = -1;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -6729,6 +6796,16 @@ Carbonite.ReferenceType.prototype.setReference = function () {
 		this.reference = reference;
 		if (this.reference.link != null) {
 			this.setReference(this.reference.link);
+			}
+	}
+}
+
+Carbonite.ReferenceType.prototype.isPrimitiveValue = function () {
+	if (arguments.length == 0) {
+		if (this.reference != null) {
+			return this.reference.primitiveValue;
+			}else{
+				return false;
 			}
 	}
 }
@@ -7218,6 +7295,13 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (
 						this.functionCheck(cast.output);
 					}
 			}
+		for (var i = 0; i < this.arguments.length; i++) {
+			var arg = this.arguments[i];
+			if (arg.output.owned && arg.output.ownedUntil < this.parent.endOffset) {
+				arg.output.ownedUntil = this.parent.endOffset;
+				arg.output.owned = false;
+				}
+			}
 	}
 
 }
@@ -7399,6 +7483,9 @@ Carbonite.Natives.Integer = function () {
 Carbonite.Natives.Integer.prototype.build = function () {
 	if (arguments.length == 0) {
 		this.value = this.raw["value"];
+		if ("prefix" in this.raw && this.raw["prefix"] == "-") {
+			this.value = 0 - this.value;
+			}
 		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
 		this.output.loadFromName("int", this.raw);
 	}
@@ -7494,6 +7581,10 @@ Carbonite.Natives.Float = function () {
 Carbonite.Natives.Float.prototype.build = function () {
 	if (arguments.length == 0) {
 		this.value = this.raw["value"];
+		if ("prefix" in this.raw && this.raw["prefix"] == "-") {
+			var zero = 0;
+			this.value = zero - this.value;
+			}
 		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
 		this.output.loadFromName("float", this.raw);
 	}
@@ -8669,18 +8760,26 @@ Carbonite.Assemblers.Cpp.prototype.root = function () {
 			for (var i = 0; i < root.children.length; i++) {
 				var cls = root.children[i];
 				if (cls.base != "relative") {
-					children.push(cls.base + " " + cls.name);
+					children.push("class " + cls.name + ";\n");
 					}
 				}
 			body = "{\npublic:\n" + children.join("\n") + "\n};";
 			}else{
-				body = "{\npublic:\n" + this.properties(root) + this.methods(root) + "\n};\n\n";
+				var children = [];
+				for (var i = 0; i < root.children.length; i++) {
+					var cls = root.children[i];
+					if (cls.base != "relative") {
+						children.push("class " + cls.name + ";\n");
+						}
+					}
+				body = "{\npublic:\n" + children.join("\n") + this.properties(root) + this.methods(root) + "\n};\n\n";
 			}
 		var pref = "";
 		if (root.parent != null) {
-			pref = root.parent.route + "::";
+			var castParent = root.parent;
+			pref = castParent.getRoute() + "::";
 			}
-		return root.base + " " + pref + root.name + body;
+		return "class " + pref + root.name + body;
 	}
 }
 
@@ -8693,11 +8792,19 @@ Carbonite.Assemblers.Cpp.prototype.properties = function () {
 			if (member.type == "property") {
 				var prop = member;
 				var route = this.route(prop.output);
+				var typeStr = route;
+				if (prop.output.isPrimitiveValue() == false) {
+					if (prop.reference == false) {
+						typeStr = "std::unique_ptr<" + route + ">";
+						}else{
+							typeStr = route + "*";
+						}
+					}
 				var prefix = "";
 				if (prop.binding == "fixed") {
 					prefix = "static ";
 					}
-				rtn += prefix + route + " " + prop.name + " = " + this.expression(prop.default) + ";\n";
+				rtn += prefix + typeStr + " " + prop.name + " = " + this.expression(prop.default) + ";\n";
 				}
 			}
 		return rtn;
@@ -8708,13 +8815,13 @@ Carbonite.Assemblers.Cpp.prototype.route = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var what = arguments[0];
 		if (what.reference.route == "array") {
-			return "vector<" + this.route(what.templates[0]) + ">";
+			return "std::vector<" + this.route(what.templates[0]) + ">";
 			}else if (what.reference.route == "map") {
-			return "map<std::string, " + this.route(what.templates[0]) + ">";
+			return "std::map<std::string, " + this.route(what.templates[0]) + ">";
 			}else if (what.reference.route == "string") {
 			return "std::string";
 			}
-		return what.reference.route;
+		return what.reference.getRoute();
 	}
 }
 
@@ -8726,20 +8833,33 @@ Carbonite.Assemblers.Cpp.prototype.methods = function () {
 			var member = root.members[i];
 			if (member.type != "property") {
 				if (member.hasFlag("inline") == false) {
-					if (member.name != "@construct") {
-						if (member.hasFlag("relative") == false) {
-							var method = member;
-							var args = [];
-							for (var a = 0; a < method.arguments.length; a++) {
-								var arg = method.arguments[a];
-								args.push(this.route(arg.type) + " " + arg.name);
+					if (member.hasFlag("relative") == false && member.abstract == false) {
+						var method = member;
+						var args = [];
+						for (var a = 0; a < method.arguments.length; a++) {
+							var arg = method.arguments[a];
+							var typeStr = this.route(arg.type);
+							if (arg.isByValue() == false) {
+								if (arg.reference) {
+									typeStr = typeStr + "*";
+									}else{
+										typeStr = "std::unique_ptr<" + typeStr + ">";
+									}
 								}
-							var prefix = "";
-							if (method.binding == "fixed") {
-								prefix = "static ";
-								}
-							methods.push(prefix + this.route(method.output) + " " + method.name + "(" + args.join(", ") + ") {\n" + this.body(method.body) + "\n}");
+							args.push(typeStr + " " + arg.name);
 							}
+						var prefix = "";
+						if (method.binding == "fixed") {
+							prefix = "static ";
+							}
+						var rte = this.route(method.output);
+						var nme = method.name;
+						if (member.name == "@construct") {
+							rte = "";
+							prefix = "";
+							nme = root.getRoute();
+							}
+						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ") {\n" + this.body(method.body) + "\n}");
 						}
 					}
 				}
@@ -8767,7 +8887,11 @@ Carbonite.Assemblers.Cpp.prototype.define = function () {
 		if (define.initializer != null) {
 			set = " = " + this.expression(define.initializer);
 			}
-		return this.route(define.output) + " " + define.name + set;
+		var typeStr = this.route(define.output);
+		if (define.output.isPrimitiveValue() == false) {
+			typeStr = "std::unique_ptr<" + typeStr + ">";
+			}
+		return typeStr + " " + define.name + set;
 	}
 }
 
@@ -8872,14 +8996,14 @@ Carbonite.Assemblers.Cpp.prototype.term = function () {
 			return this.func(cast.function);
 			}else if (term.type == "prefix") {
 			var cast = term;
-			var doNew = "";
+			var doNew = "new ";
 			var cstrs = cast.expression.output.reference.getMethods("@construct");
 			var cnstr = cstrs[0];
 			if (cnstr.hasFlag("inline")) {
 				doNew = "";
 				}
 			if (cast.prefix == "new") {
-				return doNew + this.expression(cast.expression);
+				return "std::unique_ptr<" + this.route(cast.expression.output) + ">(" + doNew + this.expression(cast.expression) + ")";
 				}
 			}else if (term.type == "sequence") {
 			var cast = term;
@@ -8901,7 +9025,7 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 						if (cast.constantReference.reference.name == "empty") {
 							rtn += "null";
 							}else{
-								rtn += cast.constantReference.reference.route;
+								rtn += cast.constantReference.reference.getRoute();
 							}
 						}else{
 							rtn += cast.constantReference.reference.name;
@@ -8914,7 +9038,7 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 				if (cast.reference != null) {
 					if (cast.reference.type == "property") {
 						var refCast = cast.reference;
-						var access = ".";
+						var access = "->";
 						if (refCast.reference.binding == "fixed") {
 							access = "::";
 							}
@@ -8927,7 +9051,7 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 							}
 						}else{
 							var refMeth = cast.reference;
-							var access = ".";
+							var access = "->";
 							if (refMeth.reference.binding == "fixed") {
 								access = "::";
 								}
@@ -8961,17 +9085,34 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 					var callOn = cast.reference.getReference();
 					var methodName = "";
 					if (callOn.hasFlag("inline") == false) {
-						methodName = "." + callOn.name;
+						methodName = "->" + callOn.name;
 						}
 					if (callOn.hasFlag("native")) {
-						rtn = this.callMethod(callOn, cast.arguments, sequence.templates, rtn + methodName);
+						var seqTemps = sequence.templates;
+						if (sequence.templates.length == 0) {
+							if (sequence.parts.length > 0) {
+								var first = sequence.parts[0];
+								if (first.type == "reference") {
+									var castFirst = first;
+									if (castFirst.isConstant && castFirst.constantReference.templates.length > 0) {
+										seqTemps = castFirst.constantReference.templates;
+										}
+									}
+								}
+							}
+						rtn = this.callMethod(callOn, cast.arguments, seqTemps, rtn + methodName);
 						}else{
 							rtn += this.callMethod(callOn, cast.arguments, sequence.templates, "");
 						}
 					}else{
 						var args = [];
 						for (var a = 0; a < cast.arguments.length; a++) {
-							args.push(this.expression(cast.arguments[a]));
+							var arg = cast.arguments[a];
+							var exp = this.expression(cast.arguments[a]);
+							if (arg.output.isPrimitiveValue() == false) {
+								exp = "std::move(" + exp + ")";
+								}
+							args.push(exp);
 							}
 						rtn += "(" + args.join(", ") + ")";
 					}
@@ -8983,7 +9124,7 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 					var attrs = callOn.getAttributes("name");
 					var mp = attrs[0];
 					var attr = mp["value"];
-					methodName = "." + attr;
+					methodName = "->" + attr;
 					}
 				var castArr = [];
 				castArr.push(cast.argument);
@@ -9033,7 +9174,11 @@ Carbonite.Assemblers.Cpp.prototype.callMethod = function () {
 		var args = [];
 		for (var i = 0; i < ___arguments.length; i++) {
 			var arg = ___arguments[i];
-			args.push(this.expression(arg));
+			var exp = this.expression(arg);
+			if (arg.output.isPrimitiveValue() == false) {
+				exp = "std::move(" + exp + ")";
+				}
+			args.push(exp);
 			}
 		return this.callMethodWithStrings(method, args, templates, context);
 	}
@@ -9059,13 +9204,17 @@ Carbonite.Assemblers.Cpp.prototype.expression = function () {
 		if (expression.reference != null) {
 			var args = [];
 			if (expression.last != null) {
-				args.push(this.term(expression.last));
+				if (expression.last.output.isPrimitiveValue() == false) {
+					args.push("std::move(" + this.term(expression.last) + ")");
+					}else{
+						args.push(this.term(expression.last));
+					}
 				}
 			var temps = [];
 			if (expression.reference.hasFlag("native")) {
 				return this.callMethodWithStrings(expression.reference, args, temps, first);
 				}else{
-					first += "." + expression.reference.getRealName() + this.callMethodWithStrings(expression.reference, args, temps, "");
+					first += "->" + expression.reference.getRealName() + this.callMethodWithStrings(expression.reference, args, temps, "");
 				}
 			}
 		rtn = first;
@@ -9722,10 +9871,10 @@ Carbonite.Assemblers.Php.prototype.captureScope = function () {
 			if (def.name == "this") {
 				continue;
 				}
-			rtn += "&$" + this.unReserve(def.name);
-			if (i != scope.scope.length - 1) {
+			if (i != 0 && rtn.length > 0) {
 				rtn += ", ";
 				}
+			rtn += "&$" + this.unReserve(def.name);
 			}
 		var output = "";
 		if (scope.parent != null) {
@@ -9970,7 +10119,7 @@ Carbonite.Platforms.Cpp.prototype.build = function () {
 		var assembler = new Carbonite.Assemblers.Cpp(this.compiler, this.options);
 		var source = assembler.build();
 		if (outputToFile == false) {
-			this.compiler.rawOutput = source;
+			this.compiler.rawOutput = "#include <string>\n#include <vector>\n#include <map>\n#include <memory>\n#include <iostream>\n\n" + source;
 			}
 	}
 }
@@ -38707,7 +38856,7 @@ Carbide.Virtual.Values.Null.prototype.iterate = function () {
 Carbide.Virtual.Values.Reference = function () {
 	this.type = "null";
 
-	this.id = 1;
+	this.id = -1;
 
 	this.processor = null;
 

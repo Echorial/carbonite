@@ -10,5 +10,9 @@ class Carbonite.Terms.Prefix inherits Carbonite.Term {
 		this.output = this.expression.output;
 		this.parentExpression = parent;
 		this.prefix = this.raw["prefix"];
+
+		if (this.prefix == "new") {
+			this.output.owned = true;
+		}
 	}
 }

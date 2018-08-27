@@ -3,6 +3,8 @@ class Carbonite.Class inherits Carbonite.Named {
 	bound public map headerData = null;
 	bound public bool isFromHeader = false;
 
+	bound public bool primitiveValue = false;
+
 	bound public <Carbonite.Member>array members = new <Carbonite.Member>array();
 	bound public <Carbonite.Class>array inherits = new <Carbonite.Class>array();
 	bound public <Carbonite.Class>array headerInherits = new <Carbonite.Class>array();
@@ -11,6 +13,7 @@ class Carbonite.Class inherits Carbonite.Named {
 	bound public <Carbonite.Class>array descendants = new <Carbonite.Class>array();
 	bound public <map>array attributes = empty;
 	bound public string reroute = "";
+	bound public bool autoReroute = false;
 
 	bound public Carbonite.Body propertyContext = empty;
 
@@ -233,6 +236,10 @@ class Carbonite.Class inherits Carbonite.Named {
 
 			for (var int i in this.inherits) {
 				var Carbonite.Class cls = this.inherits[i];
+				if (cls.route == "primitive" or cls.route == "int")
+					if (this.route != "array" or this.route != "map")
+						this.primitiveValue = true;
+				
 				cls.executeInherits();
 				this.inherit(cls);
 				cls.descendants.push(this);

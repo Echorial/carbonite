@@ -10,7 +10,7 @@ class Carbonite.Platforms.Cpp inherits Carbonite.Platform {
 		var Carbonite.Assemblers.Cpp assembler = new Carbonite.Assemblers.Cpp(this.compiler, this.options);
 		var string source = assembler.build();
 		if (outputToFile == false) {
-			this.compiler.rawOutput = source;
+			this.compiler.rawOutput = "#include <string>\n#include <vector>\n#include <map>\n#include <memory>\n#include <iostream>\n\n" + source;
 		}
 	}
 }

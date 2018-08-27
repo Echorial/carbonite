@@ -10,12 +10,19 @@ class Carbonite.Argument inherits Carbonite.Range {
 	bound public map raw = empty;
 	bound public Carbonite.Doc doc = null;
 
+	bound public bool reference = false;
+	bound public bool byValue = false;
+
 	void @construct(Carbonite.Class parent, string name, map type) {
 		this.name = name;
 		this.type = new Carbonite.Type(parent.compiler, parent);
 		this.type.loadFromRaw(type);
 		this.parent = parent;
 		this.compiler = parent.compiler;
+	}
+
+	bound public bool isByValue() {
+		return this.type.isPrimitiveValue();
 	}
 
 	fixed public <Carbonite.Argument>function @construct(Carbonite.Compiler compiler, Carbonite.Class parent, Carbonite.Body container, map raw) {
