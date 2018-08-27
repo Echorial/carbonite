@@ -580,9 +580,10 @@ class Carbonite.Assemblers.Php inherits Carbonite.Assemblers.Loose {
 			if (def.name == "this")
 				continue;
 
-			rtn += "&$" + this.unReserve(def.name);
-			if (i != scope.scope.length - 1)
+			if (i != 0 and rtn.length > 0)
 				rtn += ", ";
+
+			rtn += "&$" + this.unReserve(def.name);
 		}
 
 		var output = "";
