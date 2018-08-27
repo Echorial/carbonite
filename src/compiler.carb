@@ -249,6 +249,14 @@ class Carbonite.Compiler {
 				var Carbonite.Class root = this.roots[i];
 				if (root.alreadyBuilt == false) {
 					root.compiler = this;
+					if (root.getAttribute(root.attributes, "Reroute") != null) {
+						var mp = root.getAttribute(root.attributes, "Reroute");
+						if (mp["value"].typeAsString() == "boolean") {
+							root.autoReroute = mp["value"];
+						}else{
+							root.reroute = mp["value"];
+						}
+					}
 					if (root.isFromHeader)
 						root.fillFromHeader();
 					else
