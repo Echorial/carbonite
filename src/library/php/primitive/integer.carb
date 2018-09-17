@@ -3,6 +3,7 @@ relative int inherits primitive {
 
 	[operator="=", order = 10] native inline void set(int what) {return context.instance + " = " + context.arguments[0];}
 	[operator="+"] native inline int add(int what) {return context.instance + " + " + context.arguments[0];}
+	[operator="+"] native inline int add(string what) {return context.instance + " . " + context.arguments[0];}
 	[operator="==", order=5] native inline bool equal(int compare) {return context.instance + " == " + context.arguments[0];}
 	[operator="!=", order=5] native inline bool notEqual(int compare) {return context.instance + " != " + context.arguments[0];}
 	[operator="^", order=4] native inline int pow(int to) {return context.instance + " ^ " + context.arguments[0];}

@@ -13,7 +13,7 @@ relative string inherits primitive {
 	native inline void @construct() {return '""';}
 
 	[operator="=", order = 10] native inline void set(string what) {return context.instance + " = " + context.arguments[0];}
-	[operator="+"] native inline string concat(string what) {return context.instance + " . " + context.arguments[0];}
+	[operator="+", order = 2] native inline string concat(string what) {return context.instance + " . " + context.arguments[0];}
 	[operator="+="] native inline string concatTo(string what) {return context.instance + " .= " + context.arguments[0];}
 	[operator="==", order=5] native inline bool equal(string compare) {return context.instance + " == " + context.arguments[0];}
 	[operator="!=", order=5] native inline bool notEqual(string compare) {return context.instance + " != " + context.arguments[0];}
