@@ -43,6 +43,10 @@ class Carbonite.Statement inherits Carbonite.Range, object {
 			rtn = new Carbonite.Statements.Break(container);
 		}else if (type == "native") {
 			rtn = new Carbonite.Statements.Native(container);
+		}else if (type == "throw") {
+			rtn = new Carbonite.Statements.Throw(container);
+		}else if (type == "try") {
+			rtn = new Carbonite.Statements.Try(container);
 		}
 		return rtn;
 	}

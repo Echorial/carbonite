@@ -226,6 +226,9 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		}else if (statement.type == "expression") {
 			var Carbonite.Statements.Expression exp = statement;
 			return this.expression(exp.expression, indent) + ";";
+		}else if (statement.type == "throw") {
+			var Carbonite.Statements.Throw exp = statement;
+			return "throw " + this.expression(exp.expression, indent) + ";";
 		}else if (statement.type == "return") {
 			var Carbonite.Statements.Return exp = statement;
 			return "return " + this.expression(exp.expression, indent) + ";";
@@ -246,6 +249,16 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 			var Carbonite.Statements.For forState = statement;
 			var string str = "";
 			str = "for (" + this.define(forState.define, indent) + ";" + this.expression(forState.check, indent) + ";" + this.expression(forState.iterate, indent) + ") {\n" + this.body(forState.body, indent) + "\n" + this.indent(indent) + "}";
+			return str;
+		}else if (statement.type == "try") {
+			var Carbonite.Statements.Try tryState = statement;
+			var string str = "";
+			var catches = new <string>array();
+			for (var int i in tryState.catches) {
+				var cat = tryState.catches[i];
+				catches.push(this.indent(indent) + "if (" + this.compareType("_carb_catch_var", cat.overload) + " || typeof _carb_catch_var == 'undefined' || _carb_catch_var === null) {\n" + this.indent(indent + 1) + "var " + cat.name + " = _carb_catch_var;\n" + this.body(cat.body, indent) + "\n" + this.indent(indent) + "}");
+			}
+			str = "try {\n" + this.body(tryState.body, indent) + "\n" + this.indent(indent - 1) + "} catch (_carb_catch_var) {\n" + catches.join("else") + "\n" + this.indent(indent - 1) + "}";
 			return str;
 		}else if (statement.type == "forin") {
 			var Carbonite.Statements.ForIn forState = statement;

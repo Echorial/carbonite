@@ -31,6 +31,8 @@
 	#include "src/constructs/statements/while.carb"
 	#include "src/constructs/statements/continue.carb"
 	#include "src/constructs/statements/break.carb"
+	#include "src/constructs/statements/try.carb"
+	#include "src/constructs/statements/throw.carb"
 	#include "src/constructs/statements/native.carb"
 	#include "src/constructs/statements/expression.carb"
 #include "src/constructs/argument.carb"

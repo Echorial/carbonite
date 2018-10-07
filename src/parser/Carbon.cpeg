@@ -6,7 +6,17 @@ map|start = document: Document;
 
 map|Document = roots: (Root / Implements)* _ {type: "document", roots: {$roots}};
 
-string|Safe_Name = start: [a-zA-Z_@] after: [a-zA-Z0-9_.]** {string|export = $start + $after;};
+string|Safe_Name = start: [a-zA-Z_@] after: [a-zA-Z0-9_.]**
+	{string|
+		var name = $start + $after;
+		export = name;
+	};
+	
+string|Safe_Name_Seg = ","? _ start: [a-zA-Z_@] after: [a-zA-Z0-9_.]**
+	{string|
+		var name = $start + $after;
+		export = name;
+	};
 
 map|Template = "<" types: Type+|"," _ ">" {map|export["types"] = $types;};
 
@@ -18,7 +28,7 @@ map|Template_Type = "<" templates: (Template_Default / Template_Def)*|"," _ ">" 
 
 map|Inherit = "inherits" __ types: Type+|"," {types: {$types}};
 
-map|Root = _ doc: String_Tick* _ attr: Attribute? _ flags: Flag*|"," _ type: ("interface" / "relative" / "class" / "extend" / "namespace") __ templates: Template_Type* _ name: Safe_Name _ inherits: Inherit? _ "{" _ members: (Member_Flagged / Member)* _ "}"
+map|Root = _ doc: String_Tick* _ attr: Attribute? _ flags: Flag*|" " _ type: ("interface" / "relative" / "class" / "extend" / "namespace") __ templates: Template_Type* _ name: Safe_Name _ inherits: Inherit? _ "{" _ members: (Member_Flagged / Member)* _ "}"
 {type: {$type}, attribute: {$attr}, doc: {$doc}, flags: {$flags}, name: {$name}, members: {$members}, inherits: {$inherits}, templates: {$templates}, start: {startPos}, end: {charPos}};
 
 map|Implements = _ base: Safe_Name __ "implements" __ subject: Safe_Name _ ";" {type: "implements", implementer: {$base}, implements: {$subject}, start: {startPos}, end: {charPos}};
@@ -40,6 +50,7 @@ string|Flag = _ str: Safe_Name {string|export = $str;
 	if ($str == "relative") {@error(1, "", "")}
 	if ($str == "extend") {@error(1, "", "")}
 	if ($str == "namespace") {@error(1, "", "")}
+	if ($str == "interface") {@error(1, "", "")}
 };
 
 map|Optional = "=" _ exp: Expression {map|export = $exp;};
@@ -171,7 +182,7 @@ map|Else = "else" _ body: (Block / Single_Statement) {type: "else", body: {$body
 
 map|For = "for" _ "(" _ define: (Define / Define_Auto) _ check: Expression ";" _ iterate: Expression ")" _ body: (Block / Single_Statement) {type: "for", define: {$define}, iterate: {$iterate}, check: {$check}, body: {$body}};
 
-map|For_In = "for" _ "(" _ define: Inline_Def __ "in" _ iterate: Expression ")" _ body: (Block / Single_Statement) {type: "for", in: {true}, define: {$define}, iterate: {$iterate}, body: {$body}};
+map|For_In = "for" _ "(" _ define: (Inline_Define / Multi_Define) __ mode: ("in" / "of") iterate: Expression ")" _ body: (Block / Single_Statement) {type: "for", in: {true}, define: {$define}, iterate: {$iterate}, body: {$body}, mode: {$mode}};
 
 map|Break = "break" _ ";" {type: "break"};
 
@@ -181,7 +192,7 @@ map|While = "while" _ check: Group _ body: (Block / Single_Statement) {type: "wh
 
 map|Try = "try" _ body: (Block / Single_Statement) _ catch: Catch* {type: "try", catch: {$catch}, body: {$body}};
 
-map|Catch = "catch" _ "(" _ input: Parameter _ ")" _ body: (Block / Single_Statement) {input: {$input}, body: {$body}};
+map|Catch = _ "catch" _ "(" _ input: Parameter _ ")" _ body: (Block / Single_Statement) {input: {$input}, body: {$body}};
 
 map|Throw = "throw " _ exp: Expression _ ";" {type: "throw", expression: {$exp}};
 
@@ -232,15 +243,20 @@ map|Native = "native " _ platform: Safe_Name _ "{" content:
 	>**
 "}" {type: "native", platform: {$platform}, content: {$content}};
 
-map|Define_Auto = "var " _ type: Type _ name: Safe_Name _ "=" _ exp: Expression _ ";" {type: "define", name: {$name}, valueType: {$type}, value: {$exp}};
+map|Define_Auto = ("var" / "let") __ type: Type _ name: Safe_Name _ "=" _ exp: Expression _ ";" {type: "define", name: {$name}, valueType: {$type}, value: {$exp}};
 
-map|Define = "var " _ name: Safe_Name _ "=" _ exp: Expression _ ";" {type: "define", name: {$name}, valueType: "", auto: {true}, value: {$exp}};
+map|Define = ("var" / "let") __ name: Safe_Name _ "=" _ exp: Expression _ ";" {type: "define", name: {$name}, valueType: "", auto: {true}, value: {$exp}};
 
 map|Inline_Def = def: (Inline_Define / Inline_Define_Auto) {map|export = $def;export["start"] = startPos;export["end"] = charPos;};
 
-map|Inline_Define = "var" __ type: Type __ name: Safe_Name {type: "define", name: {$name}, valueType: {$type}};
+map|Define_List = _ ","? _ type: Type __ name: Safe_Name
+	{type: {$type}, name: {$name}};
 
-map|Inline_Define_Auto = "var" __ name: Safe_Name {type: "define", name: {$name}, valueType: "", auto: {true}};
+map|Inline_Define = ("var" / "let") __ type: Type __ name: Safe_Name {type: "define", name: {$name}, valueType: {$type}};
+
+map|Multi_Define = ("var" / "let") __ name: Safe_Name _ ","? _ name2: Safe_Name? {type: "define", name: {$name}, name2: {$name2}};
+
+map|Inline_Define_Auto = ("var" / "let") __ name: Safe_Name {type: "define", name: {$name}, valueType: "", auto: {true}};
 
 
 string|String_Tick = '`' str:

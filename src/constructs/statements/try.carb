@@ -1,0 +1,38 @@
+class Carbonite.Statements.Try inherits Carbonite.Statement {
+	fixed public override string type = "try";
+
+	bound public Carbonite.Body body = empty;
+	bound public <Carbonite.Catch>array catches = new <Carbonite.Catch>array();
+
+	bound public override <void>function build(map raw, Carbonite.Body container) {
+		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body.inherit(container);
+
+		var <map>array catches = raw["catch"];
+
+		for (var int i in catches) {
+			var cat = new Carbonite.Catch(container, catches[i]);
+			this.catches.push(cat);
+		}
+		
+		this.body.build();
+	}
+}
+
+class Carbonite.Catch {
+	Carbonite.Body body = null;
+	Carbonite.Type overload = null;
+	string name = "";
+
+	void @construct(Carbonite.Body container, map raw) {
+
+		this.name = raw["input"]["name"];
+
+		this.overload = new Carbonite.Type(container.parent.parent.compiler, container.parent.parent);
+		this.overload.loadFromRaw(raw["input"]["type"]);
+
+		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body.inherit(container);
+		this.body.build();
+	}
+}
