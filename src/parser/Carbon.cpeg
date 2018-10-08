@@ -53,6 +53,8 @@ string|Flag = _ str: Safe_Name {string|export = $str;
 	if ($str == "interface") {@error(1, "", "")}
 };
 
+string|Member_Flag = _ str: Safe_Name {string|export = $str;};
+
 map|Optional = "=" _ exp: Expression {map|export = $exp;};
 
 map|Parameter = _ type: Type __ name: Safe_Name _ op: Optional* _ doc: String_Tick* {type: {$type}, doc: {$doc}, name: {$name}, optional: {$op}};
@@ -77,7 +79,7 @@ map|Interface = ";" {type: "interface"};
 
 map|Member_Value = v: (Method / Property / Interface) {map|export = $v;};
 
-map|Member_Flagged = _ doc: String_Tick* _ attr: Attribute? _ flags: Flag+ _ type: Type? _ templates: Template_Type* _ name: Safe_Name? _ val: Member_Value
+map|Member_Flagged = _ doc: String_Tick* _ attr: Attribute? _ flags: Member_Flag+ _ type: Type? _ templates: Template_Type* _ name: Safe_Name? _ val: Member_Value
 {map|
 export["type"] = $val["type"];
 export["name"] = $name;
