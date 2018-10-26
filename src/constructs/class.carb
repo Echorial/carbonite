@@ -356,6 +356,19 @@ class Carbonite.Class inherits Carbonite.Named {
 		}
 	}
 
+	bound public <<Carbonite.Member>array>function getMembers(string name) {
+		var members = new <Carbonite.Member>array();
+		
+		for (var int i in this.members) {
+			var Carbonite.Member member = this.members[i];
+			if (member.name == name) {
+				members.push(member);
+			}
+		}
+
+		return members;
+	}
+
 	bound public <Carbonite.Member>function getMember(string name) {
 		for (var int i in this.members) {
 			var Carbonite.Member member = this.members[i];
@@ -392,7 +405,7 @@ class Carbonite.Class inherits Carbonite.Named {
 			var Carbonite.Member mem = from.members[i];
 			var bool notImplemented = true;
 			var Carbonite.Member check = this.getMember(mem.name);
-			if (check != empty) {
+			if (check != null) {
 				if (check.hasFlag("override") or mem.abstract) {
 					notImplemented = false;
 				}

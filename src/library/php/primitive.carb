@@ -9,3 +9,14 @@ relative primitive {
 }
 
 relative object {}
+
+core class _c_lib_run {
+	trust fixed string getClass(void obj) {
+		native php {
+			if (gettype($obj) == "object")
+				return get_class($obj);
+			else
+				return gettype($obj);
+		}
+	}
+}

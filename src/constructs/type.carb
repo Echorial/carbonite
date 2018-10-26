@@ -207,6 +207,7 @@ class Carbonite.Type inherits Carbonite.Range {
 
 	bound public <Carbonite.ReferenceType>function getWithContext(Carbonite.Type context) {
 		var Carbonite.ReferenceType rtn = new Carbonite.ReferenceType(this, context);
+		rtn.loadLocation(this.parent, this.raw);
 		return rtn;
 	}
 

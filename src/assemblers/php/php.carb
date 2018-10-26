@@ -245,7 +245,7 @@ class Carbonite.Assemblers.Php inherits Carbonite.Assemblers.Loose {
 			}else{
 				var <string>array tests = new <string>array();
 				if (to.route != "primitive")
-					tests.push("get_class(" + varName + ") == '" + this.classPrefix + this.doRoute(to) + "'");
+					tests.push("_c_lib_run::getClass(" + varName + ") == '" + this.classPrefix + this.doRoute(to) + "'");
 				for (var int i in to.descendants) {
 					var Carbonite.Class child = to.descendants[i];
 					tests.push(this.compareClass(varName, child));

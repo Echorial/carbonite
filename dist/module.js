@@ -12,6 +12,14 @@ Memory = function () {
 //Relative Buffer
 //Relative primitive
 //Relative object
+_c_lib_run = function () {
+
+
+}
+
+_c_lib_run.getClass = function (obj) {
+		}
+
 //Relative array
 //Relative bool
 //Relative byte
@@ -1567,6 +1575,20 @@ Carbonite.Class.prototype.buildInheritance = function () {
 				this.inherits.push(cls);
 				}
 			}
+	}
+}
+
+Carbonite.Class.prototype.getMembers = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var name = arguments[0];
+		var members = [];
+		for (var i = 0; i < this.members.length; i++) {
+			var member = this.members[i];
+			if (member.name == name) {
+				members.push(member);
+				}
+			}
+		return members;
 	}
 }
 
@@ -6941,6 +6963,7 @@ Carbonite.Type.prototype.getWithContext = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var context = arguments[0];
 		var rtn = new Carbonite.ReferenceType(this, context);
+		rtn.loadLocation(this.parent, this.raw);
 		return rtn;
 	}
 }
@@ -7238,6 +7261,7 @@ Carbonite.ReferenceType.prototype.getWithContext = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var context = arguments[0];
 		var rtn = new Carbonite.ReferenceType(this, context);
+		rtn.loadLocation(this.parent, this.raw);
 		return rtn;
 	}
 }
@@ -9800,7 +9824,7 @@ Carbonite.Assemblers.Php.prototype.compareClass = function () {
 				}else{
 					var tests = [];
 					if (to.route != "primitive") {
-						tests.push("get_class(" + varName + ") == '" + this.classPrefix + this.doRoute(to) + "'");
+						tests.push("_c_lib_run::getClass(" + varName + ") == '" + this.classPrefix + this.doRoute(to) + "'");
 						}
 					for (var i = 0; i < to.descendants.length; i++) {
 						var child = to.descendants[i];
