@@ -12,14 +12,6 @@ Memory = function () {
 //Relative Buffer
 //Relative primitive
 //Relative object
-_c_lib_run = function () {
-
-
-}
-
-_c_lib_run.getClass = function (obj) {
-		}
-
 //Relative array
 //Relative bool
 //Relative byte
@@ -21915,6 +21907,8 @@ CarbonitePreprocessorError = function () {
 
 	this.vested = 0;
 
+	this.depth = 0;
+
 	this.path = [];
 
 	this.offset = 0;
@@ -21974,11 +21968,17 @@ CarbonitePreprocessor = function () {
 
 	this.parsedChars = 0;
 
+	this.depth = 0;
+
 	this.currentInput = "";
 
 	this.data = {};
 
+	this.deepError = new CarbonitePreprocessorError(0, 0, 0);
+
 	this.error = new CarbonitePreprocessorError(0, 0, 0);
+
+	this.errors = [];
 
 	this.offset = 0;
 
@@ -21997,8 +21997,18 @@ CarbonitePreprocessor.parse = function () {
 		var input = arguments[0];
 		var parser = new CarbonitePreprocessor();
 		var output = parser.start(input);
+		parser.error = parser.deepError;
 		if (parser.hadError && parser.error.found == String.fromCharCode(1)) {
 			parser.error.found = "End of input";
+			}
+		for (var i = 0;i < parser.error.offset;i++) {
+			parser.error.column++;
+			if (i < parser.currentInput.length) {
+				if (parser.currentInput[i] == "\n") {
+					parser.error.line++;
+					parser.error.column = 0;
+					}
+				}
 			}
 		var rtn = new CarbonitePreprocessorOutput(parser.hadError, parser.error, parser.data["data"]);
 		return rtn;
@@ -22083,83 +22093,87 @@ else 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof ar
 																																																if (rule == "Sub") {
 																																																	output = parser.Sub(input, 0);
 																																																	}else{
-																																																		if (rule == "Expression") {
-																																																			output = parser.Expression(input, 0);
+																																																		if (rule == "_Expression") {
+																																																			output = parser._Expression(input, 0);
 																																																			}else{
-																																																				if (rule == "If_Expression") {
-																																																					output = parser.If_Expression(input, 0);
+																																																				if (rule == "Expression") {
+																																																					output = parser.Expression(input, 0);
 																																																					}else{
-																																																						if (rule == "Safe_Name") {
-																																																							output = parser.Safe_Name(input, 0);
+																																																						if (rule == "If_Expression") {
+																																																							output = parser.If_Expression(input, 0);
 																																																							}else{
-																																																								if (rule == "Argument") {
-																																																									output = parser.Argument(input, 0);
+																																																								if (rule == "Safe_Name") {
+																																																									output = parser.Safe_Name(input, 0);
 																																																									}else{
-																																																										if (rule == "Literal_Map") {
-																																																											output = parser.Literal_Map(input, 0);
+																																																										if (rule == "Argument") {
+																																																											output = parser.Argument(input, 0);
 																																																											}else{
-																																																												if (rule == "Value") {
-																																																													output = parser.Value(input, 0);
+																																																												if (rule == "Literal_Map") {
+																																																													output = parser.Literal_Map(input, 0);
 																																																													}else{
-																																																														if (rule == "Literal_String") {
-																																																															output = parser.Literal_String(input, 0);
+																																																														if (rule == "Value") {
+																																																															output = parser.Value(input, 0);
 																																																															}else{
-																																																																if (rule == "Number") {
-																																																																	output = parser.Number(input, 0);
+																																																																if (rule == "Literal_String") {
+																																																																	output = parser.Literal_String(input, 0);
 																																																																	}else{
-																																																																		if (rule == "Literal_Array") {
-																																																																			output = parser.Literal_Array(input, 0);
+																																																																		if (rule == "Number") {
+																																																																			output = parser.Number(input, 0);
 																																																																			}else{
-																																																																				if (rule == "Bool") {
-																																																																					output = parser.Bool(input, 0);
+																																																																				if (rule == "Literal_Array") {
+																																																																					output = parser.Literal_Array(input, 0);
 																																																																					}else{
-																																																																						if (rule == "Constant") {
-																																																																							output = parser.Constant(input, 0);
+																																																																						if (rule == "Bool") {
+																																																																							output = parser.Bool(input, 0);
 																																																																							}else{
-																																																																								if (rule == "Group") {
-																																																																									output = parser.Group(input, 0);
+																																																																								if (rule == "Constant") {
+																																																																									output = parser.Constant(input, 0);
 																																																																									}else{
-																																																																										if (rule == "Operation") {
-																																																																											output = parser.Operation(input, 0);
+																																																																										if (rule == "Group") {
+																																																																											output = parser.Group(input, 0);
 																																																																											}else{
-																																																																												if (rule == "Check") {
-																																																																													output = parser.Check(input, 0);
+																																																																												if (rule == "Operation") {
+																																																																													output = parser.Operation(input, 0);
 																																																																													}else{
-																																																																														if (rule == "Call") {
-																																																																															output = parser.Call(input, 0);
+																																																																														if (rule == "Check") {
+																																																																															output = parser.Check(input, 0);
 																																																																															}else{
-																																																																																if (rule == "_") {
-																																																																																	output = parser._(input, 0);
+																																																																																if (rule == "Call") {
+																																																																																	output = parser.Call(input, 0);
 																																																																																	}else{
-																																																																																		if (rule == "__") {
-																																																																																			output = parser.__(input, 0);
+																																																																																		if (rule == "_") {
+																																																																																			output = parser._(input, 0);
 																																																																																			}else{
-																																																																																				if (rule == "String") {
-																																																																																					output = parser.String(input, 0);
+																																																																																				if (rule == "__") {
+																																																																																					output = parser.__(input, 0);
 																																																																																					}else{
-																																																																																						if (rule == "String_Double") {
-																																																																																							output = parser.String_Double(input, 0);
+																																																																																						if (rule == "String") {
+																																																																																							output = parser.String(input, 0);
 																																																																																							}else{
-																																																																																								if (rule == "String_Single") {
-																																																																																									output = parser.String_Single(input, 0);
+																																																																																								if (rule == "String_Double") {
+																																																																																									output = parser.String_Double(input, 0);
 																																																																																									}else{
-																																																																																										if (rule == "Json") {
-																																																																																											output = parser.Json(input, 0);
+																																																																																										if (rule == "String_Single") {
+																																																																																											output = parser.String_Single(input, 0);
 																																																																																											}else{
-																																																																																												if (rule == "Json_Array") {
-																																																																																													output = parser.Json_Array(input, 0);
+																																																																																												if (rule == "Json") {
+																																																																																													output = parser.Json(input, 0);
 																																																																																													}else{
-																																																																																														if (rule == "Json_EmptyArray") {
-																																																																																															output = parser.Json_EmptyArray(input, 0);
+																																																																																														if (rule == "Json_Array") {
+																																																																																															output = parser.Json_Array(input, 0);
 																																																																																															}else{
-																																																																																																if (rule == "Json_EmptyMap") {
-																																																																																																	output = parser.Json_EmptyMap(input, 0);
+																																																																																																if (rule == "Json_EmptyArray") {
+																																																																																																	output = parser.Json_EmptyArray(input, 0);
 																																																																																																	}else{
-																																																																																																		if (rule == "Json_Value") {
-																																																																																																			output = parser.Json_Value(input, 0);
+																																																																																																		if (rule == "Json_EmptyMap") {
+																																																																																																			output = parser.Json_EmptyMap(input, 0);
 																																																																																																			}else{
-																																																																																																				if (rule == "Json_Number") {
-																																																																																																					output = parser.Json_Number(input, 0);
+																																																																																																				if (rule == "Json_Value") {
+																																																																																																					output = parser.Json_Value(input, 0);
+																																																																																																					}else{
+																																																																																																						if (rule == "Json_Number") {
+																																																																																																							output = parser.Json_Number(input, 0);
+																																																																																																							}
 																																																																																																					}
 																																																																																																			}
 																																																																																																	}
@@ -22210,14 +22224,20 @@ else 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof ar
 							}
 					}
 			}
+		parser.error = parser.deepError;
+		if (parser.lastErrors.length > 0) {
+			parser.error = parser.lastErrors[0];
+			}
 		if (parser.hadError && parser.error.found == String.fromCharCode(1)) {
 			parser.error.found = "End of input";
 			}
 		for (var i = 0;i < parser.error.offset;i++) {
 			parser.error.column++;
-			if (parser.currentInput[i] == "\n") {
-				parser.error.line++;
-				parser.error.column = 0;
+			if (i < parser.currentInput.length) {
+				if (parser.currentInput[i] == "\n") {
+					parser.error.line++;
+					parser.error.column = 0;
+					}
 				}
 			}
 		var rtn = new CarbonitePreprocessorOutput(output.hadError, output.error, output.data);
@@ -22236,6 +22256,18 @@ CarbonitePreprocessor.prototype.assembleCodes = function () {
 	}
 }
 
+CarbonitePreprocessor.prototype.groupErrors = function () {
+	if (arguments.length == 0) {
+
+	}
+}
+
+CarbonitePreprocessor.prototype.popGroup = function () {
+	if (arguments.length == 0) {
+
+	}
+}
+
 CarbonitePreprocessor.prototype.giveError = function () {
 	if (arguments.length == 3 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var code = arguments[0];
@@ -22248,6 +22280,17 @@ CarbonitePreprocessor.prototype.giveError = function () {
 		this.error.offset = this.offset;
 		this.error.line = 1;
 		this.error.column = 0;
+		if (this.deepError == null || this.depth > this.deepError.depth) {
+			var err = new CarbonitePreprocessorError(0, 0, 0);
+			err.code = code;
+			err.expected = expected;
+			err.found = found;
+			err.offset = this.offset;
+			err.line = 1;
+			err.column = 0;
+			err.depth = this.depth;
+			this.deepError = err;
+			}
 	}
 }
 
@@ -22260,6 +22303,7 @@ CarbonitePreprocessor.prototype.start = function () {
 		var data = this.data["data"];
 		var c = 0;
 		var literalChar = 0;
+		try {;
 		for (var charPos = 0;charPos < input.length;charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
@@ -22273,6 +22317,7 @@ CarbonitePreprocessor.prototype.start = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this.Source(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "Source(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -22282,6 +22327,7 @@ CarbonitePreprocessor.prototype.start = function () {
 						data["document"] = ruleOutCast0;
 						c = 0 - 1;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -22289,11 +22335,14 @@ CarbonitePreprocessor.prototype.start = function () {
 				break;
 				}
 			}
+		} catch(err) {};
 		for (var i = 0;i < this.error.offset;i++) {
 			this.error.column++;
-			if (this.currentInput[i] == "\n") {
-				this.error.line++;
-				this.error.column = 0;
+			if (i < this.currentInput.length) {
+				if (this.currentInput[i] == "\n") {
+					this.error.line++;
+					this.error.column = 0;
+					}
 				}
 			}
 		if (false && this.hadError == false) {
@@ -22324,8 +22373,12 @@ CarbonitePreprocessor.prototype.Source = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut0 = this.Raw(input, charPos);
 				if (ruleOut0.hadError) {
+					this.depth--;
 					c = 1;
 					charPos--;
 					this.offset--;
@@ -22341,9 +22394,14 @@ CarbonitePreprocessor.prototype.Source = function () {
 							}
 						c = 0;
 					}
+				this.depth--;
 				}else if (c == 1) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut1 = this.Pre(input, charPos);
 				if (ruleOut1.hadError) {
+					this.depth--;
 					if (true) {
 						var castacs0 = data["s"];
 						var actionCap0s = data["s"];
@@ -22365,6 +22423,7 @@ CarbonitePreprocessor.prototype.Source = function () {
 						c = 0;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -22403,8 +22462,12 @@ CarbonitePreprocessor.prototype.Pre = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut0 = this.If(input, charPos);
 				if (ruleOut0.hadError) {
+					this.depth--;
 					c = 1;
 					charPos--;
 					this.offset--;
@@ -22419,12 +22482,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 1) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut1 = this.Define(input, charPos);
 				if (ruleOut1.hadError) {
+					this.depth--;
 					c = 2;
 					charPos--;
 					this.offset--;
@@ -22439,12 +22508,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut2 = this.Return(input, charPos);
 				if (ruleOut2.hadError) {
+					this.depth--;
 					c = 3;
 					charPos--;
 					this.offset--;
@@ -22459,12 +22534,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut3 = this.Doc(input, charPos);
 				if (ruleOut3.hadError) {
+					this.depth--;
 					c = 4;
 					charPos--;
 					this.offset--;
@@ -22479,12 +22560,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 4) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut4 = this.Doc_Line(input, charPos);
 				if (ruleOut4.hadError) {
+					this.depth--;
 					c = 5;
 					charPos--;
 					this.offset--;
@@ -22499,12 +22586,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 5) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut5 = this.Output(input, charPos);
 				if (ruleOut5.hadError) {
+					this.depth--;
 					c = 6;
 					charPos--;
 					this.offset--;
@@ -22519,12 +22612,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 6) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut6 = this.Function(input, charPos);
 				if (ruleOut6.hadError) {
+					this.depth--;
 					c = 7;
 					charPos--;
 					this.offset--;
@@ -22539,12 +22638,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 7) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut7 = this.On(input, charPos);
 				if (ruleOut7.hadError) {
+					this.depth--;
 					c = 8;
 					charPos--;
 					this.offset--;
@@ -22559,12 +22664,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 8) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut8 = this.Script(input, charPos);
 				if (ruleOut8.hadError) {
+					this.depth--;
 					c = 9;
 					charPos--;
 					this.offset--;
@@ -22579,12 +22690,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 9) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut9 = this.Var(input, charPos);
 				if (ruleOut9.hadError) {
+					this.depth--;
 					c = 10;
 					charPos--;
 					this.offset--;
@@ -22599,12 +22716,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 10) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut10 = this.Include(input, charPos);
 				if (ruleOut10.hadError) {
+					this.depth--;
 					c = 11;
 					charPos--;
 					this.offset--;
@@ -22619,12 +22742,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 11) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut11 = this.For(input, charPos);
 				if (ruleOut11.hadError) {
+					this.depth--;
 					c = 12;
 					charPos--;
 					this.offset--;
@@ -22639,12 +22768,18 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 12) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut12 = this.ForIn(input, charPos);
 				if (ruleOut12.hadError) {
+					this.depth--;
 					c = 13;
 					charPos--;
 					this.offset--;
@@ -22659,13 +22794,21 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 13) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut13 = this.Lost(input, charPos);
 				if (ruleOut13.hadError) {
-					this.giveError(1, "If, Define, Return, Doc, Doc_Line, Output, Function, On, Script, Var, Include, For, ForIn, Lost", currentChar);
+					this.depth--;
+					c = 14;
+					charPos--;
+					this.offset--;
 					}else{
 						var ruleOutCast13 = ruleOut13.data["data"];
 						charPos = this.offset;
@@ -22677,9 +22820,35 @@ CarbonitePreprocessor.prototype.Pre = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
+				}else if (c == 14) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
+				var ruleOut14 = this.Backslash(input, charPos);
+				if (ruleOut14.hadError) {
+					this.depth--;
+					this.giveError(1, "If, Define, Return, Doc, Doc_Line, Output, Function, On, Script, Var, Include, For, ForIn, Lost, Backslash", currentChar);
+					}else{
+						var ruleOutCast14 = ruleOut14.data["data"];
+						charPos = this.offset;
+						data["p"] = ruleOutCast14;
+						if (true) {
+							var castacp0 = data["p"];
+							var actionCap0p = data["p"];
+							dataStore["data"] = actionCap0p;
+							dataStore["data"]["offset"] = charPos;
+							dataStore["data"]["startOffset"] = startPos;
+							}
+						this.depth--;
+						c = 0 - 1;
+						this.error.vested++;
+					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -22711,6 +22880,7 @@ CarbonitePreprocessor.prototype.Raw = function () {
 		var c = 0;
 		data["c"] = "";
 		var inString = "";
+		var checkPre = false;
 		var lineComment = false;
 		var checkComment = false;
 		var openComment = false;
@@ -22736,7 +22906,7 @@ CarbonitePreprocessor.prototype.Raw = function () {
 							dataStore["data"]["startOffset"] = startPos;
 							dataStore["data"]["content"] = actionCap0c;
 							}
-						}else if (currentChar == "/") {
+						}else if (currentChar == "/" && inString.length == 0) {
 						openComment = true;
 						lineComment = true;
 						data["c"] += " ";
@@ -22952,8 +23122,12 @@ CarbonitePreprocessor.prototype.SourceLine = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut0 = this.RawLine(input, charPos);
 				if (ruleOut0.hadError) {
+					this.depth--;
 					c = 1;
 					charPos--;
 					this.offset--;
@@ -22969,9 +23143,14 @@ CarbonitePreprocessor.prototype.SourceLine = function () {
 							}
 						c = 0;
 					}
+				this.depth--;
 				}else if (c == 1) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut1 = this.Lost(input, charPos);
 				if (ruleOut1.hadError) {
+					this.depth--;
 					if (true) {
 						var castacs0 = data["s"];
 						var actionCap0s = data["s"];
@@ -22993,6 +23172,7 @@ CarbonitePreprocessor.prototype.SourceLine = function () {
 						c = 0;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -23056,7 +23236,7 @@ CarbonitePreprocessor.prototype.RawLine = function () {
 						charPos--;
 						this.offset--;
 						}else{
-							this.giveError(1, "#, \r\n", currentChar);
+							this.giveError(1, "#, nl", currentChar);
 						}
 					this.error.vested++;
 					}else{
@@ -23122,6 +23302,7 @@ CarbonitePreprocessor.prototype.If = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this.If_Expression(input, charPos);
 				if (ruleOut1.hadError) {
 					var castchecks1 = data["checks"];
@@ -23149,7 +23330,9 @@ CarbonitePreprocessor.prototype.If = function () {
 						c = 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.Source(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "Source(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -23159,6 +23342,7 @@ CarbonitePreprocessor.prototype.If = function () {
 						data["content"] = ruleOutCast2;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
 				var lit3 = [35, 101, 110, 100, 32, 105, 102];
 				if (currentCode == lit3[literalChar]) {
@@ -23217,6 +23401,7 @@ CarbonitePreprocessor.prototype.As = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this._(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "White space(optional)(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -23225,6 +23410,7 @@ CarbonitePreprocessor.prototype.As = function () {
 						charPos = this.offset;
 						c = 1;
 					}
+				this.depth--;
 				}else if (c == 1) {
 				var lit1 = [97, 115];
 				if (currentCode == lit1[literalChar]) {
@@ -23238,6 +23424,7 @@ CarbonitePreprocessor.prototype.As = function () {
 						this.giveError(1, "" + this.assembleCodes(lit1) + "", currentChar);
 					}
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.__(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "White space(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -23246,7 +23433,9 @@ CarbonitePreprocessor.prototype.As = function () {
 						charPos = this.offset;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this.Safe_Name(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "Safe_Name(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -23261,6 +23450,7 @@ CarbonitePreprocessor.prototype.As = function () {
 							}
 						c = 0 - 1;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -23312,6 +23502,7 @@ CarbonitePreprocessor.prototype.Include = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this.Expression(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -23322,7 +23513,9 @@ CarbonitePreprocessor.prototype.Include = function () {
 						c = 2;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.As(input, charPos);
 				if (ruleOut2.hadError) {
 					if (true) {
@@ -23338,6 +23531,7 @@ CarbonitePreprocessor.prototype.Include = function () {
 					this.offset--;
 					if (ruleOut2.error.vested > 1) {
 						this.giveError(ruleOut2.error.code, ruleOut2.error.expected, ruleOut2.error.found);
+						throw new Error("Vested error");
 						}
 					}else{
 						var ruleOutCast2 = ruleOut2.data["data"];
@@ -23369,6 +23563,7 @@ CarbonitePreprocessor.prototype.Include = function () {
 						c = 2;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -23419,6 +23614,7 @@ CarbonitePreprocessor.prototype.Output = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this.SourceLine(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "SourceLine(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -23434,6 +23630,7 @@ CarbonitePreprocessor.prototype.Output = function () {
 							}
 						c = 0 - 1;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -23484,6 +23681,7 @@ CarbonitePreprocessor.prototype.Return = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this.Expression(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -23500,6 +23698,7 @@ CarbonitePreprocessor.prototype.Return = function () {
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -23550,6 +23749,7 @@ CarbonitePreprocessor.prototype.On = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this.Expression(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -23560,7 +23760,9 @@ CarbonitePreprocessor.prototype.On = function () {
 						c = 2;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.Source(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "Source(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -23570,6 +23772,7 @@ CarbonitePreprocessor.prototype.On = function () {
 						data["content"] = ruleOutCast2;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
 				var lit3 = [35, 101, 110, 100, 32, 111, 110];
 				if (currentCode == lit3[literalChar]) {
@@ -23628,6 +23831,8 @@ CarbonitePreprocessor.prototype.DocName = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.groupErrors();
+				this.depth++;
 				var lit0 = [110, 97, 118, 68, 114, 111, 112];
 				if (currentCode == lit0[literalChar]) {
 					literalChar++;
@@ -23638,16 +23843,20 @@ CarbonitePreprocessor.prototype.DocName = function () {
 							var actionCap0name = data["name"];
 							dataStore["data"] = actionCap0name;
 							}
+						this.depth--;
 						c = 0 - 1;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						c = 1;
 						charPos--;
 						this.offset--;
 					}
 				}else if (c == 1) {
+				this.groupErrors();
+				this.depth++;
 				var lit1 = [116, 114, 101, 101];
 				if (currentCode == lit1[literalChar]) {
 					literalChar++;
@@ -23658,16 +23867,20 @@ CarbonitePreprocessor.prototype.DocName = function () {
 							var actionCap0name = data["name"];
 							dataStore["data"] = actionCap0name;
 							}
+						this.depth--;
 						c = 0 - 1;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						c = 2;
 						charPos--;
 						this.offset--;
 					}
 				}else if (c == 2) {
+				this.groupErrors();
+				this.depth++;
 				var lit2 = [112, 97, 103, 101];
 				if (currentCode == lit2[literalChar]) {
 					literalChar++;
@@ -23678,11 +23891,13 @@ CarbonitePreprocessor.prototype.DocName = function () {
 							var actionCap0name = data["name"];
 							dataStore["data"] = actionCap0name;
 							}
+						this.depth--;
 						c = 0 - 1;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						this.giveError(1, "navDrop, tree, page", currentChar);
 					}
 				}
@@ -23723,6 +23938,8 @@ CarbonitePreprocessor.prototype.DocNameLine = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.groupErrors();
+				this.depth++;
 				var lit0 = [110, 97, 118, 76, 105, 110, 107];
 				if (currentCode == lit0[literalChar]) {
 					literalChar++;
@@ -23733,16 +23950,20 @@ CarbonitePreprocessor.prototype.DocNameLine = function () {
 							var actionCap0name = data["name"];
 							dataStore["data"] = actionCap0name;
 							}
+						this.depth--;
 						c = 0 - 1;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						c = 1;
 						charPos--;
 						this.offset--;
 					}
 				}else if (c == 1) {
+				this.groupErrors();
+				this.depth++;
 				var lit1 = [105, 110, 99, 108, 117, 100, 101];
 				if (currentCode == lit1[literalChar]) {
 					literalChar++;
@@ -23753,16 +23974,20 @@ CarbonitePreprocessor.prototype.DocNameLine = function () {
 							var actionCap0name = data["name"];
 							dataStore["data"] = actionCap0name;
 							}
+						this.depth--;
 						c = 0 - 1;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						c = 2;
 						charPos--;
 						this.offset--;
 					}
 				}else if (c == 2) {
+				this.groupErrors();
+				this.depth++;
 				var lit2 = [116, 97, 103];
 				if (currentCode == lit2[literalChar]) {
 					literalChar++;
@@ -23773,11 +23998,13 @@ CarbonitePreprocessor.prototype.DocNameLine = function () {
 							var actionCap0name = data["name"];
 							dataStore["data"] = actionCap0name;
 							}
+						this.depth--;
 						c = 0 - 1;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						this.giveError(1, "navLink, include, tag", currentChar);
 					}
 				}
@@ -23831,6 +24058,7 @@ CarbonitePreprocessor.prototype.Doc = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this.DocName(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "DocName(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -23841,7 +24069,9 @@ CarbonitePreprocessor.prototype.Doc = function () {
 						c = 2;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this._(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "White space(optional)(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -23850,6 +24080,7 @@ CarbonitePreprocessor.prototype.Doc = function () {
 						charPos = this.offset;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
 				var passed3 = false;
 				if (currentCode == 10) {
@@ -23871,6 +24102,7 @@ CarbonitePreprocessor.prototype.Doc = function () {
 						c = 3;
 					}
 				}else if (c == 4) {
+				this.depth++;
 				var ruleOut4 = this.Source(input, charPos);
 				if (ruleOut4.hadError) {
 					this.giveError(ruleOut4.error.code, "Source(" + ruleOut4.error.expected + ")", ruleOut4.error.found);
@@ -23880,6 +24112,7 @@ CarbonitePreprocessor.prototype.Doc = function () {
 						data["content"] = ruleOutCast4;
 						c = 5;
 					}
+				this.depth--;
 				}else if (c == 5) {
 				var lit5 = [35, 101, 110, 100, 32, 100, 111, 99];
 				if (currentCode == lit5[literalChar]) {
@@ -23953,6 +24186,7 @@ CarbonitePreprocessor.prototype.Doc_Line = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this.DocNameLine(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "DocNameLine(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -23963,7 +24197,9 @@ CarbonitePreprocessor.prototype.Doc_Line = function () {
 						c = 2;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this._(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "White space(optional)(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -23972,6 +24208,7 @@ CarbonitePreprocessor.prototype.Doc_Line = function () {
 						charPos = this.offset;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
 				var passed3 = false;
 				if (currentCode == 10) {
@@ -24056,6 +24293,7 @@ CarbonitePreprocessor.prototype.Script = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -24064,6 +24302,7 @@ CarbonitePreprocessor.prototype.Script = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
 				var passed2 = false;
 				if (passed2 == false) {
@@ -24088,6 +24327,7 @@ CarbonitePreprocessor.prototype.Script = function () {
 						this.offset--;
 					}
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this.Source(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "Source(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -24097,6 +24337,7 @@ CarbonitePreprocessor.prototype.Script = function () {
 						data["content"] = ruleOutCast3;
 						c = 4;
 					}
+				this.depth--;
 				}else if (c == 4) {
 				var lit4 = [35, 101, 110, 100, 32, 115, 99, 114, 105, 112, 116];
 				if (currentCode == lit4[literalChar]) {
@@ -24168,6 +24409,7 @@ CarbonitePreprocessor.prototype.Function = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -24176,7 +24418,9 @@ CarbonitePreprocessor.prototype.Function = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.Safe_Name(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -24186,7 +24430,9 @@ CarbonitePreprocessor.prototype.Function = function () {
 						data["name"] = ruleOutCast2;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this._(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -24195,6 +24441,7 @@ CarbonitePreprocessor.prototype.Function = function () {
 						charPos = this.offset;
 						c = 4;
 					}
+				this.depth--;
 				}else if (c == 4) {
 				if (currentCode == 40) {
 					c = 5;
@@ -24203,6 +24450,7 @@ CarbonitePreprocessor.prototype.Function = function () {
 						this.giveError(1, "(", currentChar);
 					}
 				}else if (c == 5) {
+				this.depth++;
 				var ruleOut5 = this._(input, charPos);
 				if (ruleOut5.hadError) {
 					this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -24211,7 +24459,9 @@ CarbonitePreprocessor.prototype.Function = function () {
 						charPos = this.offset;
 						c = 6;
 					}
+				this.depth--;
 				}else if (c == 6) {
+				this.depth++;
 				var ruleOut6 = this.Argument(input, charPos);
 				if (ruleOut6.hadError) {
 					c = 7;
@@ -24219,6 +24469,7 @@ CarbonitePreprocessor.prototype.Function = function () {
 					this.offset--;
 					if (ruleOut6.error.vested > 1) {
 						this.giveError(ruleOut6.error.code, ruleOut6.error.expected, ruleOut6.error.found);
+						throw new Error("Vested error");
 						}
 					}else{
 						var ruleOutCast6 = ruleOut6.data["data"];
@@ -24237,7 +24488,9 @@ CarbonitePreprocessor.prototype.Function = function () {
 						c = 6;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 7) {
+				this.depth++;
 				var ruleOut7 = this._(input, charPos);
 				if (ruleOut7.hadError) {
 					this.giveError(ruleOut7.error.code, "White space(optional)(" + ruleOut7.error.expected + ")", ruleOut7.error.found);
@@ -24246,6 +24499,7 @@ CarbonitePreprocessor.prototype.Function = function () {
 						charPos = this.offset;
 						c = 8;
 					}
+				this.depth--;
 				}else if (c == 8) {
 				if (currentCode == 41) {
 					c = 9;
@@ -24254,6 +24508,7 @@ CarbonitePreprocessor.prototype.Function = function () {
 						this.giveError(1, ")", currentChar);
 					}
 				}else if (c == 9) {
+				this.depth++;
 				var ruleOut9 = this.Source(input, charPos);
 				if (ruleOut9.hadError) {
 					this.giveError(ruleOut9.error.code, "Source(" + ruleOut9.error.expected + ")", ruleOut9.error.found);
@@ -24263,6 +24518,7 @@ CarbonitePreprocessor.prototype.Function = function () {
 						data["content"] = ruleOutCast9;
 						c = 10;
 					}
+				this.depth--;
 				}else if (c == 10) {
 				var lit10 = [35, 101, 110, 100, 32, 102, 117, 110, 99, 116, 105, 111, 110];
 				if (currentCode == lit10[literalChar]) {
@@ -24335,6 +24591,7 @@ CarbonitePreprocessor.prototype.For = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -24343,7 +24600,9 @@ CarbonitePreprocessor.prototype.For = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.Safe_Name(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -24353,7 +24612,9 @@ CarbonitePreprocessor.prototype.For = function () {
 						data["name"] = ruleOutCast2;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this._(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -24362,6 +24623,7 @@ CarbonitePreprocessor.prototype.For = function () {
 						charPos = this.offset;
 						c = 4;
 					}
+				this.depth--;
 				}else if (c == 4) {
 				if (currentCode == 61) {
 					c = 5;
@@ -24370,6 +24632,7 @@ CarbonitePreprocessor.prototype.For = function () {
 						this.giveError(1, "=", currentChar);
 					}
 				}else if (c == 5) {
+				this.depth++;
 				var ruleOut5 = this._(input, charPos);
 				if (ruleOut5.hadError) {
 					this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -24378,7 +24641,9 @@ CarbonitePreprocessor.prototype.For = function () {
 						charPos = this.offset;
 						c = 6;
 					}
+				this.depth--;
 				}else if (c == 6) {
+				this.depth++;
 				var ruleOut6 = this.Expression(input, charPos);
 				if (ruleOut6.hadError) {
 					this.giveError(ruleOut6.error.code, "Expression(" + ruleOut6.error.expected + ")", ruleOut6.error.found);
@@ -24389,7 +24654,9 @@ CarbonitePreprocessor.prototype.For = function () {
 						c = 7;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 7) {
+				this.depth++;
 				var ruleOut7 = this._(input, charPos);
 				if (ruleOut7.hadError) {
 					this.giveError(ruleOut7.error.code, "White space(optional)(" + ruleOut7.error.expected + ")", ruleOut7.error.found);
@@ -24398,6 +24665,7 @@ CarbonitePreprocessor.prototype.For = function () {
 						charPos = this.offset;
 						c = 8;
 					}
+				this.depth--;
 				}else if (c == 8) {
 				var lit8 = [116, 111];
 				if (currentCode == lit8[literalChar]) {
@@ -24411,6 +24679,7 @@ CarbonitePreprocessor.prototype.For = function () {
 						this.giveError(1, "" + this.assembleCodes(lit8) + "", currentChar);
 					}
 				}else if (c == 9) {
+				this.depth++;
 				var ruleOut9 = this._(input, charPos);
 				if (ruleOut9.hadError) {
 					this.giveError(ruleOut9.error.code, "White space(optional)(" + ruleOut9.error.expected + ")", ruleOut9.error.found);
@@ -24419,7 +24688,9 @@ CarbonitePreprocessor.prototype.For = function () {
 						charPos = this.offset;
 						c = 10;
 					}
+				this.depth--;
 				}else if (c == 10) {
+				this.depth++;
 				var ruleOut10 = this.Expression(input, charPos);
 				if (ruleOut10.hadError) {
 					this.giveError(ruleOut10.error.code, "Expression(" + ruleOut10.error.expected + ")", ruleOut10.error.found);
@@ -24430,7 +24701,9 @@ CarbonitePreprocessor.prototype.For = function () {
 						c = 11;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 11) {
+				this.depth++;
 				var ruleOut11 = this.Source(input, charPos);
 				if (ruleOut11.hadError) {
 					this.giveError(ruleOut11.error.code, "Source(" + ruleOut11.error.expected + ")", ruleOut11.error.found);
@@ -24440,6 +24713,7 @@ CarbonitePreprocessor.prototype.For = function () {
 						data["content"] = ruleOutCast11;
 						c = 12;
 					}
+				this.depth--;
 				}else if (c == 12) {
 				var lit12 = [35, 101, 110, 100, 32, 102, 111, 114];
 				if (currentCode == lit12[literalChar]) {
@@ -24514,6 +24788,7 @@ CarbonitePreprocessor.prototype.ForIn = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -24522,7 +24797,9 @@ CarbonitePreprocessor.prototype.ForIn = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.Safe_Name(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -24532,7 +24809,9 @@ CarbonitePreprocessor.prototype.ForIn = function () {
 						data["name"] = ruleOutCast2;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this.__(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "White space(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -24541,6 +24820,7 @@ CarbonitePreprocessor.prototype.ForIn = function () {
 						charPos = this.offset;
 						c = 4;
 					}
+				this.depth--;
 				}else if (c == 4) {
 				var lit4 = [105, 110];
 				if (currentCode == lit4[literalChar]) {
@@ -24554,6 +24834,7 @@ CarbonitePreprocessor.prototype.ForIn = function () {
 						this.giveError(1, "" + this.assembleCodes(lit4) + "", currentChar);
 					}
 				}else if (c == 5) {
+				this.depth++;
 				var ruleOut5 = this.__(input, charPos);
 				if (ruleOut5.hadError) {
 					this.giveError(ruleOut5.error.code, "White space(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -24562,7 +24843,9 @@ CarbonitePreprocessor.prototype.ForIn = function () {
 						charPos = this.offset;
 						c = 6;
 					}
+				this.depth--;
 				}else if (c == 6) {
+				this.depth++;
 				var ruleOut6 = this.Expression(input, charPos);
 				if (ruleOut6.hadError) {
 					this.giveError(ruleOut6.error.code, "Expression(" + ruleOut6.error.expected + ")", ruleOut6.error.found);
@@ -24573,7 +24856,9 @@ CarbonitePreprocessor.prototype.ForIn = function () {
 						c = 7;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 7) {
+				this.depth++;
 				var ruleOut7 = this.Source(input, charPos);
 				if (ruleOut7.hadError) {
 					this.giveError(ruleOut7.error.code, "Source(" + ruleOut7.error.expected + ")", ruleOut7.error.found);
@@ -24583,6 +24868,7 @@ CarbonitePreprocessor.prototype.ForIn = function () {
 						data["content"] = ruleOutCast7;
 						c = 8;
 					}
+				this.depth--;
 				}else if (c == 8) {
 				var lit8 = [35, 101, 110, 100, 32, 102, 111, 114];
 				if (currentCode == lit8[literalChar]) {
@@ -24655,6 +24941,7 @@ CarbonitePreprocessor.prototype.Define = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -24663,7 +24950,9 @@ CarbonitePreprocessor.prototype.Define = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.Safe_Name(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -24673,7 +24962,9 @@ CarbonitePreprocessor.prototype.Define = function () {
 						data["name"] = ruleOutCast2;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this._(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -24682,6 +24973,7 @@ CarbonitePreprocessor.prototype.Define = function () {
 						charPos = this.offset;
 						c = 4;
 					}
+				this.depth--;
 				}else if (c == 4) {
 				if (currentCode == 61) {
 					c = 5;
@@ -24690,6 +24982,7 @@ CarbonitePreprocessor.prototype.Define = function () {
 						this.giveError(1, "=", currentChar);
 					}
 				}else if (c == 5) {
+				this.depth++;
 				var ruleOut5 = this._(input, charPos);
 				if (ruleOut5.hadError) {
 					this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -24698,7 +24991,9 @@ CarbonitePreprocessor.prototype.Define = function () {
 						charPos = this.offset;
 						c = 6;
 					}
+				this.depth--;
 				}else if (c == 6) {
+				this.depth++;
 				var ruleOut6 = this.Expression(input, charPos);
 				if (ruleOut6.hadError) {
 					this.giveError(ruleOut6.error.code, "Expression(" + ruleOut6.error.expected + ")", ruleOut6.error.found);
@@ -24717,6 +25012,7 @@ CarbonitePreprocessor.prototype.Define = function () {
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -24767,6 +25063,7 @@ CarbonitePreprocessor.prototype.Var = function () {
 						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -24775,7 +25072,9 @@ CarbonitePreprocessor.prototype.Var = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.Safe_Name(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -24785,7 +25084,9 @@ CarbonitePreprocessor.prototype.Var = function () {
 						data["name"] = ruleOutCast2;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this._(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -24794,6 +25095,7 @@ CarbonitePreprocessor.prototype.Var = function () {
 						charPos = this.offset;
 						c = 4;
 					}
+				this.depth--;
 				}else if (c == 4) {
 				if (currentCode == 61) {
 					c = 5;
@@ -24802,6 +25104,7 @@ CarbonitePreprocessor.prototype.Var = function () {
 						this.giveError(1, "=", currentChar);
 					}
 				}else if (c == 5) {
+				this.depth++;
 				var ruleOut5 = this._(input, charPos);
 				if (ruleOut5.hadError) {
 					this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -24810,7 +25113,9 @@ CarbonitePreprocessor.prototype.Var = function () {
 						charPos = this.offset;
 						c = 6;
 					}
+				this.depth--;
 				}else if (c == 6) {
+				this.depth++;
 				var ruleOut6 = this.Expression(input, charPos);
 				if (ruleOut6.hadError) {
 					this.giveError(ruleOut6.error.code, "Expression(" + ruleOut6.error.expected + ")", ruleOut6.error.found);
@@ -24829,6 +25134,7 @@ CarbonitePreprocessor.prototype.Var = function () {
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -24867,16 +25173,21 @@ CarbonitePreprocessor.prototype.Backslash = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
-				if (currentCode == 35) {
-					if (true) {
-						var castac0 = data;
-						dataStore["data"]["type"] = "raw";
-						dataStore["data"]["content"] = "#";
+				var lit0 = [35, 32];
+				if (currentCode == lit0[literalChar]) {
+					literalChar++;
+					if (literalChar == 2) {
+						if (true) {
+							var castac0 = data;
+							dataStore["data"]["type"] = "raw";
+							dataStore["data"]["content"] = "# ";
+							}
+						c = 0 - 1;
+						literalChar = 0;
 						}
-					c = 0 - 1;
 					this.error.vested++;
 					}else{
-						this.giveError(1, "#", currentChar);
+						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 					}
 				}
 			this.offset++;
@@ -24923,9 +25234,10 @@ CarbonitePreprocessor.prototype.Lost = function () {
 						this.giveError(1, "#", currentChar);
 					}
 				}else if (c == 1) {
-				var ruleOut1 = this.Expression(input, charPos);
+				this.depth++;
+				var ruleOut1 = this._Expression(input, charPos);
 				if (ruleOut1.hadError) {
-					this.giveError(ruleOut1.error.code, "Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
+					this.giveError(ruleOut1.error.code, "_Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
 					}else{
 						var ruleOutCast1 = ruleOut1.data["data"];
 						charPos = this.offset;
@@ -24948,6 +25260,7 @@ CarbonitePreprocessor.prototype.Lost = function () {
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -24993,6 +25306,7 @@ CarbonitePreprocessor.prototype.Sub = function () {
 						this.giveError(1, ".", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -25001,9 +25315,14 @@ CarbonitePreprocessor.prototype.Sub = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut2 = this.Call(input, charPos);
 				if (ruleOut2.hadError) {
+					this.depth--;
 					c = 3;
 					charPos--;
 					this.offset--;
@@ -25016,12 +25335,18 @@ CarbonitePreprocessor.prototype.Sub = function () {
 							var actionCap0exp = data["exp"];
 							dataStore["data"] = actionCap0exp;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut3 = this.Value(input, charPos);
 				if (ruleOut3.hadError) {
+					this.depth--;
 					this.giveError(1, "Call, Value", currentChar);
 					}else{
 						var ruleOutCast3 = ruleOut3.data["data"];
@@ -25032,9 +25357,169 @@ CarbonitePreprocessor.prototype.Sub = function () {
 							var actionCap0exp = data["exp"];
 							dataStore["data"] = actionCap0exp;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
+				}
+			this.offset++;
+			this.column++;
+			if (c == 0 - 1) {
+				this.offset = charPos;
+				break;
+				}
+			if (this.hadError) {
+				break;
+				}
+			}
+		var parseOutput = new CarbonitePreprocessorOutput(this.hadError, this.error.clone(), dataStore);
+		parseOutput.error.vested = this.error.vested - oldVest;
+		this.error.vested = oldVest;
+		this.hadError = false;
+		return parseOutput;
+	}
+}
+
+CarbonitePreprocessor.prototype._Expression = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var input = arguments[0];
+		var startPos = arguments[1];
+		var oldVest = this.error.vested;
+		var dataStore = {};
+		dataStore["data"] = {};
+		dataStore["temp"] = {};
+		var data = dataStore["temp"];
+		var c = 0;
+		data["subs"] = [];
+		var literalChar = 0;
+		for (var charPos = startPos;charPos < input.length;charPos++) {
+			var currentChar = input[charPos];
+			var currentCode = input.charCodeAt(charPos);
+			if (currentCode == 10) {
+				this.line++;
+				this.column = 0;
+				}
+			if (c == 0) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
+				var ruleOut0 = this.Operation(input, charPos);
+				if (ruleOut0.hadError) {
+					this.depth--;
+					c = 1;
+					charPos--;
+					this.offset--;
+					}else{
+						var ruleOutCast0 = ruleOut0.data["data"];
+						charPos = this.offset;
+						data["e"] = ruleOutCast0;
+						this.depth--;
+						c = 3;
+						this.error.vested++;
+					}
+				this.depth--;
+				}else if (c == 1) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
+				var ruleOut1 = this.Call(input, charPos);
+				if (ruleOut1.hadError) {
+					this.depth--;
+					c = 2;
+					charPos--;
+					this.offset--;
+					}else{
+						var ruleOutCast1 = ruleOut1.data["data"];
+						charPos = this.offset;
+						data["e"] = ruleOutCast1;
+						this.depth--;
+						c = 3;
+						this.error.vested++;
+					}
+				this.depth--;
+				}else if (c == 2) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
+				var ruleOut2 = this.Value(input, charPos);
+				if (ruleOut2.hadError) {
+					this.depth--;
+					this.giveError(1, "Operation, Call, Value", currentChar);
+					}else{
+						var ruleOutCast2 = ruleOut2.data["data"];
+						charPos = this.offset;
+						data["e"] = ruleOutCast2;
+						this.depth--;
+						c = 3;
+						this.error.vested++;
+					}
+				this.depth--;
+				}else if (c == 3) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
+				var ruleOut3 = this.Sub(input, charPos);
+				if (ruleOut3.hadError) {
+					this.depth--;
+					c = 4;
+					charPos--;
+					this.offset--;
+					}else{
+						var ruleOutCast3 = ruleOut3.data["data"];
+						charPos = this.offset;
+						var castsubs3 = data["subs"];
+						castsubs3.push(ruleOutCast3);
+						if (true) {
+							var castacsubs0 = data["subs"];
+							var actionCap0e = data["e"];
+							var actionCap0subs = data["subs"];
+							dataStore["data"] = actionCap0e;
+							dataStore["data"]["subs"] = actionCap0subs;
+							dataStore["data"]["startOffset"] = startPos;
+							dataStore["data"]["offset"] = charPos;
+							}
+						c = 3;
+						this.error.vested++;
+					}
+				this.depth--;
+				}else if (c == 4) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
+				var ruleOut4 = this.Literal_Array(input, charPos);
+				if (ruleOut4.hadError) {
+					this.depth--;
+					if (true) {
+						var castacsubs0 = data["subs"];
+						var actionCap0e = data["e"];
+						var actionCap0subs = data["subs"];
+						dataStore["data"] = actionCap0e;
+						dataStore["data"]["subs"] = actionCap0subs;
+						dataStore["data"]["startOffset"] = startPos;
+						dataStore["data"]["offset"] = charPos;
+						}
+					c = 0 - 1;
+					charPos--;
+					this.offset--;
+					}else{
+						var ruleOutCast4 = ruleOut4.data["data"];
+						charPos = this.offset;
+						var castsubs3 = data["subs"];
+						castsubs3.push(ruleOutCast4);
+						if (true) {
+							var castacsubs0 = data["subs"];
+							var actionCap0e = data["e"];
+							var actionCap0subs = data["subs"];
+							dataStore["data"] = actionCap0e;
+							dataStore["data"]["subs"] = actionCap0subs;
+							dataStore["data"]["startOffset"] = startPos;
+							dataStore["data"]["offset"] = charPos;
+							}
+						c = 3;
+						this.error.vested++;
+					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -25074,6 +25559,7 @@ CarbonitePreprocessor.prototype.Expression = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this._(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "White space(optional)(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -25082,9 +25568,14 @@ CarbonitePreprocessor.prototype.Expression = function () {
 						charPos = this.offset;
 						c = 1;
 					}
+				this.depth--;
 				}else if (c == 1) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut1 = this.Operation(input, charPos);
 				if (ruleOut1.hadError) {
+					this.depth--;
 					c = 2;
 					charPos--;
 					this.offset--;
@@ -25092,12 +25583,18 @@ CarbonitePreprocessor.prototype.Expression = function () {
 						var ruleOutCast1 = ruleOut1.data["data"];
 						charPos = this.offset;
 						data["e"] = ruleOutCast1;
+						this.depth--;
 						c = 4;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut2 = this.Call(input, charPos);
 				if (ruleOut2.hadError) {
+					this.depth--;
 					c = 3;
 					charPos--;
 					this.offset--;
@@ -25105,23 +25602,35 @@ CarbonitePreprocessor.prototype.Expression = function () {
 						var ruleOutCast2 = ruleOut2.data["data"];
 						charPos = this.offset;
 						data["e"] = ruleOutCast2;
+						this.depth--;
 						c = 4;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut3 = this.Value(input, charPos);
 				if (ruleOut3.hadError) {
+					this.depth--;
 					this.giveError(1, "Operation, Call, Value", currentChar);
 					}else{
 						var ruleOutCast3 = ruleOut3.data["data"];
 						charPos = this.offset;
 						data["e"] = ruleOutCast3;
+						this.depth--;
 						c = 4;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 4) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut4 = this.Sub(input, charPos);
 				if (ruleOut4.hadError) {
+					this.depth--;
 					c = 5;
 					charPos--;
 					this.offset--;
@@ -25142,9 +25651,14 @@ CarbonitePreprocessor.prototype.Expression = function () {
 						c = 4;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 5) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut5 = this.Literal_Array(input, charPos);
 				if (ruleOut5.hadError) {
+					this.depth--;
 					if (true) {
 						var castacsubs0 = data["subs"];
 						var actionCap0e = data["e"];
@@ -25174,6 +25688,7 @@ CarbonitePreprocessor.prototype.Expression = function () {
 						c = 4;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -25213,6 +25728,7 @@ CarbonitePreprocessor.prototype.If_Expression = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this._(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "White space(optional)(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -25221,9 +25737,14 @@ CarbonitePreprocessor.prototype.If_Expression = function () {
 						charPos = this.offset;
 						c = 1;
 					}
+				this.depth--;
 				}else if (c == 1) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut1 = this.Operation(input, charPos);
 				if (ruleOut1.hadError) {
+					this.depth--;
 					c = 2;
 					charPos--;
 					this.offset--;
@@ -25231,12 +25752,18 @@ CarbonitePreprocessor.prototype.If_Expression = function () {
 						var ruleOutCast1 = ruleOut1.data["data"];
 						charPos = this.offset;
 						data["e"] = ruleOutCast1;
+						this.depth--;
 						c = 5;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut2 = this.Call(input, charPos);
 				if (ruleOut2.hadError) {
+					this.depth--;
 					c = 3;
 					charPos--;
 					this.offset--;
@@ -25244,12 +25771,18 @@ CarbonitePreprocessor.prototype.If_Expression = function () {
 						var ruleOutCast2 = ruleOut2.data["data"];
 						charPos = this.offset;
 						data["e"] = ruleOutCast2;
+						this.depth--;
 						c = 5;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut3 = this.Check(input, charPos);
 				if (ruleOut3.hadError) {
+					this.depth--;
 					c = 4;
 					charPos--;
 					this.offset--;
@@ -25257,23 +25790,35 @@ CarbonitePreprocessor.prototype.If_Expression = function () {
 						var ruleOutCast3 = ruleOut3.data["data"];
 						charPos = this.offset;
 						data["e"] = ruleOutCast3;
+						this.depth--;
 						c = 5;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 4) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut4 = this.Value(input, charPos);
 				if (ruleOut4.hadError) {
+					this.depth--;
 					this.giveError(1, "Operation, Call, Check, Value", currentChar);
 					}else{
 						var ruleOutCast4 = ruleOut4.data["data"];
 						charPos = this.offset;
 						data["e"] = ruleOutCast4;
+						this.depth--;
 						c = 5;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 5) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut5 = this.Sub(input, charPos);
 				if (ruleOut5.hadError) {
+					this.depth--;
 					c = 6;
 					charPos--;
 					this.offset--;
@@ -25293,9 +25838,14 @@ CarbonitePreprocessor.prototype.If_Expression = function () {
 						c = 5;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 6) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut6 = this.Literal_Array(input, charPos);
 				if (ruleOut6.hadError) {
+					this.depth--;
 					if (true) {
 						var castacsubs0 = data["subs"];
 						var actionCap0e = data["e"];
@@ -25323,6 +25873,7 @@ CarbonitePreprocessor.prototype.If_Expression = function () {
 						c = 5;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -25438,6 +25989,7 @@ CarbonitePreprocessor.prototype.Argument = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this._(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "White space(optional)(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -25446,6 +25998,7 @@ CarbonitePreprocessor.prototype.Argument = function () {
 						charPos = this.offset;
 						c = 1;
 					}
+				this.depth--;
 				}else if (c == 1) {
 				var passed1 = false;
 				if (currentCode == 95) {
@@ -25522,6 +26075,7 @@ CarbonitePreprocessor.prototype.Literal_Map = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this.Json(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "Json(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -25538,6 +26092,7 @@ CarbonitePreprocessor.prototype.Literal_Map = function () {
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -25576,8 +26131,12 @@ CarbonitePreprocessor.prototype.Value = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut0 = this.Literal_String(input, charPos);
 				if (ruleOut0.hadError) {
+					this.depth--;
 					c = 1;
 					charPos--;
 					this.offset--;
@@ -25592,12 +26151,18 @@ CarbonitePreprocessor.prototype.Value = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 1) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut1 = this.Number(input, charPos);
 				if (ruleOut1.hadError) {
+					this.depth--;
 					c = 2;
 					charPos--;
 					this.offset--;
@@ -25612,12 +26177,18 @@ CarbonitePreprocessor.prototype.Value = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut2 = this.Literal_Array(input, charPos);
 				if (ruleOut2.hadError) {
+					this.depth--;
 					c = 3;
 					charPos--;
 					this.offset--;
@@ -25632,12 +26203,18 @@ CarbonitePreprocessor.prototype.Value = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut3 = this.Literal_Map(input, charPos);
 				if (ruleOut3.hadError) {
+					this.depth--;
 					c = 4;
 					charPos--;
 					this.offset--;
@@ -25652,12 +26229,18 @@ CarbonitePreprocessor.prototype.Value = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 4) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut4 = this.Bool(input, charPos);
 				if (ruleOut4.hadError) {
+					this.depth--;
 					c = 5;
 					charPos--;
 					this.offset--;
@@ -25672,12 +26255,18 @@ CarbonitePreprocessor.prototype.Value = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 5) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut5 = this.Constant(input, charPos);
 				if (ruleOut5.hadError) {
+					this.depth--;
 					this.giveError(1, "Literal_String, Number, Literal_Array, Literal_Map, Bool, Constant", currentChar);
 					}else{
 						var ruleOutCast5 = ruleOut5.data["data"];
@@ -25690,8 +26279,10 @@ CarbonitePreprocessor.prototype.Value = function () {
 							dataStore["data"]["offset"] = charPos;
 							dataStore["data"]["startOffset"] = startPos;
 							}
+						this.depth--;
 						c = 0 - 1;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -25730,6 +26321,7 @@ CarbonitePreprocessor.prototype.Literal_String = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this.String(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "String(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -25746,6 +26338,7 @@ CarbonitePreprocessor.prototype.Literal_String = function () {
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -25790,6 +26383,7 @@ CarbonitePreprocessor.prototype.Number = function () {
 					c = 1;
 					this.error.vested++;
 					}else{
+						this.popGroup();
 						c = 1;
 						charPos--;
 						this.offset--;
@@ -25880,6 +26474,7 @@ CarbonitePreprocessor.prototype.Literal_Array = function () {
 						this.giveError(1, "[", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -25888,7 +26483,9 @@ CarbonitePreprocessor.prototype.Literal_Array = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.Expression(input, charPos);
 				if (ruleOut2.hadError) {
 					c = 3;
@@ -25896,6 +26493,7 @@ CarbonitePreprocessor.prototype.Literal_Array = function () {
 					this.offset--;
 					if (ruleOut2.error.vested > 1) {
 						this.giveError(ruleOut2.error.code, ruleOut2.error.expected, ruleOut2.error.found);
+						throw new Error("Vested error");
 						}
 					}else{
 						var ruleOutCast2 = ruleOut2.data["data"];
@@ -25914,7 +26512,9 @@ CarbonitePreprocessor.prototype.Literal_Array = function () {
 						c = 2;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this._(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -25923,6 +26523,7 @@ CarbonitePreprocessor.prototype.Literal_Array = function () {
 						charPos = this.offset;
 						c = 4;
 					}
+				this.depth--;
 				}else if (c == 4) {
 				if (currentCode == 93) {
 					if (true) {
@@ -25994,11 +26595,13 @@ CarbonitePreprocessor.prototype.Bool = function () {
 							dataStore["data"]["type"] = "bool";
 							dataStore["data"]["value"] = actionCap0value;
 							}
+						this.depth--;
 						c = 0 - 1;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						c = 1;
 						charPos--;
 						this.offset--;
@@ -26024,11 +26627,13 @@ CarbonitePreprocessor.prototype.Bool = function () {
 							dataStore["data"]["type"] = "bool";
 							dataStore["data"]["value"] = actionCap0value;
 							}
+						this.depth--;
 						c = 0 - 1;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						this.giveError(1, "true, false", currentChar);
 					}
 				}
@@ -26069,6 +26674,7 @@ CarbonitePreprocessor.prototype.Constant = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this.Safe_Name(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "Safe_Name(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -26084,6 +26690,7 @@ CarbonitePreprocessor.prototype.Constant = function () {
 							}
 						c = 0 - 1;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -26129,6 +26736,7 @@ CarbonitePreprocessor.prototype.Group = function () {
 						this.giveError(1, "(", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this.Expression(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -26139,6 +26747,7 @@ CarbonitePreprocessor.prototype.Group = function () {
 						c = 2;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
 				if (currentCode == 41) {
 					if (true) {
@@ -26190,8 +26799,12 @@ CarbonitePreprocessor.prototype.Operation = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut0 = this.Group(input, charPos);
 				if (ruleOut0.hadError) {
+					this.depth--;
 					c = 1;
 					charPos--;
 					this.offset--;
@@ -26199,12 +26812,18 @@ CarbonitePreprocessor.prototype.Operation = function () {
 						var ruleOutCast0 = ruleOut0.data["data"];
 						charPos = this.offset;
 						data["head"] = ruleOutCast0;
+						this.depth--;
 						c = 3;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 1) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut1 = this.Call(input, charPos);
 				if (ruleOut1.hadError) {
+					this.depth--;
 					c = 2;
 					charPos--;
 					this.offset--;
@@ -26212,21 +26831,30 @@ CarbonitePreprocessor.prototype.Operation = function () {
 						var ruleOutCast1 = ruleOut1.data["data"];
 						charPos = this.offset;
 						data["head"] = ruleOutCast1;
+						this.depth--;
 						c = 3;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut2 = this.Value(input, charPos);
 				if (ruleOut2.hadError) {
+					this.depth--;
 					this.giveError(1, "Group, Call, Value", currentChar);
 					}else{
 						var ruleOutCast2 = ruleOut2.data["data"];
 						charPos = this.offset;
 						data["head"] = ruleOutCast2;
+						this.depth--;
 						c = 3;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this._(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -26235,6 +26863,7 @@ CarbonitePreprocessor.prototype.Operation = function () {
 						charPos = this.offset;
 						c = 4;
 					}
+				this.depth--;
 				}else if (c == 4) {
 				var passed4 = false;
 				if (currentCode == 33) {
@@ -26289,6 +26918,7 @@ CarbonitePreprocessor.prototype.Operation = function () {
 							}
 					}
 				}else if (c == 5) {
+				this.depth++;
 				var ruleOut5 = this._(input, charPos);
 				if (ruleOut5.hadError) {
 					this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -26297,9 +26927,14 @@ CarbonitePreprocessor.prototype.Operation = function () {
 						charPos = this.offset;
 						c = 6;
 					}
+				this.depth--;
 				}else if (c == 6) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut6 = this.Group(input, charPos);
 				if (ruleOut6.hadError) {
+					this.depth--;
 					c = 7;
 					charPos--;
 					this.offset--;
@@ -26317,12 +26952,18 @@ CarbonitePreprocessor.prototype.Operation = function () {
 							dataStore["data"]["operator"] = actionCap0o;
 							dataStore["data"]["tail"] = actionCap0tail;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 7) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut7 = this.Call(input, charPos);
 				if (ruleOut7.hadError) {
+					this.depth--;
 					c = 8;
 					charPos--;
 					this.offset--;
@@ -26340,12 +26981,18 @@ CarbonitePreprocessor.prototype.Operation = function () {
 							dataStore["data"]["operator"] = actionCap0o;
 							dataStore["data"]["tail"] = actionCap0tail;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 8) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut8 = this.Value(input, charPos);
 				if (ruleOut8.hadError) {
+					this.depth--;
 					this.giveError(1, "Group, Call, Value", currentChar);
 					}else{
 						var ruleOutCast8 = ruleOut8.data["data"];
@@ -26361,9 +27008,11 @@ CarbonitePreprocessor.prototype.Operation = function () {
 							dataStore["data"]["operator"] = actionCap0o;
 							dataStore["data"]["tail"] = actionCap0tail;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -26402,6 +27051,7 @@ CarbonitePreprocessor.prototype.Check = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this.Value(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "Value(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -26412,7 +27062,9 @@ CarbonitePreprocessor.prototype.Check = function () {
 						c = 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this.__(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -26421,7 +27073,9 @@ CarbonitePreprocessor.prototype.Check = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.Value(input, charPos);
 				if (ruleOut2.hadError) {
 					this.giveError(ruleOut2.error.code, "Value(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -26440,6 +27094,7 @@ CarbonitePreprocessor.prototype.Check = function () {
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -26479,6 +27134,7 @@ CarbonitePreprocessor.prototype.Call = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this.Value(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "Value(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -26489,7 +27145,9 @@ CarbonitePreprocessor.prototype.Call = function () {
 						c = 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -26498,6 +27156,7 @@ CarbonitePreprocessor.prototype.Call = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
 				if (currentCode == 40) {
 					c = 3;
@@ -26506,6 +27165,7 @@ CarbonitePreprocessor.prototype.Call = function () {
 						this.giveError(1, "(", currentChar);
 					}
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this.Expression(input, charPos);
 				if (ruleOut3.hadError) {
 					c = 4;
@@ -26513,6 +27173,7 @@ CarbonitePreprocessor.prototype.Call = function () {
 					this.offset--;
 					if (ruleOut3.error.vested > 1) {
 						this.giveError(ruleOut3.error.code, ruleOut3.error.expected, ruleOut3.error.found);
+						throw new Error("Vested error");
 						}
 					}else{
 						var ruleOutCast3 = ruleOut3.data["data"];
@@ -26531,7 +27192,9 @@ CarbonitePreprocessor.prototype.Call = function () {
 						c = 3;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 4) {
+				this.depth++;
 				var ruleOut4 = this._(input, charPos);
 				if (ruleOut4.hadError) {
 					this.giveError(ruleOut4.error.code, "White space(optional)(" + ruleOut4.error.expected + ")", ruleOut4.error.found);
@@ -26540,6 +27203,7 @@ CarbonitePreprocessor.prototype.Call = function () {
 						charPos = this.offset;
 						c = 5;
 					}
+				this.depth--;
 				}else if (c == 5) {
 				if (currentCode == 41) {
 					if (true) {
@@ -26584,7 +27248,7 @@ CarbonitePreprocessor.prototype._ = function () {
 		dataStore["temp"] = {};
 		var data = dataStore["temp"];
 		var c = 0;
-		data = [];
+		data = "";
 		var literalChar = 0;
 		for (var charPos = startPos;charPos < input.length;charPos++) {
 			var currentChar = input[charPos];
@@ -26644,7 +27308,7 @@ CarbonitePreprocessor.prototype.__ = function () {
 		dataStore["temp"] = {};
 		var data = dataStore["temp"];
 		var c = 0;
-		data["w"] = [];
+		data["w"] = "";
 		var literalChar = 0;
 		for (var charPos = startPos;charPos < input.length;charPos++) {
 			var currentChar = input[charPos];
@@ -26668,8 +27332,7 @@ CarbonitePreprocessor.prototype.__ = function () {
 
 					}
 				if (passed0) {
-					var castw0 = data["w"];
-					castw0.push(currentChar);
+					data["w"] += currentChar;
 					c = 0;
 					this.error.vested++;
 					}else{
@@ -26679,7 +27342,7 @@ CarbonitePreprocessor.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \r, \r\n", currentChar);
+								this.giveError(1, " , 	, rc, nl", currentChar);
 							}
 					}
 				}
@@ -26720,8 +27383,12 @@ CarbonitePreprocessor.prototype.String = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut0 = this.String_Double(input, charPos);
 				if (ruleOut0.hadError) {
+					this.depth--;
 					c = 1;
 					charPos--;
 					this.offset--;
@@ -26734,12 +27401,18 @@ CarbonitePreprocessor.prototype.String = function () {
 							var actionCap0str = data["str"];
 							dataStore["data"] = actionCap0str;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 1) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut1 = this.String_Single(input, charPos);
 				if (ruleOut1.hadError) {
+					this.depth--;
 					this.giveError(1, "String_Double, String_Single", currentChar);
 					}else{
 						var ruleOutCast1 = ruleOut1.data["data"];
@@ -26750,9 +27423,11 @@ CarbonitePreprocessor.prototype.String = function () {
 							var actionCap0str = data["str"];
 							dataStore["data"] = actionCap0str;
 							}
+						this.depth--;
 						c = 0 - 1;
 						this.error.vested++;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;
@@ -26982,6 +27657,7 @@ CarbonitePreprocessor.prototype.Json = function () {
 						this.giveError(1, "{", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -26990,7 +27666,9 @@ CarbonitePreprocessor.prototype.Json = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this._(input, charPos);
 				if (ruleOut2.hadError) {
 					c = 9;
@@ -27001,7 +27679,9 @@ CarbonitePreprocessor.prototype.Json = function () {
 						charPos = this.offset;
 						c = 3;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this.String(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "String(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -27012,7 +27692,9 @@ CarbonitePreprocessor.prototype.Json = function () {
 						c = 4;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 4) {
+				this.depth++;
 				var ruleOut4 = this._(input, charPos);
 				if (ruleOut4.hadError) {
 					this.giveError(ruleOut4.error.code, "White space(optional)(" + ruleOut4.error.expected + ")", ruleOut4.error.found);
@@ -27021,6 +27703,7 @@ CarbonitePreprocessor.prototype.Json = function () {
 						charPos = this.offset;
 						c = 5;
 					}
+				this.depth--;
 				}else if (c == 5) {
 				if (currentCode == 58) {
 					c = 6;
@@ -27029,6 +27712,7 @@ CarbonitePreprocessor.prototype.Json = function () {
 						this.giveError(1, ":", currentChar);
 					}
 				}else if (c == 6) {
+				this.depth++;
 				var ruleOut6 = this._(input, charPos);
 				if (ruleOut6.hadError) {
 					this.giveError(ruleOut6.error.code, "White space(optional)(" + ruleOut6.error.expected + ")", ruleOut6.error.found);
@@ -27037,7 +27721,9 @@ CarbonitePreprocessor.prototype.Json = function () {
 						charPos = this.offset;
 						c = 7;
 					}
+				this.depth--;
 				}else if (c == 7) {
+				this.depth++;
 				var ruleOut7 = this.Json_Value(input, charPos);
 				if (ruleOut7.hadError) {
 					this.giveError(ruleOut7.error.code, "Json_Value(" + ruleOut7.error.expected + ")", ruleOut7.error.found);
@@ -27048,7 +27734,9 @@ CarbonitePreprocessor.prototype.Json = function () {
 						c = 8;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 8) {
+				this.depth++;
 				var ruleOut8 = this._(input, charPos);
 				if (ruleOut8.hadError) {
 					c = 9;
@@ -27071,7 +27759,9 @@ CarbonitePreprocessor.prototype.Json = function () {
 						captureRoot1 = {};
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 9) {
+				this.depth++;
 				var ruleOut9 = this._(input, charPos);
 				if (ruleOut9.hadError) {
 					this.giveError(ruleOut9.error.code, "White space(optional)(" + ruleOut9.error.expected + ")", ruleOut9.error.found);
@@ -27080,6 +27770,7 @@ CarbonitePreprocessor.prototype.Json = function () {
 						charPos = this.offset;
 						c = 10;
 					}
+				this.depth--;
 				}else if (c == 10) {
 				if (currentCode == 125) {
 					if (true) {
@@ -27142,6 +27833,7 @@ CarbonitePreprocessor.prototype.Json_Array = function () {
 						this.giveError(1, "[", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -27150,7 +27842,9 @@ CarbonitePreprocessor.prototype.Json_Array = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
+				this.depth++;
 				var ruleOut2 = this.Json_Value(input, charPos);
 				if (ruleOut2.hadError) {
 					c = 3;
@@ -27158,6 +27852,7 @@ CarbonitePreprocessor.prototype.Json_Array = function () {
 					this.offset--;
 					if (ruleOut2.error.vested > 1) {
 						this.giveError(ruleOut2.error.code, ruleOut2.error.expected, ruleOut2.error.found);
+						throw new Error("Vested error");
 						}
 					}else{
 						var ruleOutCast2 = ruleOut2.data["data"];
@@ -27176,7 +27871,9 @@ CarbonitePreprocessor.prototype.Json_Array = function () {
 						c = 2;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 3) {
+				this.depth++;
 				var ruleOut3 = this._(input, charPos);
 				if (ruleOut3.hadError) {
 					this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -27185,6 +27882,7 @@ CarbonitePreprocessor.prototype.Json_Array = function () {
 						charPos = this.offset;
 						c = 4;
 					}
+				this.depth--;
 				}else if (c == 4) {
 				if (currentCode == 93) {
 					if (true) {
@@ -27242,6 +27940,7 @@ CarbonitePreprocessor.prototype.Json_EmptyArray = function () {
 						this.giveError(1, "[", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -27250,6 +27949,7 @@ CarbonitePreprocessor.prototype.Json_EmptyArray = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
 				if (currentCode == 93) {
 					if (true) {
@@ -27306,6 +28006,7 @@ CarbonitePreprocessor.prototype.Json_EmptyMap = function () {
 						this.giveError(1, "{", currentChar);
 					}
 				}else if (c == 1) {
+				this.depth++;
 				var ruleOut1 = this._(input, charPos);
 				if (ruleOut1.hadError) {
 					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -27314,6 +28015,7 @@ CarbonitePreprocessor.prototype.Json_EmptyMap = function () {
 						charPos = this.offset;
 						c = 2;
 					}
+				this.depth--;
 				}else if (c == 2) {
 				if (currentCode == 125) {
 					if (true) {
@@ -27363,6 +28065,7 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
+				this.depth++;
 				var ruleOut0 = this._(input, charPos);
 				if (ruleOut0.hadError) {
 					this.giveError(ruleOut0.error.code, "White space(optional)(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -27371,6 +28074,7 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 						charPos = this.offset;
 						c = 1;
 					}
+				this.depth--;
 				}else if (c == 1) {
 				var lit1 = [110, 117, 108, 108];
 				if (currentCode == lit1[literalChar]) {
@@ -27380,11 +28084,13 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 							var castacexp1 = data["exp"];
 							data["exp"] = null;
 							}
+						this.depth--;
 						c = 10;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						c = 2;
 						charPos--;
 						this.offset--;
@@ -27398,11 +28104,13 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 							var castacexp2 = data["exp"];
 							data["exp"] = true;
 							}
+						this.depth--;
 						c = 10;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						c = 3;
 						charPos--;
 						this.offset--;
@@ -27416,18 +28124,24 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 							var castacexp3 = data["exp"];
 							data["exp"] = false;
 							}
+						this.depth--;
 						c = 10;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
+						this.depth--;
 						c = 4;
 						charPos--;
 						this.offset--;
 					}
 				}else if (c == 4) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut4 = this.Json_EmptyArray(input, charPos);
 				if (ruleOut4.hadError) {
+					this.depth--;
 					c = 5;
 					charPos--;
 					this.offset--;
@@ -27435,12 +28149,18 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 						var ruleOutCast4 = ruleOut4.data["data"];
 						charPos = this.offset;
 						data["exp"] = ruleOutCast4;
+						this.depth--;
 						c = 10;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 5) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut5 = this.Json_EmptyMap(input, charPos);
 				if (ruleOut5.hadError) {
+					this.depth--;
 					c = 6;
 					charPos--;
 					this.offset--;
@@ -27448,12 +28168,18 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 						var ruleOutCast5 = ruleOut5.data["data"];
 						charPos = this.offset;
 						data["exp"] = ruleOutCast5;
+						this.depth--;
 						c = 10;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 6) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut6 = this.Json_Array(input, charPos);
 				if (ruleOut6.hadError) {
+					this.depth--;
 					c = 7;
 					charPos--;
 					this.offset--;
@@ -27461,12 +28187,18 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 						var ruleOutCast6 = ruleOut6.data["data"];
 						charPos = this.offset;
 						data["exp"] = ruleOutCast6;
+						this.depth--;
 						c = 10;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 7) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut7 = this.Json(input, charPos);
 				if (ruleOut7.hadError) {
+					this.depth--;
 					c = 8;
 					charPos--;
 					this.offset--;
@@ -27474,12 +28206,18 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 						var ruleOutCast7 = ruleOut7.data["data"];
 						charPos = this.offset;
 						data["exp"] = ruleOutCast7;
+						this.depth--;
 						c = 10;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 8) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut8 = this.String(input, charPos);
 				if (ruleOut8.hadError) {
+					this.depth--;
 					c = 9;
 					charPos--;
 					this.offset--;
@@ -27487,20 +28225,29 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 						var ruleOutCast8 = ruleOut8.data["data"];
 						charPos = this.offset;
 						data["exp"] = ruleOutCast8;
+						this.depth--;
 						c = 10;
 						this.error.vested++;
 					}
+				this.depth--;
 				}else if (c == 9) {
+				this.depth++;
+				this.groupErrors();
+				this.depth++;
 				var ruleOut9 = this.Json_Number(input, charPos);
 				if (ruleOut9.hadError) {
+					this.depth--;
 					this.giveError(1, "null, true, false, Json_EmptyArray, Json_EmptyMap, Json_Array, Json, String, Json_Number", currentChar);
 					}else{
 						var ruleOutCast9 = ruleOut9.data["data"];
 						charPos = this.offset;
 						data["exp"] = ruleOutCast9;
+						this.depth--;
 						c = 10;
 					}
+				this.depth--;
 				}else if (c == 10) {
+				this.depth++;
 				var ruleOut10 = this._(input, charPos);
 				if (ruleOut10.hadError) {
 					this.giveError(ruleOut10.error.code, "White space(optional)(" + ruleOut10.error.expected + ")", ruleOut10.error.found);
@@ -27514,6 +28261,7 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 							}
 						c = 0 - 1;
 					}
+				this.depth--;
 				}
 			this.offset++;
 			this.column++;

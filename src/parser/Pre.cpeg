@@ -6,14 +6,14 @@ map|start = document: Source;
 
 map|Source = s: (Raw / Pre)* {map|export = $s;};
 
-map|Pre = p: (If / Define / Return / Doc / Doc_Line / Output / Function / On / Script / Var / Include / For / ForIn / Lost) {map|export = $p;export["offset"] = charPos;export["startOffset"] = startPos;};
+map|Pre = p: (If / Define / Return / Doc / Doc_Line / Output / Function / On / Script / Var / Include / For / ForIn / Lost / Backslash) {map|export = $p;export["offset"] = charPos;export["startOffset"] = startPos;};
 
-map|Raw = c: <string{var string inString = ""; var bool lineComment = false;var bool checkComment = false;var bool openComment = false;}|
+map|Raw = c: <string{var string inString = ""; var bool checkPre = false; var bool lineComment = false;var bool checkComment = false;var bool openComment = false;}|
 if (checkComment and openComment == false) {
 	if (currentChar == "*") {
 		openComment = true;
 		@capture(" ")
-	}else if (currentChar == "/") {
+	}else if (currentChar == "/" and inString.length == 0) {
 		openComment = true;
 		lineComment = true;
 		@capture(" ")
@@ -118,9 +118,9 @@ map|Define = "#define" _ name: Safe_Name _ "=" _ value: Expression {type: "defin
 
 map|Var = "#var" _ name: Safe_Name _ "=" _ value: Expression {type: "var", name: {$name}, value: {$value}};
 
-map|Backslash = "#" {type: "raw", content: "#"};
+map|Backslash = "# " {type: "raw", content: "# "};
 
-map|Lost = "#" exp: Expression {
+map|Lost = "#" exp: _Expression {
 map|
 var bool doSet = true;
 if ($exp["type"] == "constant") {
@@ -136,6 +136,8 @@ export["value"] = $exp;
 };
 
 map|Sub = "." _ exp: (Call / Value) {map|export = $exp;};
+
+map|_Expression = e: (Operation / Call / Value) subs: (Sub / Literal_Array)* {map|export = $e;export["subs"] = $subs; export["startOffset"] = startPos;export["offset"] = charPos;};
 
 map|Expression = _ e: (Operation / Call / Value) subs: (Sub / Literal_Array)* {map|export = $e;export["subs"] = $subs; export["startOffset"] = startPos;export["offset"] = charPos;};
 
