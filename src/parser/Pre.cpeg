@@ -10,15 +10,21 @@ map|Pre = p: (If / Define / Return / Doc / Doc_Line / Output / Function / On / S
 
 map|Raw = c: <string{var string inString = ""; var bool checkPre = false; var bool lineComment = false;var bool checkComment = false;var bool openComment = false;}|
 if (checkComment and openComment == false) {
-	if (currentChar == "*") {
+	if (currentChar == "*" and inString == "") {
 		openComment = true;
 		@capture(" ")
-	}else if (currentChar == "/" and inString.length == 0) {
+	}else if (currentChar == "/" and inString == "") {
 		openComment = true;
 		lineComment = true;
 		@capture(" ")
 	}else{
 		@capture("/" + currentChar)
+		
+		if (inString.length != 0) {
+			if (inString == currentChar) {
+				inString = "";
+			}
+		}
 	}
 	checkComment = false;
 }else if (openComment) {

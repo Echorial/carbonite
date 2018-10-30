@@ -592,7 +592,7 @@ dataStore["temp"] = new map();
 	
 	
 if (checkComment and openComment == false) {
-	if (currentChar == "*") {
+	if (currentChar == "*" and inString == "") {
 		openComment = true;
 		data["c"] += " ";
 if (true) {
@@ -603,7 +603,7 @@ dataStore["data"]["offset"] = charPos;
 dataStore["data"]["startOffset"] = startPos;
 dataStore["data"]["content"] = actionCap0c;
 }
-	}else if (currentChar == "/" and inString.length == 0) {
+	}else if (currentChar == "/" and inString == "") {
 		openComment = true;
 		lineComment = true;
 		data["c"] += " ";
@@ -625,6 +625,12 @@ dataStore["data"]["offset"] = charPos;
 dataStore["data"]["startOffset"] = startPos;
 dataStore["data"]["content"] = actionCap0c;
 }
+		
+		if (inString.length != 0) {
+			if (inString == currentChar) {
+				inString = "";
+			}
+		}
 	}
 	checkComment = false;
 }else if (openComment) {

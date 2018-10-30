@@ -22895,7 +22895,7 @@ CarbonitePreprocessor.prototype.Raw = function () {
 			if (c == 0) {
 				var castnacc0 = data["c"];
 				if (checkComment && openComment == false) {
-					if (currentChar == "*") {
+					if (currentChar == "*" && inString == "") {
 						openComment = true;
 						data["c"] += " ";
 						if (true) {
@@ -22906,7 +22906,7 @@ CarbonitePreprocessor.prototype.Raw = function () {
 							dataStore["data"]["startOffset"] = startPos;
 							dataStore["data"]["content"] = actionCap0c;
 							}
-						}else if (currentChar == "/" && inString.length == 0) {
+						}else if (currentChar == "/" && inString == "") {
 						openComment = true;
 						lineComment = true;
 						data["c"] += " ";
@@ -22927,6 +22927,11 @@ CarbonitePreprocessor.prototype.Raw = function () {
 								dataStore["data"]["offset"] = charPos;
 								dataStore["data"]["startOffset"] = startPos;
 								dataStore["data"]["content"] = actionCap0c;
+								}
+							if (inString.length != 0) {
+								if (inString == currentChar) {
+									inString = "";
+									}
 								}
 						}
 					checkComment = false;
