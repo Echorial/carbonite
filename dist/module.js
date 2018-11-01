@@ -23085,6 +23085,14 @@ CarbonitePreprocessor.prototype.Raw = function () {
 												inString = "";
 												}
 										}
+									}else if (currentCode == 96) {
+									if (inString == "") {
+										inString = "`";
+										}else{
+											if (inString == "`") {
+												inString = "";
+												}
+										}
 									}
 							}
 					}

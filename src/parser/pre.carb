@@ -775,6 +775,14 @@ dataStore["data"]["content"] = actionCap0c;
 					inString = "";
 				}
 			}
+		}else if (currentCode == 96) {
+			if (inString == "") {
+				inString = "`";
+			}else{
+				if (inString == "`") {
+					inString = "";
+				}
+			}
 		}
 	}
 }
