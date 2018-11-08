@@ -9808,7 +9808,7 @@ Carbonite.Assemblers.Php.prototype.compareClass = function () {
 			}else if (to.route == "array") {
 			return "(gettype(" + varName + ") == 'array')";
 			}else if (to.route == "map") {
-			return "(gettype(" + varName + ") == 'array' ? _c_lib__mapUtils::isMap(" + varName + ") : get_class(" + varName + ") == '_carb_map')";
+			return "(gettype(" + varName + ") == 'array' ? _c_lib__mapUtils::isMap(" + varName + ") : (gettype(" + varName + ") == 'object' ? get_class(" + varName + ") == '_carb_map' : false))";
 			}
 		if (native.length == 0) {
 			if (to.route == "everything") {
