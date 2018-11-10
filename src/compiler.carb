@@ -13,6 +13,8 @@ class Carbonite.Compiler {
 
 	bound public <string>array noExports = new <string>array();
 
+	bound public <void, string, string, <void, string, string>function>function importHandler = null;
+
 	bound public Carbonite.Router router = empty;
 	bound public <Carbonite.Source>array sources = new <Carbonite.Source>array();
 	bound public <Carbonite.Named>array roots = new <Carbonite.Named>array();

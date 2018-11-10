@@ -1,0 +1,44 @@
+class Carbonite.Pre.Statements.Import inherits Carbonite.Pre.Statement {
+	bound public string name = "";
+	bound public <string>array as = null;
+
+	bound public override <void>function build() {
+		
+	}
+
+	bound public override <void>function run() {
+		var that = this;
+
+		this.name = this.data["name"]["value"];
+		this.as = this.data["as"];
+
+		var comp = this.parent.parent.source.parent;
+
+		if (comp.importHandler == null) {
+			var notice = new Carbonite.Notice("No import handler registered for this compiler");
+			notice.start = new Carbonite.Location(0, 0, 0);
+			notice.end = new Carbonite.Location(0, 0, 0);
+			notice.module = "Import";
+			notice.type = "Import";
+			notice.source = this.parent.parent.source;
+			this.parent.parent.source.parent.status.give(notice);
+			Exception.throw("Import error");
+		}else{
+			comp.importHandler(this.name, "*", void (string err, string location) => {
+				if (err != null and err.length > 0) {
+					var notice = new Carbonite.Notice(err);
+					notice.start = new Carbonite.Location(0, 0, 0);
+					notice.end = new Carbonite.Location(0, 0, 0);
+					notice.module = "Import";
+					notice.type = "Import";
+					notice.source = that.parent.parent.source;
+					that.parent.parent.source.parent.status.give(notice);
+					Exception.throw("Import error");
+				}else{
+					var tempInclude = new Carbonite.Pre.Statements.Include(that.parent, that.data);
+					Carbonite.Pre.Statements.Include.include(location, tempInclude);
+				}
+			});
+		}
+	}
+}

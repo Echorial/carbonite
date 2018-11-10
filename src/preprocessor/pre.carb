@@ -10,6 +10,7 @@
 	#include "statements/var.carb"
 	#include "statements/return.carb"
 	#include "statements/include.carb"
+	#include "statements/import.carb"
 	#include "statements/out.carb"
 	#include "statements/script.carb"
 	#include "statements/doc.carb"

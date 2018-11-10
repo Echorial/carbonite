@@ -20,6 +20,8 @@ class Carbonite.Pre.Statement {
 			rtn = new Carbonite.Pre.Statements.If(block, data);
 		}else if (type == "include") {
 			rtn = new Carbonite.Pre.Statements.Include(block, data);
+		}else if (type == "import") {
+			rtn = new Carbonite.Pre.Statements.Import(block, data);
 		}else if (type == "raw") {
 			rtn = new Carbonite.Pre.Statements.Raw(block, data);
 		}else if (type == "function") {

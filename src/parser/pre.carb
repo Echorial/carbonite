@@ -12,7 +12,6 @@ bound public int code = 0;
 bound public string found = 0;
 bound public string expected = 0;
 bound public int vested = 0;
-bound public int depth = 0;
 bound public <CarbonitePreprocessorError>array path = new <CarbonitePreprocessorError>array();
 bound public <CarbonitePreprocessorError>function clone() {var CarbonitePreprocessorError clone = new CarbonitePreprocessorError(this.offset, this.line, this.column); clone.code = this.code; clone.found = this.found; clone.expected = this.expected; clone.vested = this.vested; for (var int i in this.path) {var CarbonitePreprocessorError current = this.path[i]; clone.path.push(current.clone());} return clone;}}
 
@@ -26,14 +25,9 @@ class CarbonitePreprocessor inherits CarbonitePreprocessorLocation {
 fixed public override <CarbonitePreprocessor>function @construct() {}
 fixed public <<map>CarbonitePreprocessorOutput>function parse(string input) {	var <map>CarbonitePreprocessor parser = new <map>CarbonitePreprocessor();
 	var map output = parser.start(input);
-	parser.error = parser.deepError;
 	if (parser.hadError and (parser.error.found == string.fromCharCode(0001))) {
 		parser.error.found = "End of input";
-	}
-	for (var int i = 0; i < parser.error.offset; i++) {
-		parser.error.column++;
-		if (i < parser.currentInput.length)		if (parser.currentInput[i] == "\n") {parser.error.line++; parser.error.column = 0;}
-	}
+}
 	var <map>CarbonitePreprocessorOutput rtn = new <map>CarbonitePreprocessorOutput(parser.hadError, parser.error, parser.data["data"]);
 	return rtn;
 }
@@ -58,6 +52,8 @@ fixed public <<map>CarbonitePreprocessorOutput>function parse(string rule, strin
 	output = parser.As(input, 0);
 	}elseif (rule == "Include") {
 	output = parser.Include(input, 0);
+	}elseif (rule == "Import") {
+	output = parser.Import(input, 0);
 	}elseif (rule == "Output") {
 	output = parser.Output(input, 0);
 	}elseif (rule == "Return") {
@@ -144,9 +140,7 @@ fixed public <<map>CarbonitePreprocessorOutput>function parse(string rule, strin
 	output = parser.Json_Value(input, 0);
 	}elseif (rule == "Json_Number") {
 	output = parser.Json_Number(input, 0);
-	}	parser.error = parser.deepError;
-
-	if (parser.lastErrors.length > 0) {parser.error = parser.lastErrors[0];}
+	}
 	if (parser.hadError and (parser.error.found == string.fromCharCode(0001))) {
 		parser.error.found = "End of input";
 	}
@@ -160,41 +154,23 @@ fixed public <<map>CarbonitePreprocessorOutput>function parse(string rule, strin
 bound public <CarbonitePreprocessorError>array lastErrors = new <CarbonitePreprocessorError>array();
 bound public bool hadError = false;
 bound public int parsedChars = 0;
-bound public int depth = 0;
 bound public string currentInput = new string();
 bound public map data = new map();
-bound public CarbonitePreprocessorError deepError = new CarbonitePreprocessorError(0, 0, 0);
 bound public CarbonitePreprocessorError error = new CarbonitePreprocessorError(0, 0, 0);
-bound public <<CarbonitePreprocessorError>array>array errors = new <<CarbonitePreprocessorError>array>array();
 bound public <string>function assembleCodes(<int>array codes) {
 	var string rtn = new string();
 	for (var int i in codes) {
 		rtn += string.fromCharCode(codes[i]);
 	}
 	return rtn;}
-bound public <void>function groupErrors() {
-	}
-bound public <void>function popGroup() {
-	}
 bound public <void>function giveError(int code, string expected, string found) {
-	this.hadError = true;
-	this.error.code = code;
-	this.error.expected = expected;
-	this.error.found = found;
-	this.error.offset = this.offset;
-	this.error.line = 1;
-	this.error.column = 0;
-	if (this.deepError == null or this.depth > this.deepError.depth) {
-		var err = new CarbonitePreprocessorError(0, 0, 0);
-		err.code = code;
-		err.expected = expected;
-		err.found = found;
-		err.offset = this.offset;
-		err.line = 1;
-		err.column = 0;
-		err.depth = this.depth;
-		this.deepError = err;
-	}
+this.hadError = true;
+this.error.code = code;
+this.error.expected = expected;
+this.error.found = found;
+this.error.offset = this.offset;
+this.error.line = 1;
+this.error.column = 0;
 }
 
 bound public <void>function start(string input) {
@@ -204,14 +180,13 @@ bound public <void>function start(string input) {
 	var int c = 0;
 	
 			var int literalChar = 0;
-	Exception.try();
 	for (var int charPos = 0; charPos < input.length(); charPos++) {
 		var string currentChar = input[charPos];
 		var int currentCode = input.charCodeAt(charPos);
 		if (c == 0 - 1) {if (currentChar != string.fromCharCode(0001)) {this.giveError(2, "EOF", currentChar);}}
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Source(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Source(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "Source(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -223,11 +198,10 @@ charPos = this.offset;
 		c = 0 - 1;
 		
 	}
- this.depth--;}		this.offset++; 
+}		this.offset++; 
  this.column++;
 		if (this.hadError) {break;}
 	}
-	Exception.endTry();
 	for (var int i = 0; i < this.error.offset; i++) {
 		this.error.column++;
 		if (i < this.currentInput.length)		if (this.currentInput[i] == "\n") {this.error.line++; this.error.column = 0;}
@@ -251,11 +225,10 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; this.groupErrors(); this.depth++;
 	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Raw(input, charPos);
 	
 if (ruleOut0.hadError) {
-		this.depth--; c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast0 = ruleOut0.data["data"];
@@ -269,12 +242,11 @@ var <map>array actionCap0s = data["s"];dataStore["data"] = actionCap0s;}
 		c = 0;
 		
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 1) {
 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Pre(input, charPos);
 	
 if (ruleOut1.hadError) {
-		this.depth--; if (true) {
+		if (true) {
 
 var <map>array castacs0 = data["s"];
 var <map>array actionCap0s = data["s"];dataStore["data"] = actionCap0s;}c = 0 - 1; charPos--; this.offset--;
@@ -291,7 +263,7 @@ var <map>array actionCap0s = data["s"];dataStore["data"] = actionCap0s;}
 		c = 0;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -312,11 +284,10 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; this.groupErrors(); this.depth++;
 	var <map>CarbonitePreprocessorOutput ruleOut0 = this.If(input, charPos);
 	
 if (ruleOut0.hadError) {
-		this.depth--; c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast0 = ruleOut0.data["data"];
@@ -325,15 +296,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 1) {
 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Define(input, charPos);
 	
 if (ruleOut1.hadError) {
-		this.depth--; c = 2; charPos--; this.offset--;
+		c = 2; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast1 = ruleOut1.data["data"];
@@ -342,15 +312,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 2) {
 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Return(input, charPos);
 	
 if (ruleOut2.hadError) {
-		this.depth--; c = 3; charPos--; this.offset--;
+		c = 3; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast2 = ruleOut2.data["data"];
@@ -359,15 +328,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 3) {
 	var <map>CarbonitePreprocessorOutput ruleOut3 = this.Doc(input, charPos);
 	
 if (ruleOut3.hadError) {
-		this.depth--; c = 4; charPos--; this.offset--;
+		c = 4; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast3 = ruleOut3.data["data"];
@@ -376,15 +344,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 4) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 4) {
 	var <map>CarbonitePreprocessorOutput ruleOut4 = this.Doc_Line(input, charPos);
 	
 if (ruleOut4.hadError) {
-		this.depth--; c = 5; charPos--; this.offset--;
+		c = 5; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast4 = ruleOut4.data["data"];
@@ -393,15 +360,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 5) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 5) {
 	var <map>CarbonitePreprocessorOutput ruleOut5 = this.Output(input, charPos);
 	
 if (ruleOut5.hadError) {
-		this.depth--; c = 6; charPos--; this.offset--;
+		c = 6; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast5 = ruleOut5.data["data"];
@@ -410,15 +376,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 6) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 6) {
 	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Function(input, charPos);
 	
 if (ruleOut6.hadError) {
-		this.depth--; c = 7; charPos--; this.offset--;
+		c = 7; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast6 = ruleOut6.data["data"];
@@ -427,15 +392,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 7) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 7) {
 	var <map>CarbonitePreprocessorOutput ruleOut7 = this.On(input, charPos);
 	
 if (ruleOut7.hadError) {
-		this.depth--; c = 8; charPos--; this.offset--;
+		c = 8; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast7 = ruleOut7.data["data"];
@@ -444,15 +408,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 8) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 8) {
 	var <map>CarbonitePreprocessorOutput ruleOut8 = this.Script(input, charPos);
 	
 if (ruleOut8.hadError) {
-		this.depth--; c = 9; charPos--; this.offset--;
+		c = 9; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast8 = ruleOut8.data["data"];
@@ -461,15 +424,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 9) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 9) {
 	var <map>CarbonitePreprocessorOutput ruleOut9 = this.Var(input, charPos);
 	
 if (ruleOut9.hadError) {
-		this.depth--; c = 10; charPos--; this.offset--;
+		c = 10; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast9 = ruleOut9.data["data"];
@@ -478,15 +440,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 10) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 10) {
 	var <map>CarbonitePreprocessorOutput ruleOut10 = this.Include(input, charPos);
 	
 if (ruleOut10.hadError) {
-		this.depth--; c = 11; charPos--; this.offset--;
+		c = 11; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast10 = ruleOut10.data["data"];
@@ -495,15 +456,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 11) {
-	this.depth++; this.groupErrors(); this.depth++;
-	var <map>CarbonitePreprocessorOutput ruleOut11 = this.For(input, charPos);
+}else if (c == 11) {
+	var <map>CarbonitePreprocessorOutput ruleOut11 = this.Import(input, charPos);
 	
 if (ruleOut11.hadError) {
-		this.depth--; c = 12; charPos--; this.offset--;
+		c = 12; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast11 = ruleOut11.data["data"];
@@ -512,15 +472,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 12) {
-	this.depth++; this.groupErrors(); this.depth++;
-	var <map>CarbonitePreprocessorOutput ruleOut12 = this.ForIn(input, charPos);
+}else if (c == 12) {
+	var <map>CarbonitePreprocessorOutput ruleOut12 = this.For(input, charPos);
 	
 if (ruleOut12.hadError) {
-		this.depth--; c = 13; charPos--; this.offset--;
+		c = 13; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast12 = ruleOut12.data["data"];
@@ -529,15 +488,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 13) {
-	this.depth++; this.groupErrors(); this.depth++;
-	var <map>CarbonitePreprocessorOutput ruleOut13 = this.Lost(input, charPos);
+}else if (c == 13) {
+	var <map>CarbonitePreprocessorOutput ruleOut13 = this.ForIn(input, charPos);
 	
 if (ruleOut13.hadError) {
-		this.depth--; c = 14; charPos--; this.offset--;
+		c = 14; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast13 = ruleOut13.data["data"];
@@ -546,15 +504,14 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 14) {
-	this.depth++; this.groupErrors(); this.depth++;
-	var <map>CarbonitePreprocessorOutput ruleOut14 = this.Backslash(input, charPos);
+}else if (c == 14) {
+	var <map>CarbonitePreprocessorOutput ruleOut14 = this.Lost(input, charPos);
 	
 if (ruleOut14.hadError) {
-		this.depth--; this.giveError(1, "If, Define, Return, Doc, Doc_Line, Output, Function, On, Script, Var, Include, For, ForIn, Lost, Backslash", currentChar);
+		c = 15; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast14 = ruleOut14.data["data"];
@@ -563,10 +520,26 @@ charPos = this.offset;
 
 var map castacp0 = data["p"];
 var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}else if (c == 15) {
+	var <map>CarbonitePreprocessorOutput ruleOut15 = this.Backslash(input, charPos);
+	
+if (ruleOut15.hadError) {
+		this.giveError(1, "If, Define, Return, Doc, Doc_Line, Output, Function, On, Script, Var, Include, Import, For, ForIn, Lost, Backslash", currentChar);
+		
+	}else{
+		var map ruleOutCast15 = ruleOut15.data["data"];
+charPos = this.offset;
+		data["p"] = ruleOutCast15;if (true) {
+
+var map castacp0 = data["p"];
+var map actionCap0p = data["p"];dataStore["data"] = actionCap0p;dataStore["data"]["offset"] = charPos;dataStore["data"]["startOffset"] = startPos;}
+		c = 0 - 1;
+		this.error.vested++;
+	}
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -582,13 +555,13 @@ dataStore["temp"] = new map();
 	var int c = 0;
 	data["c"] = new string();
 
-		var string inString = ""; var bool checkPre = false; var bool lineComment = false;var bool checkComment = false;var bool openComment = false;	var int literalChar = 0;
+		var bool escape = false; var string inString = ""; var bool checkPre = false; var bool lineComment = false;var bool checkComment = false;var bool openComment = false;	var int literalChar = 0;
 	for (var int charPos = startPos; charPos < input.length(); charPos++) {
 		var string currentChar = input[charPos];
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var string castnacc0 = data["c"];
+	var string castnacc0 = data["c"];
 	
 	
 if (checkComment and openComment == false) {
@@ -759,15 +732,17 @@ dataStore["data"]["offset"] = charPos;
 dataStore["data"]["startOffset"] = startPos;
 dataStore["data"]["content"] = actionCap0c;
 }
-		if (currentCode == 34) {
+		var oe = escape;
+		escape = false;
+		if (currentCode == 34 and oe == false) {
 			if (inString == "") {
 				inString = "\"";
 			}else{
-				if (inString == "\"") {
+				if (inString == "\"" and ) {
 					inString = "";
 				}
 			}
-		}else if (currentCode == 39) {
+		}else if (currentCode == 39 and oe == false) {
 			if (inString == "") {
 				inString = "'";
 			}else{
@@ -783,6 +758,8 @@ dataStore["data"]["content"] = actionCap0c;
 					inString = "";
 				}
 			}
+		}else if (currentCode == 92) {
+			escape = oe == false;
 		}
 	}
 }
@@ -809,11 +786,10 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; this.groupErrors(); this.depth++;
 	var <map>CarbonitePreprocessorOutput ruleOut0 = this.RawLine(input, charPos);
 	
 if (ruleOut0.hadError) {
-		this.depth--; c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast0 = ruleOut0.data["data"];
@@ -827,12 +803,11 @@ var <map>array actionCap0s = data["s"];dataStore["data"] = actionCap0s;}
 		c = 0;
 		
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 1) {
 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Lost(input, charPos);
 	
 if (ruleOut1.hadError) {
-		this.depth--; if (true) {
+		if (true) {
 
 var <map>array castacs0 = data["s"];
 var <map>array actionCap0s = data["s"];dataStore["data"] = actionCap0s;}c = 0 - 1; charPos--; this.offset--;
@@ -849,7 +824,7 @@ var <map>array actionCap0s = data["s"];dataStore["data"] = actionCap0s;}
 		c = 0;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -887,7 +862,8 @@ dataStore["data"]["content"] = actionCap0c;
 dataStore["data"]["startOffset"] = startPos;
 dataStore["data"]["offset"] = charPos;
 }c = 0 - 1; charPos--; this.offset--;}else{
-this.giveError(1, "#, nl", currentChar);}
+this.giveError(1, "#, 
+", currentChar);}
 		this.error.vested++;
 
 	}else{
@@ -927,7 +903,7 @@ data["checks"] = new <map>array();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 105, 102];
+	var <int>array lit0 = [35, 105, 102];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 3) {
@@ -940,7 +916,7 @@ data["checks"] = new <map>array();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.If_Expression(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut1 = this.If_Expression(input, charPos);
 	
 if (ruleOut1.hadError) {
 		var <map>array castchecks1 = data["checks"];
@@ -960,8 +936,8 @@ c = 2;continue;}else {charPos++;}if (charPos == input.length() - 1) {this.giveEr
 		c = 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Source(input, charPos);
+}else if (c == 2) {
+	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Source(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "Source(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -973,8 +949,8 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
-		var <int>array lit3 = [35, 101, 110, 100, 32, 105, 102];
+}else if (c == 3) {
+	var <int>array lit3 = [35, 101, 110, 100, 32, 105, 102];
 	if (currentCode == lit3[literalChar]) {
 		literalChar++;
 		if (literalChar == 7) {
@@ -1016,7 +992,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut0 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut0 = this._(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "White space(optional)(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -1028,8 +1004,8 @@ charPos = this.offset;
 		c = 1;
 		
 	}
- this.depth--;}else if (c == 1) {
-		var <int>array lit1 = [97, 115];
+}else if (c == 1) {
+	var <int>array lit1 = [97, 115];
 	if (currentCode == lit1[literalChar]) {
 		literalChar++;
 		if (literalChar == 2) {
@@ -1042,7 +1018,7 @@ charPos = this.offset;
 		this.giveError(1, "" + this.assembleCodes(lit1) + "", currentChar);
 	}
 }else if (c == 2) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut2 = this.__(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this.__(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "White space(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -1054,8 +1030,8 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut3 = this.Safe_Name(input, charPos);
+}else if (c == 3) {
+	var <string>CarbonitePreprocessorOutput ruleOut3 = this.Safe_Name(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "Safe_Name(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -1070,7 +1046,7 @@ var string actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
 		c = 0 - 1;
 		
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -1094,7 +1070,7 @@ data["as"] = new <string>array();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 105, 110, 99, 108, 117, 100, 101];
+	var <int>array lit0 = [35, 105, 110, 99, 108, 117, 100, 101];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 8) {
@@ -1107,7 +1083,7 @@ data["as"] = new <string>array();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Expression(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Expression(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -1119,8 +1095,8 @@ charPos = this.offset;
 		c = 2;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut2 = this.As(input, charPos);
+}else if (c == 2) {
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this.As(input, charPos);
 	
 if (ruleOut2.hadError) {
 		if (true) {
@@ -1130,7 +1106,7 @@ var <string>array actionCap0as = data["as"];var map actionCap0file = data["file"
 dataStore["data"]["as"] = actionCap0as;
 dataStore["data"]["file"] = actionCap0file;
 }c = 0 - 1; charPos--; this.offset--;
-		if (ruleOut2.error.vested > 1) {this.giveError(ruleOut2.error.code, ruleOut2.error.expected, ruleOut2.error.found); Exception.throw('Vested error');}
+		if (ruleOut2.error.vested > 1) {this.giveError(ruleOut2.error.code, ruleOut2.error.expected, ruleOut2.error.found);}
 	}else{
 		var string ruleOutCast2 = ruleOut2.data["data"];
 charPos = this.offset;
@@ -1153,7 +1129,90 @@ dataStore["data"]["file"] = actionCap0file;
 		c = 2;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
+		if (c == 0 - 1) {this.offset = charPos; break;}
+		if (this.hadError) {break;}
+	}
+	var <map>CarbonitePreprocessorOutput parseOutput = new <map>CarbonitePreprocessorOutput(this.hadError, this.error.clone(), dataStore);
+	parseOutput.error.vested = this.error.vested - oldVest; this.error.vested = oldVest;	this.hadError = false;
+	return parseOutput;
+}
+bound public <<map>CarbonitePreprocessorOutput>function Import(string input, int startPos) {var int oldVest = this.error.vested;
+	var map dataStore = new map();
+dataStore["data"] = new map();
+dataStore["temp"] = new map();
+	var map data = dataStore["temp"];
+	var int c = 0;
+	
+
+data["as"] = new <string>array();
+
+			var int literalChar = 0;
+	for (var int charPos = startPos; charPos < input.length(); charPos++) {
+		var string currentChar = input[charPos];
+		var int currentCode = input.charCodeAt(charPos);
+		if (currentCode == 10) {this.line++; this.column = 0;}
+		if (c == 0) {
+	var <int>array lit0 = [35, 105, 109, 112, 111, 114, 116];
+	if (currentCode == lit0[literalChar]) {
+		literalChar++;
+		if (literalChar == 7) {
+			
+			c = 1;
+			literalChar = 0;
+}
+			this.error.vested++;
+	}else{
+		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
+	}
+}else if (c == 1) {
+	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Expression(input, charPos);
+	
+if (ruleOut1.hadError) {
+		this.giveError(ruleOut1.error.code, "Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
+		
+	}else{
+		var map ruleOutCast1 = ruleOut1.data["data"];
+charPos = this.offset;
+		data["name"] = ruleOutCast1;
+		c = 2;
+		this.error.vested++;
+	}
+}else if (c == 2) {
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this.As(input, charPos);
+	
+if (ruleOut2.hadError) {
+		if (true) {
+
+var map castacas0 = data["as"];
+var <string>array actionCap0as = data["as"];var map actionCap0name = data["name"];dataStore["data"]["type"] = "import";
+dataStore["data"]["as"] = actionCap0as;
+dataStore["data"]["name"] = actionCap0name;
+}c = 0 - 1; charPos--; this.offset--;
+		if (ruleOut2.error.vested > 1) {this.giveError(ruleOut2.error.code, ruleOut2.error.expected, ruleOut2.error.found);}
+	}else{
+		var string ruleOutCast2 = ruleOut2.data["data"];
+charPos = this.offset;
+		var <string>array castas2 = data["as"];
+castas2.push(ruleOutCast2);
+if (input.charCodeAt(charPos + 1) != 44) {
+if (true) {
+
+var map castacas0 = data["as"];
+var <string>array actionCap0as = data["as"];var map actionCap0name = data["name"];dataStore["data"]["type"] = "import";
+dataStore["data"]["as"] = actionCap0as;
+dataStore["data"]["name"] = actionCap0name;
+}c = 0 - 1;continue;}else {charPos++;}if (true) {
+
+var map castacas0 = data["as"];
+var <string>array actionCap0as = data["as"];var map actionCap0name = data["name"];dataStore["data"]["type"] = "import";
+dataStore["data"]["as"] = actionCap0as;
+dataStore["data"]["name"] = actionCap0name;
+}
+		c = 2;
+		this.error.vested++;
+	}
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -1175,7 +1234,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 111, 117, 116, 32];
+	var <int>array lit0 = [35, 111, 117, 116, 32];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 5) {
@@ -1188,7 +1247,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.SourceLine(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut1 = this.SourceLine(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "SourceLine(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -1205,7 +1264,7 @@ dataStore["data"]["content"] = actionCap0content;
 		c = 0 - 1;
 		
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -1227,7 +1286,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 114, 101, 116, 117, 114, 110, 32];
+	var <int>array lit0 = [35, 114, 101, 116, 117, 114, 110, 32];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 8) {
@@ -1240,7 +1299,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Expression(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Expression(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -1257,7 +1316,7 @@ dataStore["data"]["expression"] = actionCap0exp;
 		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -1281,7 +1340,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 111, 110, 32];
+	var <int>array lit0 = [35, 111, 110, 32];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 4) {
@@ -1294,7 +1353,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Expression(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Expression(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -1306,8 +1365,8 @@ charPos = this.offset;
 		c = 2;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Source(input, charPos);
+}else if (c == 2) {
+	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Source(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "Source(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -1319,8 +1378,8 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
-		var <int>array lit3 = [35, 101, 110, 100, 32, 111, 110];
+}else if (c == 3) {
+	var <int>array lit3 = [35, 101, 110, 100, 32, 111, 110];
 	if (currentCode == lit3[literalChar]) {
 		literalChar++;
 		if (literalChar == 7) {
@@ -1359,7 +1418,6 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.groupErrors(); this.depth++;
 	var <int>array lit0 = [110, 97, 118, 68, 114, 111, 112];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
@@ -1368,15 +1426,14 @@ dataStore["temp"] = new map();
 
 var map castacname0 = data["name"];
 var map actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
-			this.depth--;c = 0 - 1;
+			c = 0 - 1;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 	}
 }else if (c == 1) {
-	this.groupErrors(); this.depth++;
 	var <int>array lit1 = [116, 114, 101, 101];
 	if (currentCode == lit1[literalChar]) {
 		literalChar++;
@@ -1385,15 +1442,14 @@ var map actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
 
 var map castacname0 = data["name"];
 var map actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
-			this.depth--;c = 0 - 1;
+			c = 0 - 1;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; c = 2; charPos--; this.offset--;
+		c = 2; charPos--; this.offset--;
 	}
 }else if (c == 2) {
-	this.groupErrors(); this.depth++;
 	var <int>array lit2 = [112, 97, 103, 101];
 	if (currentCode == lit2[literalChar]) {
 		literalChar++;
@@ -1402,12 +1458,12 @@ var map actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
 
 var map castacname0 = data["name"];
 var map actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
-			this.depth--;c = 0 - 1;
+			c = 0 - 1;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; this.giveError(1, "navDrop, tree, page", currentChar);
+		this.giveError(1, "navDrop, tree, page", currentChar);
 	}
 }		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
@@ -1430,7 +1486,6 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.groupErrors(); this.depth++;
 	var <int>array lit0 = [110, 97, 118, 76, 105, 110, 107];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
@@ -1439,15 +1494,14 @@ dataStore["temp"] = new map();
 
 var map castacname0 = data["name"];
 var map actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
-			this.depth--;c = 0 - 1;
+			c = 0 - 1;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 	}
 }else if (c == 1) {
-	this.groupErrors(); this.depth++;
 	var <int>array lit1 = [105, 110, 99, 108, 117, 100, 101];
 	if (currentCode == lit1[literalChar]) {
 		literalChar++;
@@ -1456,15 +1510,14 @@ var map actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
 
 var map castacname0 = data["name"];
 var map actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
-			this.depth--;c = 0 - 1;
+			c = 0 - 1;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; c = 2; charPos--; this.offset--;
+		c = 2; charPos--; this.offset--;
 	}
 }else if (c == 2) {
-	this.groupErrors(); this.depth++;
 	var <int>array lit2 = [116, 97, 103];
 	if (currentCode == lit2[literalChar]) {
 		literalChar++;
@@ -1473,12 +1526,12 @@ var map actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
 
 var map castacname0 = data["name"];
 var map actionCap0name = data["name"];dataStore["data"] = actionCap0name;}
-			this.depth--;c = 0 - 1;
+			c = 0 - 1;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; this.giveError(1, "navLink, include, tag", currentChar);
+		this.giveError(1, "navLink, include, tag", currentChar);
 	}
 }		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
@@ -1507,7 +1560,7 @@ data["arguments"] = new string();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 100, 111, 99, 32];
+	var <int>array lit0 = [35, 100, 111, 99, 32];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 5) {
@@ -1520,7 +1573,7 @@ data["arguments"] = new string();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this.DocName(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this.DocName(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "DocName(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -1532,8 +1585,8 @@ charPos = this.offset;
 		c = 2;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut2 = this._(input, charPos);
+}else if (c == 2) {
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this._(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "White space(optional)(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -1545,7 +1598,7 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
+}else if (c == 3) {
 	var bool passed3 = false;
 	if (currentCode == 10) {passed3 = true;}
 	if (passed3 == false) {
@@ -1561,7 +1614,7 @@ if (charPos == input.length() - 1) {this.giveError(2, "EOF", currentChar);}
 c = 3;
 	}
 }else if (c == 4) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut4 = this.Source(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut4 = this.Source(input, charPos);
 	
 if (ruleOut4.hadError) {
 		this.giveError(ruleOut4.error.code, "Source(" + ruleOut4.error.expected + ")", ruleOut4.error.found);
@@ -1573,8 +1626,8 @@ charPos = this.offset;
 		c = 5;
 		
 	}
- this.depth--;}else if (c == 5) {
-		var <int>array lit5 = [35, 101, 110, 100, 32, 100, 111, 99];
+}else if (c == 5) {
+	var <int>array lit5 = [35, 101, 110, 100, 32, 100, 111, 99];
 	if (currentCode == lit5[literalChar]) {
 		literalChar++;
 		if (literalChar == 8) {
@@ -1618,7 +1671,7 @@ data["arguments"] = new string();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 100, 111, 99, 32];
+	var <int>array lit0 = [35, 100, 111, 99, 32];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 5) {
@@ -1631,7 +1684,7 @@ data["arguments"] = new string();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this.DocNameLine(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this.DocNameLine(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "DocNameLine(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -1643,8 +1696,8 @@ charPos = this.offset;
 		c = 2;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut2 = this._(input, charPos);
+}else if (c == 2) {
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this._(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "White space(optional)(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -1656,7 +1709,7 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
+}else if (c == 3) {
 	var bool passed3 = false;
 	if (currentCode == 10) {passed3 = true;}
 	if (passed3 == false) {
@@ -1708,7 +1761,7 @@ data["language"] = new string();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 115, 99, 114, 105, 112, 116];
+	var <int>array lit0 = [35, 115, 99, 114, 105, 112, 116];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 7) {
@@ -1721,7 +1774,7 @@ data["language"] = new string();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -1733,7 +1786,7 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
+}else if (c == 2) {
 	var bool passed2 = false;
 	
 	if (passed2 == false) {
@@ -1749,7 +1802,7 @@ c = 2;		this.error.vested++;
 		c = 3; charPos--; this.offset--;
 	}
 }else if (c == 3) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut3 = this.Source(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut3 = this.Source(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "Source(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -1761,8 +1814,8 @@ charPos = this.offset;
 		c = 4;
 		
 	}
- this.depth--;}else if (c == 4) {
-		var <int>array lit4 = [35, 101, 110, 100, 32, 115, 99, 114, 105, 112, 116];
+}else if (c == 4) {
+	var <int>array lit4 = [35, 101, 110, 100, 32, 115, 99, 114, 105, 112, 116];
 	if (currentCode == lit4[literalChar]) {
 		literalChar++;
 		if (literalChar == 11) {
@@ -1812,7 +1865,7 @@ data["args"] = new <string>array();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 102, 117, 110, 99, 116, 105, 111, 110];
+	var <int>array lit0 = [35, 102, 117, 110, 99, 116, 105, 111, 110];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 9) {
@@ -1825,7 +1878,7 @@ data["args"] = new <string>array();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -1837,8 +1890,8 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut2 = this.Safe_Name(input, charPos);
+}else if (c == 2) {
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this.Safe_Name(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -1850,8 +1903,8 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
+}else if (c == 3) {
+	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -1863,7 +1916,7 @@ charPos = this.offset;
 		c = 4;
 		
 	}
- this.depth--;}else if (c == 4) {
+}else if (c == 4) {
 	if (currentCode == 40) {
 			
 			c = 5;
@@ -1872,7 +1925,7 @@ charPos = this.offset;
 		this.giveError(1, "(", currentChar);
 	}
 }else if (c == 5) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut5 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut5 = this._(input, charPos);
 	
 if (ruleOut5.hadError) {
 		this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -1884,12 +1937,12 @@ charPos = this.offset;
 		c = 6;
 		
 	}
- this.depth--;}else if (c == 6) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut6 = this.Argument(input, charPos);
+}else if (c == 6) {
+	var <string>CarbonitePreprocessorOutput ruleOut6 = this.Argument(input, charPos);
 	
 if (ruleOut6.hadError) {
 		c = 7; charPos--; this.offset--;
-		if (ruleOut6.error.vested > 1) {this.giveError(ruleOut6.error.code, ruleOut6.error.expected, ruleOut6.error.found); Exception.throw('Vested error');}
+		if (ruleOut6.error.vested > 1) {this.giveError(ruleOut6.error.code, ruleOut6.error.expected, ruleOut6.error.found);}
 	}else{
 		var string ruleOutCast6 = ruleOut6.data["data"];
 charPos = this.offset;
@@ -1901,8 +1954,8 @@ c = 7;continue;}else {charPos++;}if (charPos == input.length() - 1) {this.giveEr
 		c = 6;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 7) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut7 = this._(input, charPos);
+}else if (c == 7) {
+	var <string>CarbonitePreprocessorOutput ruleOut7 = this._(input, charPos);
 	
 if (ruleOut7.hadError) {
 		this.giveError(ruleOut7.error.code, "White space(optional)(" + ruleOut7.error.expected + ")", ruleOut7.error.found);
@@ -1914,7 +1967,7 @@ charPos = this.offset;
 		c = 8;
 		
 	}
- this.depth--;}else if (c == 8) {
+}else if (c == 8) {
 	if (currentCode == 41) {
 			
 			c = 9;
@@ -1923,7 +1976,7 @@ charPos = this.offset;
 		this.giveError(1, ")", currentChar);
 	}
 }else if (c == 9) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut9 = this.Source(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut9 = this.Source(input, charPos);
 	
 if (ruleOut9.hadError) {
 		this.giveError(ruleOut9.error.code, "Source(" + ruleOut9.error.expected + ")", ruleOut9.error.found);
@@ -1935,8 +1988,8 @@ charPos = this.offset;
 		c = 10;
 		
 	}
- this.depth--;}else if (c == 10) {
-		var <int>array lit10 = [35, 101, 110, 100, 32, 102, 117, 110, 99, 116, 105, 111, 110];
+}else if (c == 10) {
+	var <int>array lit10 = [35, 101, 110, 100, 32, 102, 117, 110, 99, 116, 105, 111, 110];
 	if (currentCode == lit10[literalChar]) {
 		literalChar++;
 		if (literalChar == 13) {
@@ -1988,7 +2041,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 102, 111, 114];
+	var <int>array lit0 = [35, 102, 111, 114];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 4) {
@@ -2001,7 +2054,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -2013,8 +2066,8 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut2 = this.Safe_Name(input, charPos);
+}else if (c == 2) {
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this.Safe_Name(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -2026,8 +2079,8 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
+}else if (c == 3) {
+	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -2039,7 +2092,7 @@ charPos = this.offset;
 		c = 4;
 		
 	}
- this.depth--;}else if (c == 4) {
+}else if (c == 4) {
 	if (currentCode == 61) {
 			
 			c = 5;
@@ -2048,7 +2101,7 @@ charPos = this.offset;
 		this.giveError(1, "=", currentChar);
 	}
 }else if (c == 5) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut5 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut5 = this._(input, charPos);
 	
 if (ruleOut5.hadError) {
 		this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -2060,8 +2113,8 @@ charPos = this.offset;
 		c = 6;
 		
 	}
- this.depth--;}else if (c == 6) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Expression(input, charPos);
+}else if (c == 6) {
+	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Expression(input, charPos);
 	
 if (ruleOut6.hadError) {
 		this.giveError(ruleOut6.error.code, "Expression(" + ruleOut6.error.expected + ")", ruleOut6.error.found);
@@ -2073,8 +2126,8 @@ charPos = this.offset;
 		c = 7;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 7) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut7 = this._(input, charPos);
+}else if (c == 7) {
+	var <string>CarbonitePreprocessorOutput ruleOut7 = this._(input, charPos);
 	
 if (ruleOut7.hadError) {
 		this.giveError(ruleOut7.error.code, "White space(optional)(" + ruleOut7.error.expected + ")", ruleOut7.error.found);
@@ -2086,8 +2139,8 @@ charPos = this.offset;
 		c = 8;
 		
 	}
- this.depth--;}else if (c == 8) {
-		var <int>array lit8 = [116, 111];
+}else if (c == 8) {
+	var <int>array lit8 = [116, 111];
 	if (currentCode == lit8[literalChar]) {
 		literalChar++;
 		if (literalChar == 2) {
@@ -2100,7 +2153,7 @@ charPos = this.offset;
 		this.giveError(1, "" + this.assembleCodes(lit8) + "", currentChar);
 	}
 }else if (c == 9) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut9 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut9 = this._(input, charPos);
 	
 if (ruleOut9.hadError) {
 		this.giveError(ruleOut9.error.code, "White space(optional)(" + ruleOut9.error.expected + ")", ruleOut9.error.found);
@@ -2112,8 +2165,8 @@ charPos = this.offset;
 		c = 10;
 		
 	}
- this.depth--;}else if (c == 10) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut10 = this.Expression(input, charPos);
+}else if (c == 10) {
+	var <map>CarbonitePreprocessorOutput ruleOut10 = this.Expression(input, charPos);
 	
 if (ruleOut10.hadError) {
 		this.giveError(ruleOut10.error.code, "Expression(" + ruleOut10.error.expected + ")", ruleOut10.error.found);
@@ -2125,8 +2178,8 @@ charPos = this.offset;
 		c = 11;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 11) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut11 = this.Source(input, charPos);
+}else if (c == 11) {
+	var <map>CarbonitePreprocessorOutput ruleOut11 = this.Source(input, charPos);
 	
 if (ruleOut11.hadError) {
 		this.giveError(ruleOut11.error.code, "Source(" + ruleOut11.error.expected + ")", ruleOut11.error.found);
@@ -2138,8 +2191,8 @@ charPos = this.offset;
 		c = 12;
 		
 	}
- this.depth--;}else if (c == 12) {
-		var <int>array lit12 = [35, 101, 110, 100, 32, 102, 111, 114];
+}else if (c == 12) {
+	var <int>array lit12 = [35, 101, 110, 100, 32, 102, 111, 114];
 	if (currentCode == lit12[literalChar]) {
 		literalChar++;
 		if (literalChar == 8) {
@@ -2188,7 +2241,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 102, 111, 114];
+	var <int>array lit0 = [35, 102, 111, 114];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 4) {
@@ -2201,7 +2254,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -2213,8 +2266,8 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut2 = this.Safe_Name(input, charPos);
+}else if (c == 2) {
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this.Safe_Name(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -2226,8 +2279,8 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut3 = this.__(input, charPos);
+}else if (c == 3) {
+	var <string>CarbonitePreprocessorOutput ruleOut3 = this.__(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "White space(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -2239,8 +2292,8 @@ charPos = this.offset;
 		c = 4;
 		
 	}
- this.depth--;}else if (c == 4) {
-		var <int>array lit4 = [105, 110];
+}else if (c == 4) {
+	var <int>array lit4 = [105, 110];
 	if (currentCode == lit4[literalChar]) {
 		literalChar++;
 		if (literalChar == 2) {
@@ -2253,7 +2306,7 @@ charPos = this.offset;
 		this.giveError(1, "" + this.assembleCodes(lit4) + "", currentChar);
 	}
 }else if (c == 5) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut5 = this.__(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut5 = this.__(input, charPos);
 	
 if (ruleOut5.hadError) {
 		this.giveError(ruleOut5.error.code, "White space(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -2265,8 +2318,8 @@ charPos = this.offset;
 		c = 6;
 		
 	}
- this.depth--;}else if (c == 6) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Expression(input, charPos);
+}else if (c == 6) {
+	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Expression(input, charPos);
 	
 if (ruleOut6.hadError) {
 		this.giveError(ruleOut6.error.code, "Expression(" + ruleOut6.error.expected + ")", ruleOut6.error.found);
@@ -2278,8 +2331,8 @@ charPos = this.offset;
 		c = 7;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 7) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut7 = this.Source(input, charPos);
+}else if (c == 7) {
+	var <map>CarbonitePreprocessorOutput ruleOut7 = this.Source(input, charPos);
 	
 if (ruleOut7.hadError) {
 		this.giveError(ruleOut7.error.code, "Source(" + ruleOut7.error.expected + ")", ruleOut7.error.found);
@@ -2291,8 +2344,8 @@ charPos = this.offset;
 		c = 8;
 		
 	}
- this.depth--;}else if (c == 8) {
-		var <int>array lit8 = [35, 101, 110, 100, 32, 102, 111, 114];
+}else if (c == 8) {
+	var <int>array lit8 = [35, 101, 110, 100, 32, 102, 111, 114];
 	if (currentCode == lit8[literalChar]) {
 		literalChar++;
 		if (literalChar == 8) {
@@ -2338,7 +2391,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 100, 101, 102, 105, 110, 101];
+	var <int>array lit0 = [35, 100, 101, 102, 105, 110, 101];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 7) {
@@ -2351,7 +2404,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -2363,8 +2416,8 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut2 = this.Safe_Name(input, charPos);
+}else if (c == 2) {
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this.Safe_Name(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -2376,8 +2429,8 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
+}else if (c == 3) {
+	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -2389,7 +2442,7 @@ charPos = this.offset;
 		c = 4;
 		
 	}
- this.depth--;}else if (c == 4) {
+}else if (c == 4) {
 	if (currentCode == 61) {
 			
 			c = 5;
@@ -2398,7 +2451,7 @@ charPos = this.offset;
 		this.giveError(1, "=", currentChar);
 	}
 }else if (c == 5) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut5 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut5 = this._(input, charPos);
 	
 if (ruleOut5.hadError) {
 		this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -2410,8 +2463,8 @@ charPos = this.offset;
 		c = 6;
 		
 	}
- this.depth--;}else if (c == 6) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Expression(input, charPos);
+}else if (c == 6) {
+	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Expression(input, charPos);
 	
 if (ruleOut6.hadError) {
 		this.giveError(ruleOut6.error.code, "Expression(" + ruleOut6.error.expected + ")", ruleOut6.error.found);
@@ -2429,7 +2482,7 @@ dataStore["data"]["value"] = actionCap0value;
 		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -2456,7 +2509,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 118, 97, 114];
+	var <int>array lit0 = [35, 118, 97, 114];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 4) {
@@ -2469,7 +2522,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -2481,8 +2534,8 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut2 = this.Safe_Name(input, charPos);
+}else if (c == 2) {
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this.Safe_Name(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -2494,8 +2547,8 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
+}else if (c == 3) {
+	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -2507,7 +2560,7 @@ charPos = this.offset;
 		c = 4;
 		
 	}
- this.depth--;}else if (c == 4) {
+}else if (c == 4) {
 	if (currentCode == 61) {
 			
 			c = 5;
@@ -2516,7 +2569,7 @@ charPos = this.offset;
 		this.giveError(1, "=", currentChar);
 	}
 }else if (c == 5) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut5 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut5 = this._(input, charPos);
 	
 if (ruleOut5.hadError) {
 		this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -2528,8 +2581,8 @@ charPos = this.offset;
 		c = 6;
 		
 	}
- this.depth--;}else if (c == 6) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Expression(input, charPos);
+}else if (c == 6) {
+	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Expression(input, charPos);
 	
 if (ruleOut6.hadError) {
 		this.giveError(ruleOut6.error.code, "Expression(" + ruleOut6.error.expected + ")", ruleOut6.error.found);
@@ -2547,7 +2600,7 @@ dataStore["data"]["value"] = actionCap0value;
 		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -2568,7 +2621,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [35, 32];
+	var <int>array lit0 = [35, 32];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 2) {
@@ -2615,7 +2668,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "#", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut1 = this._Expression(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut1 = this._Expression(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "_Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -2642,7 +2695,7 @@ dataStore["data"]["value"] = actionCap0exp;
 		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -2673,7 +2726,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, ".", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -2685,12 +2738,11 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 2) {
 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Call(input, charPos);
 	
 if (ruleOut2.hadError) {
-		this.depth--; c = 3; charPos--; this.offset--;
+		c = 3; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast2 = ruleOut2.data["data"];
@@ -2699,15 +2751,14 @@ charPos = this.offset;
 
 var map castacexp0 = data["exp"];
 var map actionCap0exp = data["exp"];dataStore["data"] = actionCap0exp;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 3) {
 	var <map>CarbonitePreprocessorOutput ruleOut3 = this.Value(input, charPos);
 	
 if (ruleOut3.hadError) {
-		this.depth--; this.giveError(1, "Call, Value", currentChar);
+		this.giveError(1, "Call, Value", currentChar);
 		
 	}else{
 		var map ruleOutCast3 = ruleOut3.data["data"];
@@ -2716,10 +2767,10 @@ charPos = this.offset;
 
 var map castacexp0 = data["exp"];
 var map actionCap0exp = data["exp"];dataStore["data"] = actionCap0exp;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -2742,53 +2793,49 @@ data["subs"] = new <map>array();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; this.groupErrors(); this.depth++;
 	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Operation(input, charPos);
 	
 if (ruleOut0.hadError) {
-		this.depth--; c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast0 = ruleOut0.data["data"];
 charPos = this.offset;
 		data["e"] = ruleOutCast0;
-		this.depth--;c = 3;
+		c = 3;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 1) {
 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Call(input, charPos);
 	
 if (ruleOut1.hadError) {
-		this.depth--; c = 2; charPos--; this.offset--;
+		c = 2; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast1 = ruleOut1.data["data"];
 charPos = this.offset;
 		data["e"] = ruleOutCast1;
-		this.depth--;c = 3;
+		c = 3;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 2) {
 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Value(input, charPos);
 	
 if (ruleOut2.hadError) {
-		this.depth--; this.giveError(1, "Operation, Call, Value", currentChar);
+		this.giveError(1, "Operation, Call, Value", currentChar);
 		
 	}else{
 		var map ruleOutCast2 = ruleOut2.data["data"];
 charPos = this.offset;
 		data["e"] = ruleOutCast2;
-		this.depth--;c = 3;
+		c = 3;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 3) {
 	var <map>CarbonitePreprocessorOutput ruleOut3 = this.Sub(input, charPos);
 	
 if (ruleOut3.hadError) {
-		this.depth--; c = 4; charPos--; this.offset--;
+		c = 4; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast3 = ruleOut3.data["data"];
@@ -2802,12 +2849,11 @@ var map actionCap0e = data["e"];var <map>array actionCap0subs = data["subs"];dat
 		c = 3;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 4) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 4) {
 	var <map>CarbonitePreprocessorOutput ruleOut4 = this.Literal_Array(input, charPos);
 	
 if (ruleOut4.hadError) {
-		this.depth--; if (true) {
+		if (true) {
 
 var map castacsubs0 = data["subs"];
 var map actionCap0e = data["e"];var <map>array actionCap0subs = data["subs"];dataStore["data"] = actionCap0e;dataStore["data"]["subs"] = actionCap0subs; dataStore["data"]["startOffset"] = startPos;dataStore["data"]["offset"] = charPos;}c = 0 - 1; charPos--; this.offset--;
@@ -2824,7 +2870,7 @@ var map actionCap0e = data["e"];var <map>array actionCap0subs = data["subs"];dat
 		c = 3;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -2848,7 +2894,7 @@ data["subs"] = new <map>array();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut0 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut0 = this._(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "White space(optional)(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -2860,54 +2906,50 @@ charPos = this.offset;
 		c = 1;
 		
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 1) {
 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Operation(input, charPos);
 	
 if (ruleOut1.hadError) {
-		this.depth--; c = 2; charPos--; this.offset--;
+		c = 2; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast1 = ruleOut1.data["data"];
 charPos = this.offset;
 		data["e"] = ruleOutCast1;
-		this.depth--;c = 4;
+		c = 4;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 2) {
 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Call(input, charPos);
 	
 if (ruleOut2.hadError) {
-		this.depth--; c = 3; charPos--; this.offset--;
+		c = 3; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast2 = ruleOut2.data["data"];
 charPos = this.offset;
 		data["e"] = ruleOutCast2;
-		this.depth--;c = 4;
+		c = 4;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 3) {
 	var <map>CarbonitePreprocessorOutput ruleOut3 = this.Value(input, charPos);
 	
 if (ruleOut3.hadError) {
-		this.depth--; this.giveError(1, "Operation, Call, Value", currentChar);
+		this.giveError(1, "Operation, Call, Value", currentChar);
 		
 	}else{
 		var map ruleOutCast3 = ruleOut3.data["data"];
 charPos = this.offset;
 		data["e"] = ruleOutCast3;
-		this.depth--;c = 4;
+		c = 4;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 4) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 4) {
 	var <map>CarbonitePreprocessorOutput ruleOut4 = this.Sub(input, charPos);
 	
 if (ruleOut4.hadError) {
-		this.depth--; c = 5; charPos--; this.offset--;
+		c = 5; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast4 = ruleOut4.data["data"];
@@ -2921,12 +2963,11 @@ var map actionCap0e = data["e"];var <map>array actionCap0subs = data["subs"];dat
 		c = 4;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 5) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 5) {
 	var <map>CarbonitePreprocessorOutput ruleOut5 = this.Literal_Array(input, charPos);
 	
 if (ruleOut5.hadError) {
-		this.depth--; if (true) {
+		if (true) {
 
 var map castacsubs0 = data["subs"];
 var map actionCap0e = data["e"];var <map>array actionCap0subs = data["subs"];dataStore["data"] = actionCap0e;dataStore["data"]["subs"] = actionCap0subs; dataStore["data"]["startOffset"] = startPos;dataStore["data"]["offset"] = charPos;}c = 0 - 1; charPos--; this.offset--;
@@ -2943,7 +2984,7 @@ var map actionCap0e = data["e"];var <map>array actionCap0subs = data["subs"];dat
 		c = 4;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -2967,7 +3008,7 @@ data["subs"] = new <map>array();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut0 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut0 = this._(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "White space(optional)(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -2979,68 +3020,63 @@ charPos = this.offset;
 		c = 1;
 		
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 1) {
 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Operation(input, charPos);
 	
 if (ruleOut1.hadError) {
-		this.depth--; c = 2; charPos--; this.offset--;
+		c = 2; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast1 = ruleOut1.data["data"];
 charPos = this.offset;
 		data["e"] = ruleOutCast1;
-		this.depth--;c = 5;
+		c = 5;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 2) {
 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Call(input, charPos);
 	
 if (ruleOut2.hadError) {
-		this.depth--; c = 3; charPos--; this.offset--;
+		c = 3; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast2 = ruleOut2.data["data"];
 charPos = this.offset;
 		data["e"] = ruleOutCast2;
-		this.depth--;c = 5;
+		c = 5;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 3) {
 	var <map>CarbonitePreprocessorOutput ruleOut3 = this.Check(input, charPos);
 	
 if (ruleOut3.hadError) {
-		this.depth--; c = 4; charPos--; this.offset--;
+		c = 4; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast3 = ruleOut3.data["data"];
 charPos = this.offset;
 		data["e"] = ruleOutCast3;
-		this.depth--;c = 5;
+		c = 5;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 4) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 4) {
 	var <map>CarbonitePreprocessorOutput ruleOut4 = this.Value(input, charPos);
 	
 if (ruleOut4.hadError) {
-		this.depth--; this.giveError(1, "Operation, Call, Check, Value", currentChar);
+		this.giveError(1, "Operation, Call, Check, Value", currentChar);
 		
 	}else{
 		var map ruleOutCast4 = ruleOut4.data["data"];
 charPos = this.offset;
 		data["e"] = ruleOutCast4;
-		this.depth--;c = 5;
+		c = 5;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 5) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 5) {
 	var <map>CarbonitePreprocessorOutput ruleOut5 = this.Sub(input, charPos);
 	
 if (ruleOut5.hadError) {
-		this.depth--; c = 6; charPos--; this.offset--;
+		c = 6; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast5 = ruleOut5.data["data"];
@@ -3054,12 +3090,11 @@ var map actionCap0e = data["e"];var <map>array actionCap0subs = data["subs"];dat
 		c = 5;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 6) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 6) {
 	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Literal_Array(input, charPos);
 	
 if (ruleOut6.hadError) {
-		this.depth--; if (true) {
+		if (true) {
 
 var map castacsubs0 = data["subs"];
 var map actionCap0e = data["e"];var <map>array actionCap0subs = data["subs"];dataStore["data"] = actionCap0e;dataStore["data"]["subs"] = actionCap0subs; dataStore["data"]["startOffset"] = startPos;}c = 0 - 1; charPos--; this.offset--;
@@ -3076,7 +3111,7 @@ var map actionCap0e = data["e"];var <map>array actionCap0subs = data["subs"];dat
 		c = 5;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -3144,7 +3179,7 @@ data["a"] = new string();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut0 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut0 = this._(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "White space(optional)(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -3156,7 +3191,7 @@ charPos = this.offset;
 		c = 1;
 		
 	}
- this.depth--;}else if (c == 1) {
+}else if (c == 1) {
 	var bool passed1 = false;
 	if (currentCode == 95) {passed1 = true;}
 	if (passed1 == false) {
@@ -3201,7 +3236,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Json(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Json(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "Json(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -3218,7 +3253,7 @@ dataStore["data"]["value"] = actionCap0m;
 		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -3239,11 +3274,10 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; this.groupErrors(); this.depth++;
 	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Literal_String(input, charPos);
 	
 if (ruleOut0.hadError) {
-		this.depth--; c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast0 = ruleOut0.data["data"];
@@ -3252,15 +3286,14 @@ charPos = this.offset;
 
 var map castacv0 = data["v"];
 var map actionCap0v = data["v"];dataStore["data"] = actionCap0v;dataStore["data"]["offset"] = charPos; dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 1) {
 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Number(input, charPos);
 	
 if (ruleOut1.hadError) {
-		this.depth--; c = 2; charPos--; this.offset--;
+		c = 2; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast1 = ruleOut1.data["data"];
@@ -3269,15 +3302,14 @@ charPos = this.offset;
 
 var map castacv0 = data["v"];
 var map actionCap0v = data["v"];dataStore["data"] = actionCap0v;dataStore["data"]["offset"] = charPos; dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 2) {
 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Literal_Array(input, charPos);
 	
 if (ruleOut2.hadError) {
-		this.depth--; c = 3; charPos--; this.offset--;
+		c = 3; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast2 = ruleOut2.data["data"];
@@ -3286,15 +3318,14 @@ charPos = this.offset;
 
 var map castacv0 = data["v"];
 var map actionCap0v = data["v"];dataStore["data"] = actionCap0v;dataStore["data"]["offset"] = charPos; dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 3) {
 	var <map>CarbonitePreprocessorOutput ruleOut3 = this.Literal_Map(input, charPos);
 	
 if (ruleOut3.hadError) {
-		this.depth--; c = 4; charPos--; this.offset--;
+		c = 4; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast3 = ruleOut3.data["data"];
@@ -3303,15 +3334,14 @@ charPos = this.offset;
 
 var map castacv0 = data["v"];
 var map actionCap0v = data["v"];dataStore["data"] = actionCap0v;dataStore["data"]["offset"] = charPos; dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 4) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 4) {
 	var <map>CarbonitePreprocessorOutput ruleOut4 = this.Bool(input, charPos);
 	
 if (ruleOut4.hadError) {
-		this.depth--; c = 5; charPos--; this.offset--;
+		c = 5; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast4 = ruleOut4.data["data"];
@@ -3320,15 +3350,14 @@ charPos = this.offset;
 
 var map castacv0 = data["v"];
 var map actionCap0v = data["v"];dataStore["data"] = actionCap0v;dataStore["data"]["offset"] = charPos; dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 5) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 5) {
 	var <map>CarbonitePreprocessorOutput ruleOut5 = this.Constant(input, charPos);
 	
 if (ruleOut5.hadError) {
-		this.depth--; this.giveError(1, "Literal_String, Number, Literal_Array, Literal_Map, Bool, Constant", currentChar);
+		this.giveError(1, "Literal_String, Number, Literal_Array, Literal_Map, Bool, Constant", currentChar);
 		
 	}else{
 		var map ruleOutCast5 = ruleOut5.data["data"];
@@ -3337,10 +3366,10 @@ charPos = this.offset;
 
 var map castacv0 = data["v"];
 var map actionCap0v = data["v"];dataStore["data"] = actionCap0v;dataStore["data"]["offset"] = charPos; dataStore["data"]["startOffset"] = startPos;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -3361,7 +3390,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut0 = this.String(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut0 = this.String(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "String(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -3378,7 +3407,7 @@ dataStore["data"]["value"] = actionCap0str;
 		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -3406,7 +3435,7 @@ data["n"] = new string();
 			c = 1;
 			this.error.vested++;
 	}else{
-		this.popGroup(); c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 	}
 }else if (c == 1) {
 	var bool passed1 = false;
@@ -3472,7 +3501,7 @@ data["items"] = new <map>array();
 		this.giveError(1, "[", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -3484,12 +3513,12 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Expression(input, charPos);
+}else if (c == 2) {
+	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Expression(input, charPos);
 	
 if (ruleOut2.hadError) {
 		c = 3; charPos--; this.offset--;
-		if (ruleOut2.error.vested > 1) {this.giveError(ruleOut2.error.code, ruleOut2.error.expected, ruleOut2.error.found); Exception.throw('Vested error');}
+		if (ruleOut2.error.vested > 1) {this.giveError(ruleOut2.error.code, ruleOut2.error.expected, ruleOut2.error.found);}
 	}else{
 		var map ruleOutCast2 = ruleOut2.data["data"];
 charPos = this.offset;
@@ -3501,8 +3530,8 @@ c = 3;continue;}else {charPos++;}if (charPos == input.length() - 1) {this.giveEr
 		c = 2;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
+}else if (c == 3) {
+	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -3514,7 +3543,7 @@ charPos = this.offset;
 		c = 4;
 		
 	}
- this.depth--;}else if (c == 4) {
+}else if (c == 4) {
 	if (currentCode == 93) {
 			if (true) {
 
@@ -3548,7 +3577,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-		var <int>array lit0 = [116, 114, 117, 101];
+	var <int>array lit0 = [116, 114, 117, 101];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
 		if (literalChar == 4) {
@@ -3566,15 +3595,15 @@ var map castacvalue0 = data["value"];
 var map actionCap0value = data["value"];dataStore["data"]["type"] = "bool";
 dataStore["data"]["value"] = actionCap0value;
 }
-			this.depth--;c = 0 - 1;
+			c = 0 - 1;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 	}
 }else if (c == 1) {
-		var <int>array lit1 = [102, 97, 108, 115, 101];
+	var <int>array lit1 = [102, 97, 108, 115, 101];
 	if (currentCode == lit1[literalChar]) {
 		literalChar++;
 		if (literalChar == 5) {
@@ -3592,12 +3621,12 @@ var map castacvalue0 = data["value"];
 var map actionCap0value = data["value"];dataStore["data"]["type"] = "bool";
 dataStore["data"]["value"] = actionCap0value;
 }
-			this.depth--;c = 0 - 1;
+			c = 0 - 1;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; this.giveError(1, "true, false", currentChar);
+		this.giveError(1, "true, false", currentChar);
 	}
 }		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
@@ -3620,7 +3649,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut0 = this.Safe_Name(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut0 = this.Safe_Name(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "Safe_Name(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -3637,7 +3666,7 @@ dataStore["data"]["value"] = actionCap0name;
 		c = 0 - 1;
 		
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -3668,7 +3697,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "(", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Expression(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Expression(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "Expression(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -3680,7 +3709,7 @@ charPos = this.offset;
 		c = 2;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
+}else if (c == 2) {
 	if (currentCode == 41) {
 			if (true) {
 
@@ -3717,49 +3746,46 @@ data["o"] = new string();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; this.groupErrors(); this.depth++;
 	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Group(input, charPos);
 	
 if (ruleOut0.hadError) {
-		this.depth--; c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast0 = ruleOut0.data["data"];
 charPos = this.offset;
 		data["head"] = ruleOutCast0;
-		this.depth--;c = 3;
+		c = 3;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 1) {
 	var <map>CarbonitePreprocessorOutput ruleOut1 = this.Call(input, charPos);
 	
 if (ruleOut1.hadError) {
-		this.depth--; c = 2; charPos--; this.offset--;
+		c = 2; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast1 = ruleOut1.data["data"];
 charPos = this.offset;
 		data["head"] = ruleOutCast1;
-		this.depth--;c = 3;
+		c = 3;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 2) {
 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Value(input, charPos);
 	
 if (ruleOut2.hadError) {
-		this.depth--; this.giveError(1, "Group, Call, Value", currentChar);
+		this.giveError(1, "Group, Call, Value", currentChar);
 		
 	}else{
 		var map ruleOutCast2 = ruleOut2.data["data"];
 charPos = this.offset;
 		data["head"] = ruleOutCast2;
-		this.depth--;c = 3;
+		c = 3;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
+}else if (c == 3) {
+	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -3771,7 +3797,7 @@ charPos = this.offset;
 		c = 4;
 		
 	}
- this.depth--;}else if (c == 4) {
+}else if (c == 4) {
 	var bool passed4 = false;
 	if (currentCode == 33) {passed4 = true;}else if (currentCode == 64) {passed4 = true;}else if (currentCode == 36) {passed4 = true;}else if (currentCode == 37) {passed4 = true;}else if (currentCode == 38) {passed4 = true;}else if (currentCode == 94) {passed4 = true;}else if (currentCode == 43) {passed4 = true;}else if (currentCode == 42) {passed4 = true;}else if (currentCode == 45) {passed4 = true;}else if (currentCode == 47) {passed4 = true;}else if (currentCode == 63) {passed4 = true;}else if (currentCode == 62) {passed4 = true;}else if (currentCode == 60) {passed4 = true;}else if (currentCode == 124) {passed4 = true;}else if (currentCode == 61) {passed4 = true;}
 	if (passed4 == false) {
@@ -3791,7 +3817,7 @@ this.giveError(1, "!, @, $, %, &, ^, +, *, -, /, ?, >, <, |, =", currentChar);}
 
 	}
 }else if (c == 5) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut5 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut5 = this._(input, charPos);
 	
 if (ruleOut5.hadError) {
 		this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
@@ -3803,12 +3829,11 @@ charPos = this.offset;
 		c = 6;
 		
 	}
- this.depth--;}else if (c == 6) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 6) {
 	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Group(input, charPos);
 	
 if (ruleOut6.hadError) {
-		this.depth--; c = 7; charPos--; this.offset--;
+		c = 7; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast6 = ruleOut6.data["data"];
@@ -3821,15 +3846,14 @@ dataStore["data"]["head"] = actionCap0head;
 dataStore["data"]["operator"] = actionCap0o;
 dataStore["data"]["tail"] = actionCap0tail;
 }
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 7) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 7) {
 	var <map>CarbonitePreprocessorOutput ruleOut7 = this.Call(input, charPos);
 	
 if (ruleOut7.hadError) {
-		this.depth--; c = 8; charPos--; this.offset--;
+		c = 8; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast7 = ruleOut7.data["data"];
@@ -3842,15 +3866,14 @@ dataStore["data"]["head"] = actionCap0head;
 dataStore["data"]["operator"] = actionCap0o;
 dataStore["data"]["tail"] = actionCap0tail;
 }
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 8) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 8) {
 	var <map>CarbonitePreprocessorOutput ruleOut8 = this.Value(input, charPos);
 	
 if (ruleOut8.hadError) {
-		this.depth--; this.giveError(1, "Group, Call, Value", currentChar);
+		this.giveError(1, "Group, Call, Value", currentChar);
 		
 	}else{
 		var map ruleOutCast8 = ruleOut8.data["data"];
@@ -3863,10 +3886,10 @@ dataStore["data"]["head"] = actionCap0head;
 dataStore["data"]["operator"] = actionCap0o;
 dataStore["data"]["tail"] = actionCap0tail;
 }
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -3889,7 +3912,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Value(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Value(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "Value(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -3901,8 +3924,8 @@ charPos = this.offset;
 		c = 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this.__(input, charPos);
+}else if (c == 1) {
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this.__(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -3914,8 +3937,8 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Value(input, charPos);
+}else if (c == 2) {
+	var <map>CarbonitePreprocessorOutput ruleOut2 = this.Value(input, charPos);
 	
 if (ruleOut2.hadError) {
 		this.giveError(ruleOut2.error.code, "Value(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
@@ -3933,7 +3956,7 @@ dataStore["data"]["against"] = actionCap0against;
 		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -3960,7 +3983,7 @@ data["params"] = new <map>array();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Value(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut0 = this.Value(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "Value(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -3972,8 +3995,8 @@ charPos = this.offset;
 		c = 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+}else if (c == 1) {
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -3985,7 +4008,7 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
+}else if (c == 2) {
 	if (currentCode == 40) {
 			
 			c = 3;
@@ -3994,11 +4017,11 @@ charPos = this.offset;
 		this.giveError(1, "(", currentChar);
 	}
 }else if (c == 3) {
-	this.depth++; 	var <map>CarbonitePreprocessorOutput ruleOut3 = this.Expression(input, charPos);
+	var <map>CarbonitePreprocessorOutput ruleOut3 = this.Expression(input, charPos);
 	
 if (ruleOut3.hadError) {
 		c = 4; charPos--; this.offset--;
-		if (ruleOut3.error.vested > 1) {this.giveError(ruleOut3.error.code, ruleOut3.error.expected, ruleOut3.error.found); Exception.throw('Vested error');}
+		if (ruleOut3.error.vested > 1) {this.giveError(ruleOut3.error.code, ruleOut3.error.expected, ruleOut3.error.found);}
 	}else{
 		var map ruleOutCast3 = ruleOut3.data["data"];
 charPos = this.offset;
@@ -4010,8 +4033,8 @@ c = 4;continue;}else {charPos++;}if (charPos == input.length() - 1) {this.giveEr
 		c = 3;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 4) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut4 = this._(input, charPos);
+}else if (c == 4) {
+	var <string>CarbonitePreprocessorOutput ruleOut4 = this._(input, charPos);
 	
 if (ruleOut4.hadError) {
 		this.giveError(ruleOut4.error.code, "White space(optional)(" + ruleOut4.error.expected + ")", ruleOut4.error.found);
@@ -4023,7 +4046,7 @@ charPos = this.offset;
 		c = 5;
 		
 	}
- this.depth--;}else if (c == 5) {
+}else if (c == 5) {
 	if (currentCode == 41) {
 			if (true) {
 
@@ -4107,7 +4130,8 @@ c = 0;		this.error.vested++;
 		var string castw0 = data["w"];
 if (castw0.length() >= 1) {
 c = 0 - 1; charPos--; this.offset--;}else{
-this.giveError(1, " , 	, rc, nl", currentChar);}
+this.giveError(1, " , 	, \r, 
+", currentChar);}
 
 	}
 }		this.offset++; this.column++;
@@ -4131,11 +4155,10 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; this.groupErrors(); this.depth++;
 	var <string>CarbonitePreprocessorOutput ruleOut0 = this.String_Double(input, charPos);
 	
 if (ruleOut0.hadError) {
-		this.depth--; c = 1; charPos--; this.offset--;
+		c = 1; charPos--; this.offset--;
 		
 	}else{
 		var string ruleOutCast0 = ruleOut0.data["data"];
@@ -4144,15 +4167,14 @@ charPos = this.offset;
 
 var map castacstr0 = data["str"];
 var map actionCap0str = data["str"];dataStore["data"] = actionCap0str;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 1) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 1) {
 	var <string>CarbonitePreprocessorOutput ruleOut1 = this.String_Single(input, charPos);
 	
 if (ruleOut1.hadError) {
-		this.depth--; this.giveError(1, "String_Double, String_Single", currentChar);
+		this.giveError(1, "String_Double, String_Single", currentChar);
 		
 	}else{
 		var string ruleOutCast1 = ruleOut1.data["data"];
@@ -4161,10 +4183,10 @@ charPos = this.offset;
 
 var map castacstr0 = data["str"];
 var map actionCap0str = data["str"];dataStore["data"] = actionCap0str;}
-		this.depth--;c = 0 - 1;
+		c = 0 - 1;
 		this.error.vested++;
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}
@@ -4206,7 +4228,7 @@ escapeCodes["\\"] = "\\";
 		this.giveError(1, "\"", currentChar);
 	}
 }else if (c == 1) {
-		var string castnacstr1 = data["str"];
+	var string castnacstr1 = data["str"];
 	
 	
 
@@ -4286,7 +4308,7 @@ escapeCodes["\\"] = "\\";
 		this.giveError(1, "'", currentChar);
 	}
 }else if (c == 1) {
-		var string castnacstr1 = data["str"];
+	var string castnacstr1 = data["str"];
 	
 	
 
@@ -4365,7 +4387,7 @@ var map captureRoot1 = new map();
 		this.giveError(1, "{", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -4377,8 +4399,8 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut2 = this._(input, charPos);
+}else if (c == 2) {
+	var <string>CarbonitePreprocessorOutput ruleOut2 = this._(input, charPos);
 	
 if (ruleOut2.hadError) {
 		c = 9; charPos--; this.offset--;
@@ -4390,8 +4412,8 @@ charPos = this.offset;
 		c = 3;
 		
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut3 = this.String(input, charPos);
+}else if (c == 3) {
+	var <string>CarbonitePreprocessorOutput ruleOut3 = this.String(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "String(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -4403,8 +4425,8 @@ charPos = this.offset;
 		c = 4;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 4) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut4 = this._(input, charPos);
+}else if (c == 4) {
+	var <string>CarbonitePreprocessorOutput ruleOut4 = this._(input, charPos);
 	
 if (ruleOut4.hadError) {
 		this.giveError(ruleOut4.error.code, "White space(optional)(" + ruleOut4.error.expected + ")", ruleOut4.error.found);
@@ -4416,7 +4438,7 @@ charPos = this.offset;
 		c = 5;
 		
 	}
- this.depth--;}else if (c == 5) {
+}else if (c == 5) {
 	if (currentCode == 58) {
 			
 			c = 6;
@@ -4425,7 +4447,7 @@ charPos = this.offset;
 		this.giveError(1, ":", currentChar);
 	}
 }else if (c == 6) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut6 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut6 = this._(input, charPos);
 	
 if (ruleOut6.hadError) {
 		this.giveError(ruleOut6.error.code, "White space(optional)(" + ruleOut6.error.expected + ")", ruleOut6.error.found);
@@ -4437,8 +4459,8 @@ charPos = this.offset;
 		c = 7;
 		
 	}
- this.depth--;}else if (c == 7) {
-	this.depth++; 	var <int>CarbonitePreprocessorOutput ruleOut7 = this.Json_Value(input, charPos);
+}else if (c == 7) {
+	var <int>CarbonitePreprocessorOutput ruleOut7 = this.Json_Value(input, charPos);
 	
 if (ruleOut7.hadError) {
 		this.giveError(ruleOut7.error.code, "Json_Value(" + ruleOut7.error.expected + ")", ruleOut7.error.found);
@@ -4450,8 +4472,8 @@ charPos = this.offset;
 		c = 8;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 8) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut8 = this._(input, charPos);
+}else if (c == 8) {
+	var <string>CarbonitePreprocessorOutput ruleOut8 = this._(input, charPos);
 	
 if (ruleOut8.hadError) {
 		c = 9; charPos--; this.offset--;
@@ -4474,8 +4496,8 @@ captureRoot1 = new map();
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 9) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut9 = this._(input, charPos);
+}else if (c == 9) {
+	var <string>CarbonitePreprocessorOutput ruleOut9 = this._(input, charPos);
 	
 if (ruleOut9.hadError) {
 		this.giveError(ruleOut9.error.code, "White space(optional)(" + ruleOut9.error.expected + ")", ruleOut9.error.found);
@@ -4487,7 +4509,7 @@ charPos = this.offset;
 		c = 10;
 		
 	}
- this.depth--;}else if (c == 10) {
+}else if (c == 10) {
 	if (currentCode == 125) {
 			if (true) {
 
@@ -4537,7 +4559,7 @@ data["vals"] = new <int>array();
 		this.giveError(1, "[", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -4549,12 +4571,12 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
-	this.depth++; 	var <int>CarbonitePreprocessorOutput ruleOut2 = this.Json_Value(input, charPos);
+}else if (c == 2) {
+	var <int>CarbonitePreprocessorOutput ruleOut2 = this.Json_Value(input, charPos);
 	
 if (ruleOut2.hadError) {
 		c = 3; charPos--; this.offset--;
-		if (ruleOut2.error.vested > 1) {this.giveError(ruleOut2.error.code, ruleOut2.error.expected, ruleOut2.error.found); Exception.throw('Vested error');}
+		if (ruleOut2.error.vested > 1) {this.giveError(ruleOut2.error.code, ruleOut2.error.expected, ruleOut2.error.found);}
 	}else{
 		var int ruleOutCast2 = ruleOut2.data["data"];
 charPos = this.offset;
@@ -4566,8 +4588,8 @@ c = 3;continue;}else {charPos++;}if (charPos == input.length() - 1) {this.giveEr
 		c = 2;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 3) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
+}else if (c == 3) {
+	var <string>CarbonitePreprocessorOutput ruleOut3 = this._(input, charPos);
 	
 if (ruleOut3.hadError) {
 		this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
@@ -4579,7 +4601,7 @@ charPos = this.offset;
 		c = 4;
 		
 	}
- this.depth--;}else if (c == 4) {
+}else if (c == 4) {
 	if (currentCode == 93) {
 			if (true) {
 
@@ -4621,7 +4643,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "[", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -4633,7 +4655,7 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
+}else if (c == 2) {
 	if (currentCode == 93) {
 			if (true) {
 
@@ -4675,7 +4697,7 @@ dataStore["temp"] = new map();
 		this.giveError(1, "{", currentChar);
 	}
 }else if (c == 1) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut1 = this._(input, charPos);
 	
 if (ruleOut1.hadError) {
 		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
@@ -4687,7 +4709,7 @@ charPos = this.offset;
 		c = 2;
 		
 	}
- this.depth--;}else if (c == 2) {
+}else if (c == 2) {
 	if (currentCode == 125) {
 			if (true) {
 
@@ -4721,7 +4743,7 @@ dataStore["temp"] = new map();
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut0 = this._(input, charPos);
+	var <string>CarbonitePreprocessorOutput ruleOut0 = this._(input, charPos);
 	
 if (ruleOut0.hadError) {
 		this.giveError(ruleOut0.error.code, "White space(optional)(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
@@ -4733,8 +4755,8 @@ charPos = this.offset;
 		c = 1;
 		
 	}
- this.depth--;}else if (c == 1) {
-		var <int>array lit1 = [110, 117, 108, 108];
+}else if (c == 1) {
+	var <int>array lit1 = [110, 117, 108, 108];
 	if (currentCode == lit1[literalChar]) {
 		literalChar++;
 		if (literalChar == 4) {
@@ -4742,15 +4764,15 @@ charPos = this.offset;
 
 var string castacexp1 = data["exp"];
 data["exp"] = empty;}
-			this.depth--;c = 10;
+			c = 10;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; c = 2; charPos--; this.offset--;
+		c = 2; charPos--; this.offset--;
 	}
 }else if (c == 2) {
-		var <int>array lit2 = [116, 114, 117, 101];
+	var <int>array lit2 = [116, 114, 117, 101];
 	if (currentCode == lit2[literalChar]) {
 		literalChar++;
 		if (literalChar == 4) {
@@ -4758,15 +4780,15 @@ data["exp"] = empty;}
 
 var string castacexp2 = data["exp"];
 data["exp"] = true;}
-			this.depth--;c = 10;
+			c = 10;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; c = 3; charPos--; this.offset--;
+		c = 3; charPos--; this.offset--;
 	}
 }else if (c == 3) {
-		var <int>array lit3 = [102, 97, 108, 115, 101];
+	var <int>array lit3 = [102, 97, 108, 115, 101];
 	if (currentCode == lit3[literalChar]) {
 		literalChar++;
 		if (literalChar == 5) {
@@ -4774,99 +4796,93 @@ data["exp"] = true;}
 
 var string castacexp3 = data["exp"];
 data["exp"] = false;}
-			this.depth--;c = 10;
+			c = 10;
 			literalChar = 0;
 }
 			this.error.vested++;
 	}else{
-		this.depth--; c = 4; charPos--; this.offset--;
+		c = 4; charPos--; this.offset--;
 	}
 }else if (c == 4) {
-	this.depth++; this.groupErrors(); this.depth++;
 	var <<map>array>CarbonitePreprocessorOutput ruleOut4 = this.Json_EmptyArray(input, charPos);
 	
 if (ruleOut4.hadError) {
-		this.depth--; c = 5; charPos--; this.offset--;
+		c = 5; charPos--; this.offset--;
 		
 	}else{
 		var <map>array ruleOutCast4 = ruleOut4.data["data"];
 charPos = this.offset;
 		data["exp"] = ruleOutCast4;
-		this.depth--;c = 10;
+		c = 10;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 5) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 5) {
 	var <map>CarbonitePreprocessorOutput ruleOut5 = this.Json_EmptyMap(input, charPos);
 	
 if (ruleOut5.hadError) {
-		this.depth--; c = 6; charPos--; this.offset--;
+		c = 6; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast5 = ruleOut5.data["data"];
 charPos = this.offset;
 		data["exp"] = ruleOutCast5;
-		this.depth--;c = 10;
+		c = 10;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 6) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 6) {
 	var <map>CarbonitePreprocessorOutput ruleOut6 = this.Json_Array(input, charPos);
 	
 if (ruleOut6.hadError) {
-		this.depth--; c = 7; charPos--; this.offset--;
+		c = 7; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast6 = ruleOut6.data["data"];
 charPos = this.offset;
 		data["exp"] = ruleOutCast6;
-		this.depth--;c = 10;
+		c = 10;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 7) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 7) {
 	var <map>CarbonitePreprocessorOutput ruleOut7 = this.Json(input, charPos);
 	
 if (ruleOut7.hadError) {
-		this.depth--; c = 8; charPos--; this.offset--;
+		c = 8; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast7 = ruleOut7.data["data"];
 charPos = this.offset;
 		data["exp"] = ruleOutCast7;
-		this.depth--;c = 10;
+		c = 10;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 8) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 8) {
 	var <string>CarbonitePreprocessorOutput ruleOut8 = this.String(input, charPos);
 	
 if (ruleOut8.hadError) {
-		this.depth--; c = 9; charPos--; this.offset--;
+		c = 9; charPos--; this.offset--;
 		
 	}else{
 		var string ruleOutCast8 = ruleOut8.data["data"];
 charPos = this.offset;
 		data["exp"] = ruleOutCast8;
-		this.depth--;c = 10;
+		c = 10;
 		this.error.vested++;
 	}
- this.depth--;}else if (c == 9) {
-	this.depth++; this.groupErrors(); this.depth++;
+}else if (c == 9) {
 	var <int>CarbonitePreprocessorOutput ruleOut9 = this.Json_Number(input, charPos);
 	
 if (ruleOut9.hadError) {
-		this.depth--; this.giveError(1, "null, true, false, Json_EmptyArray, Json_EmptyMap, Json_Array, Json, String, Json_Number", currentChar);
+		this.giveError(1, "null, true, false, Json_EmptyArray, Json_EmptyMap, Json_Array, Json, String, Json_Number", currentChar);
 		
 	}else{
 		var int ruleOutCast9 = ruleOut9.data["data"];
 charPos = this.offset;
 		data["exp"] = ruleOutCast9;
-		this.depth--;c = 10;
+		c = 10;
 		
 	}
- this.depth--;}else if (c == 10) {
-	this.depth++; 	var <string>CarbonitePreprocessorOutput ruleOut10 = this._(input, charPos);
+}else if (c == 10) {
+	var <string>CarbonitePreprocessorOutput ruleOut10 = this._(input, charPos);
 	
 if (ruleOut10.hadError) {
 		this.giveError(ruleOut10.error.code, "White space(optional)(" + ruleOut10.error.expected + ")", ruleOut10.error.found);
@@ -4881,7 +4897,7 @@ var map actionCap0exp = data["exp"];dataStore["data"] = actionCap0exp;}
 		c = 0 - 1;
 		
 	}
- this.depth--;}		this.offset++; this.column++;
+}		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}
 		if (this.hadError) {break;}
 	}

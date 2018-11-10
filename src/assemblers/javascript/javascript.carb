@@ -107,12 +107,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 						if ((member.hasFlag("relative") == false) and (member.abstract == false)) {
 							var Carbonite.Members.Method method = member;
 							var overloads = methods.find(method.name);
-							/*if (method.name in methods) {
-								overloads = methods[method.name];
-							}else{
-								overloads = new <string>array();
-								methods[method.name] = overloads;
-							}*/
+							
 							var <string>array check = new <string>array();
 							var <string>array argInit = new <string>array();
 							for (var int a in method.arguments) {

@@ -6,9 +6,9 @@ map|start = document: Source;
 
 map|Source = s: (Raw / Pre)* {map|export = $s;};
 
-map|Pre = p: (If / Define / Return / Doc / Doc_Line / Output / Function / On / Script / Var / Include / For / ForIn / Lost / Backslash) {map|export = $p;export["offset"] = charPos;export["startOffset"] = startPos;};
+map|Pre = p: (If / Define / Return / Doc / Doc_Line / Output / Function / On / Script / Var / Include / Import / For / ForIn / Lost / Backslash) {map|export = $p;export["offset"] = charPos;export["startOffset"] = startPos;};
 
-map|Raw = c: <string{var string inString = ""; var bool checkPre = false; var bool lineComment = false;var bool checkComment = false;var bool openComment = false;}|
+map|Raw = c: <string{var bool escape = false; var string inString = ""; var bool checkPre = false; var bool lineComment = false;var bool checkComment = false;var bool openComment = false;}|
 if (checkComment and openComment == false) {
 	if (currentChar == "*" and inString == "") {
 		openComment = true;
@@ -67,15 +67,17 @@ if (checkComment and openComment == false) {
 		@error(1, "", "")
 	}else{
 		@capture(currentChar)
-		if (currentCode == 34) {
+		var oe = escape;
+		escape = false;
+		if (currentCode == 34 and oe == false) {
 			if (inString == "") {
 				inString = "\"";
 			}else{
-				if (inString == "\"") {
+				if (inString == "\"" and ) {
 					inString = "";
 				}
 			}
-		}else if (currentCode == 39) {
+		}else if (currentCode == 39 and oe == false) {
 			if (inString == "") {
 				inString = "'";
 			}else{
@@ -91,6 +93,8 @@ if (checkComment and openComment == false) {
 					inString = "";
 				}
 			}
+		}else if (currentCode == 92) {
+			escape = oe == false;
 		}
 	}
 }
@@ -105,6 +109,8 @@ map|If = "#if" checks: If_Expression+|"and" content: Source "#end if" {type: "if
 string|As = _ "as" __ name: Safe_Name {string|export = $name;};
 
 map|Include = "#include" file: Expression as: As*|"," {type: "include", as: {$as}, file: {$file}};
+
+map|Import = "#import" name: Expression as: As*|"," {type: "import", as: {$as}, name: {$name}};
 
 map|Output = "#out " content: SourceLine {type: "output", content: {$content}};
 
