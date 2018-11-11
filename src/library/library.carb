@@ -10,6 +10,7 @@
 #if platform.javascript
 	#include "primitive.carb"
 	#include "javascript/primitive"
+	#include "javascript/math.carb"
 #end if
 
 #if platform.documentation
@@ -20,6 +21,7 @@
 #if platform.header
 	#include "primitive.carb"
 	#include "javascript/primitive"
+	#include "javascript/math.carb"
 #end if
 
 #if platform.php

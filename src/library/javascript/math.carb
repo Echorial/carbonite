@@ -1,0 +1,35 @@
+relative Math {
+	fixed native inline property float pi() {return "Math.PI";}
+	fixed native inline property float e() {return "Math.E";}
+	fixed native inline property float sqrt2() {return "Math.SQRT2";}
+
+	fixed native inline float sin(float x) {return "Math.sin(" + context.arguments[0] + ")";}
+	fixed native inline float cos(float x) {return "Math.cos(" + context.arguments[0] + ")";}
+	fixed native inline float tan(float x) {return "Math.tan(" + context.arguments[0] + ")";}
+
+	fixed native inline float asin(float x) {return "Math.asin(" + context.arguments[0] + ")";}
+	fixed native inline float acos(float x) {return "Math.acos(" + context.arguments[0] + ")";}
+	fixed native inline float atan(float x) {return "Math.atan(" + context.arguments[0] + ")";}
+
+	fixed native inline float sinh(float x) {return "Math.sinh(" + context.arguments[0] + ")";}
+	fixed native inline float cosh(float x) {return "Math.cosh(" + context.arguments[0] + ")";}
+	fixed native inline float tanh(float x) {return "Math.tanh(" + context.arguments[0] + ")";}
+
+	fixed native inline float asinh(float x) {return "Math.asinh(" + context.arguments[0] + ")";}
+	fixed native inline float acosh(float x) {return "Math.acosh(" + context.arguments[0] + ")";}
+	fixed native inline float atanh(float x) {return "Math.atanh(" + context.arguments[0] + ")";}
+
+	fixed native inline float atan2(float y, float x) {return "Math.atan2(" + context.arguments[0] + ", " + context.arguments[1] + ")";}
+
+	fixed native inline float log(float x) {return "Math.log(" + context.arguments[0] + ")";}
+
+	fixed native inline float round(float x) {return "Math.round(" + context.arguments[0] + ")";}
+	fixed native inline float round(float x, float to) {return "(Math.round(" + context.arguments[0] + " / " + context.arguments[0] + ") * " + context.arguments[0] + ")";}
+
+	fixed native inline float ceil(float x) {return "Math.ceil(" + context.arguments[0] + ")";}
+	fixed native inline float floor(float x) {return "Math.floor(" + context.arguments[0] + ")";}
+
+	fixed native inline float sqrt(float x) {return "Math.sqrt(" + context.arguments[0] + ")";}
+
+	fixed native inline float abs(float x) {return "Math.abs(" + context.arguments[0] + ")";}
+}
