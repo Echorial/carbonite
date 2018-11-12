@@ -162,9 +162,11 @@ operator: (Operand_Symbolic / Operand_Word)
 
 map|Anonymous_Function = type: Type _ "(" _ parameters: Parameter*|"," _ ")" _ "=>" _ body: Block {type: "function", output: {$type}, parameters: {$parameters}, body: {$body}};
 
-map|Expression = _ exp: (Expression_Operation / Expression_Operated) {map|export = $exp;export["start"] = startPos;export["end"] = charPos;};
+map|Expression = _ exp: (Expression_Function / Expression_Operation / Expression_Operated) {map|export = $exp;export["start"] = startPos;export["end"] = charPos;};
 
 map|Expression_Line = exp: Expression _ ";" {map|export = $exp;};
+
+map|Expression_Function = exp: Anonymous_Function {map|export["terms"] = [$exp]; export["type"] = "expression";};
 
 map|Expression_Operation = exp: Operation* t: Term {map|$exp.push($t); export["terms"] = $exp; export["type"] = "expression";};
 
