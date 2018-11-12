@@ -11,10 +11,10 @@ relative float inherits primitive, int {
 	[operator="<", order=5] override native inline bool lesser(float what) {return context.instance + " < " + context.arguments[0];}
 	[operator="<=", order=5] override native inline bool lesserOrEqual(float what) {return context.instance + " <= " + context.arguments[0];}
 	[operator=">=", order=5] override native inline bool greaterOrEqual(float what) {return context.instance + " >= " + context.arguments[0];}
-	[operator="++"] override native inline bool increment() {return context.instance + "++";}
-	[operator="--"] override native inline bool decrement() {return context.instance + "--";}
-	[operator="+="] override native inline bool plusEquals(float what) {return context.instance + "+=" + context.arguments[0];}
-	[operator="-="] override native inline bool minusEquals(float what) {return context.instance + "-=" + context.arguments[0];}
+	[operator="++"] override native inline float increment() {return context.instance + "++";}
+	[operator="--"] override native inline float decrement() {return context.instance + "--";}
+	[operator="+=", order = 5] override native inline float plusEquals(float what) {return context.instance + "+=" + context.arguments[0];}
+	[operator="-=", order = 5] override native inline float minusEquals(float what) {return context.instance + "-=" + context.arguments[0];}
 	
 	native inline bool isInteger() {return context.instance + " % 1 === 0";}
 	

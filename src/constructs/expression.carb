@@ -1,4 +1,4 @@
-	class Carbonite.Expression inherits Carbonite.Range {
+class Carbonite.Expression inherits Carbonite.Range {
 	bound public Carbonite.Type output = empty;
 	bound public Carbonite.Class parent = empty;
 	bound public Carbonite.Body container = empty;

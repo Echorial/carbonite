@@ -13,10 +13,10 @@ relative int inherits primitive {
 	[operator="<", order=5] native inline bool lesser(int what) {return context.instance + " < " + context.arguments[0];}
 	[operator="<=", order=5] native inline bool lesserOrEqual(int what) {return context.instance + " <= " + context.arguments[0];}
 	[operator=">=", order=5] native inline bool greaterOrEqual(int what) {return context.instance + " >= " + context.arguments[0];}
-	[operator="++"] native inline bool increment() {return context.instance + "++";}
-	[operator="--"] native inline bool decrement() {return context.instance + "--";}
-	[operator="+="] native inline bool plusEquals(int what) {return context.instance + "+=" + context.arguments[0];}
-	[operator="-="] native inline bool minusEquals(int what) {return context.instance + "-=" + context.arguments[0];}
+	[operator="++"] native inline int increment() {return context.instance + "++";}
+	[operator="--"] native inline int decrement() {return context.instance + "--";}
+	[operator="+=", order = 5] native inline int plusEquals(int what) {return context.instance + "+=" + context.arguments[0];}
+	[operator="-=", order = 5] native inline int minusEquals(int what) {return context.instance + "-=" + context.arguments[0];}
 
 	fixed native inline bool mid(int val, int min, int max) {return context.arguments[0] + " >= " + context.arguments[1] + " && " + context.arguments[0] + " <= " + context.arguments[2];}
 
