@@ -35,6 +35,7 @@ Memory = function () {
 //Relative empty
 //Relative void
 //Relative string
+//Relative Math
 Carbonite = function () {
 
 
@@ -8792,7 +8793,13 @@ Carbonite.Assemblers.Javascript.prototype.term = function () {
 		var indent = arguments[1];
 		if (term.type == "expression") {
 			var cast = term;
-			return this.expression(cast.expression, indent);
+			var wrap = "(";
+			var wEnd = ")";
+			if (cast.expression.grouped == false) {
+				wrap = "";
+				wEnd = "";
+				}
+			return wrap + this.expression(cast.expression, indent) + wEnd;
 			}else if (term.type == "literal") {
 			var cast = term;
 			return this.native(cast.native);

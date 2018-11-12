@@ -341,7 +341,15 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 	bound public override <string>function term(Carbonite.Term term, int indent) {
 		if (term.type == "expression") {
 			var Carbonite.Terms.Expression cast = term;
-			return this.expression(cast.expression, indent);
+			var wrap = "(";
+			var wEnd = ")";
+			
+			if (cast.expression.grouped == false) {
+				wrap = "";
+				wEnd = "";
+			}
+
+			return wrap + this.expression(cast.expression, indent) + wEnd;
 		}else if (term.type == "literal") {
 			var Carbonite.Terms.Literal cast = term;
 			return this.native(cast.native);
