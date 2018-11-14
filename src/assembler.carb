@@ -15,10 +15,12 @@ class Carbonite.Assembler inherits object {
 class Carbonite.Assemblers.Loose inherits Carbonite.Assembler {
 	bound public override <string>function build() {
 		var string rtn = "";
+
 		for (var int i in this.compiler.roots) {
 			var Carbonite.Class root = this.compiler.roots[i];
 			rtn += this.root(root);
 		}
+		
 		return rtn;
 	}
 
