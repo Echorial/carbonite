@@ -2,7 +2,7 @@ relative primitive {
 	native inline primitive @index(int index) {return context.instance + "[" + context.arguments[0] + "]";}
 	native inline primitive @index(string index) {return context.instance + "[" + context.arguments[0] + "]";}
 
-	native inline string typeAsString() {return "(gettype(" + context.instance + ") == 'double' ? 'float' : (gettype(" + context.instance + ") == 'array' ? (isset(" + context.instance + "['_c__mapC']) ? 'map' : 'array') : gettype(" + context.instance + ")))";}
+	native inline string typeAsString() {return "((" + context.instance + ").index() == 'double' ? 'float' : (gettype(" + context.instance + ") == 'array' ? (isset(" + context.instance + "['_c__mapC']) ? 'map' : 'array') : gettype(" + context.instance + ")))";}
 
 	[operator="+"] native inline primitive add(primitive what) {return context.instance + " . " + context.arguments[0];}
 	[operator="+="] set native inline primitive addTo(primitive what) {return context.instance + " .= " + context.arguments[0];}

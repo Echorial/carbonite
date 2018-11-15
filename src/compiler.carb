@@ -217,6 +217,15 @@ class Carbonite.Compiler {
 		}
 	}
 
+	`Returns the contents of a file located under the /library dir
+	@note Only works with javascript`
+	bound public <string>function getLibraryFile(string path `Path relative to /library`) {
+		native javascript {
+			let base = require("path").resolve(__dirname, "../src/library/" + path);
+			return require("fs").readFileSync(base, "utf8");
+		}
+	}
+
 	bound public <Carbonite.Status>function build(string platformRoute, map options) {
 		var Carbonite.Platform platform = Carbonite.Platform.make(this, platformRoute, options);
 		var map platforms = new map();

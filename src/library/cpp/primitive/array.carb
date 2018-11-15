@@ -4,9 +4,9 @@ relative <class T = primitive>array inherits primitive {
 
 	native inline void @construct() {return "std::vector<" + context.templates[0] + ">()";}
 
-	native inline property int length() {return context.instance + ".size()";}
-	native inline void pop() {return context.instance + ".pop_back()";}
-	native inline int push(T element) {return context.instance + ".push_back(" + context.arguments[0] + ")";}
+	native inline property int length() {return context.instance + "->size()";}
+	native inline void pop() {return context.instance + "->pop_back()";}
+	native inline int push(T element) {return context.instance + "->push_back(" + context.arguments[0] + ")";}
 	native inline string join(string with) {return context.instance + ".join(" + context.arguments[0] + ")";}
 	native inline void remove(int index) {return context.instance + ".splice(" + context.arguments[0] + ", 1)";}
 	native inline void unshift(T item) {return context.instance + ".unshift(" + context.arguments[0] + ")";}

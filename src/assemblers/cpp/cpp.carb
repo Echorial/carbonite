@@ -1,10 +1,16 @@
  class Carbonite.Assemblers.Cpp inherits Carbonite.Assembler {
 	bound public override <string>function build() {
 		var string rtn = "";
+		
 		for (var int i in this.compiler.roots) {
 			var Carbonite.Class root = this.compiler.roots[i];
 			rtn += this.root(root);
 		}
+
+		if (this.compiler.noCore == false) {
+			return this.compiler.getLibraryFile("cpp/native.cpp") + "\n\n\n\n" + rtn;
+		}
+
 		return rtn;
 	}
 
@@ -73,7 +79,10 @@
 			return "std::map<std::string, " + this.route(what.templates[0]) + ">";
 		}else if (what.reference.route == "string") {
 			return "std::string";
+		}else if (what.reference.route == "primitive") {
+			return "_c_primitive";
 		}
+
 		return what.reference.getRoute();
 	}
 
@@ -140,9 +149,10 @@
 			set = " = " + this.expression(define.initializer);
 		}
 		var typeStr = this.route(define.output);
-		if (define.output.isPrimitiveValue() == false) {
+		if (define.output.isPrimitiveValue() == false or define.output.reference.name == "array" or define.output.reference.name == "map") {
 			typeStr = "std::unique_ptr<" + typeStr + ">";
 		}
+
 		return typeStr + " " + define.name + set;
 	}
 
@@ -241,6 +251,7 @@
 			var string doNew = "new ";
 			var <Carbonite.Members.Method>array cstrs = cast.expression.output.reference.getMethods("@construct");
 			var Carbonite.Members.Method cnstr = cstrs[0];
+			if (cast.expression.output.reference.name != "map" and cast.expression.output.reference.name != "array")
 			if (cnstr.hasFlag("inline")) {
 				doNew = "";
 			}

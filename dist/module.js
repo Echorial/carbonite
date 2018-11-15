@@ -746,6 +746,16 @@ Carbonite.Compiler.prototype.addNativeLibrary = function () {
 	}
 }
 
+Carbonite.Compiler.prototype.getLibraryFile = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var path = arguments[0];
+		
+			let base = require("path").resolve(__dirname, "../src/library/" + path);
+			return require("fs").readFileSync(base, "utf8");
+		
+	}
+}
+
 Carbonite.Compiler.prototype.build = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var platformRoute = arguments[0];
@@ -9074,6 +9084,9 @@ Carbonite.Assemblers.Cpp.prototype.build = function () {
 			var root = this.compiler.roots[i];
 			rtn += this.root(root);
 			}
+		if (this.compiler.noCore == false) {
+			return this.compiler.getLibraryFile("cpp/native.cpp") + "\n\n\n\n" + rtn;
+			}
 		return rtn;
 	}
 }
@@ -9150,6 +9163,8 @@ Carbonite.Assemblers.Cpp.prototype.route = function () {
 			return "std::map<std::string, " + this.route(what.templates[0]) + ">";
 			}else if (what.reference.route == "string") {
 			return "std::string";
+			}else if (what.reference.route == "primitive") {
+			return "_c_primitive";
 			}
 		return what.reference.getRoute();
 	}
@@ -9218,7 +9233,7 @@ Carbonite.Assemblers.Cpp.prototype.define = function () {
 			set = " = " + this.expression(define.initializer);
 			}
 		var typeStr = this.route(define.output);
-		if (define.output.isPrimitiveValue() == false) {
+		if (define.output.isPrimitiveValue() == false || define.output.reference.name == "array" || define.output.reference.name == "map") {
 			typeStr = "std::unique_ptr<" + typeStr + ">";
 			}
 		return typeStr + " " + define.name + set;
@@ -9329,8 +9344,10 @@ Carbonite.Assemblers.Cpp.prototype.term = function () {
 			var doNew = "new ";
 			var cstrs = cast.expression.output.reference.getMethods("@construct");
 			var cnstr = cstrs[0];
-			if (cnstr.hasFlag("inline")) {
-				doNew = "";
+			if (cast.expression.output.reference.name != "map" && cast.expression.output.reference.name != "array") {
+				if (cnstr.hasFlag("inline")) {
+					doNew = "";
+					}
 				}
 			if (cast.prefix == "new") {
 				return "std::unique_ptr<" + this.route(cast.expression.output) + ">(" + doNew + this.expression(cast.expression) + ")";
