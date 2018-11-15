@@ -1,6 +1,8 @@
 relative Carbon {}
 
 relative Carbon.Context {
+	`Expected output for inline statement.`
+	bound public string type = "";
 	bound public string instance = "";
 	bound public <string>array arguments = null;
 	bound public <string>array templates = null;

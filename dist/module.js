@@ -496,6 +496,8 @@ Carbonite.Source.prototype.error = function () {
 }
 
 Carbonite.Context = function () {
+	this.type = "";
+
 	this.instance = "";
 
 	this.arguments = [];
@@ -9507,6 +9509,7 @@ Carbonite.Assemblers.Cpp.prototype.callMethodWithStrings = function () {
 					temps.push(this.route(temp));
 					}
 				var ctx = new Carbonite.Context(context, ___arguments, temps);
+				ctx.type = this.route(method.output);
 				return method.generate(ctx);
 			}
 	}

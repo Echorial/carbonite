@@ -16,7 +16,9 @@ relative <class T = primitive>array inherits primitive {
 	native inline <T>array splice(int index) {return context.instance + ".slice().splice(" + context.arguments[0] + ")";}
 	native inline <T>array clone() {return "JSON.parse(JSON.stringify(" + context.instance + "))";}
 
-	native inline T @index(int index) {return context.instance + "[" + context.arguments[0] + "]";}
+	native inline T @index(int index) {
+		return "_c_index<" + context.type + ">(" + context.instance + ", " + context.arguments[0] + ")";
+	}
 
 	native inline <T>array highToLow()
 	{return context.instance + ".sort(function (a, b) {return b-a;})";}

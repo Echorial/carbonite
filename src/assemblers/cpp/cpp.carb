@@ -406,6 +406,7 @@
 				temps.push(this.route(temp));
 			}
 			var Carbonite.Context ctx = new Carbonite.Context(context, arguments, temps);
+			ctx.type = this.route(method.output);
 			return method.generate(ctx);
 		}
 	}

@@ -73,4 +73,25 @@ struct _c_primitive {
 
 inline _c_primitive::~_c_primitive() = default;
 
+template <class T>
+T _c_index(std::unique_ptr<std::vector<_c_primitive>> &vec, std::size_t i) {
+	return std::get<T>((*vec.get())[i].val);
+}
+
+template <class T>
+T _c_index_map(std::unique_ptr<std::vector<_c_primitive>> &vec, std::string key) {
+	return std::get<T>((*vec.get())[key].val);
+}
+
+template <class T>
+bool _c_map_has(std::unique_ptr<std::map<std::string, T>> &vec, std::string key) {
+	auto mp = (*vec.get());
+	auto val = mp.find(key);
+	if (val == mp.end()) {
+		return true;
+	}else{
+		return false;
+	}
+}
+
 #endif
