@@ -33,9 +33,10 @@ map|Root = _ doc: String_Tick* _ attr: Attribute? _ flags: Flag*|" " _ type: ("i
 
 map|Implements = _ base: Safe_Name __ "implements" __ subject: Safe_Name _ ";" {type: "implements", implementer: {$base}, implements: {$subject}, start: {startPos}, end: {charPos}};
 
-map|Type = _ template: Template? name: Safe_Name
+map|Type = _ template: Template? name: Safe_Name reference: "&"*
 {map|
 export["name"] = $name;
+export["reference"] = $reference.length;
 export["start"] = startPos;
 export["end"] = charPos;
 if ($template != empty) {
