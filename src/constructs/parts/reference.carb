@@ -17,7 +17,7 @@ class Carbonite.Parts.Reference inherits Carbonite.Part {
 				this.isConstructor = true;
 			}
 			var string rawName = parent.raw["name"];
-			if (parent.parent.parent.compiler.getClass(rawName) != empty) {
+			if (parent.parent.parent.compiler.getClass(rawName) != empty or parent.parent.parent.hasTemplate(rawName)) {
 				this.isConstructor = true;
 			}
 
@@ -42,7 +42,7 @@ class Carbonite.Parts.Reference inherits Carbonite.Part {
 					this.isConstructor = true;
 				}
 				var string rawName = parent.raw["name"];
-				if (parent.parent.parent.compiler.getClass(rawName) != empty) {
+				if (parent.parent.parent.compiler.getClass(rawName) != empty or parent.parent.parent.hasTemplate(rawName)) {
 					this.isConstructor = true;
 				}
 

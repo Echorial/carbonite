@@ -1,0 +1,35 @@
+class Carbonite.TemplateInstance {
+	bound public Carbonite.Class instance = null;
+	bound public Carbonite.Class base = null;
+	bound public <Carbonite.Type>array templates = new <Carbonite.Type>array();
+
+	void @construct(Carbonite.Class instance, Carbonite.Class base) {
+		this.instance = instance;
+		this.base = base;
+	}
+
+	bool compare(Carbonite.Type type) {
+		if (type.templates.length != this.templates.length) {
+			type.buildError("Illegal template comparison"); // This should be an exception, however for debugging purposes it will remain.
+		}
+
+		for (var int i in this.templates) {
+			var tmp = this.templates[i];
+
+			if (type.late == false and tmp.late == false)
+			if (tmp.reference.route == type.templates[i].reference.route) {
+				if (tmp.reference.templates.length > 0) {
+					for (var int r in tmp.reference.instances) {
+						var inst = tmp.reference.instances[r];
+						if (inst.compare(type.templates[i]) == false)
+							return false;
+					}
+				}
+			}else{
+				return false;
+			}
+		}
+		
+		return true;
+	}
+}

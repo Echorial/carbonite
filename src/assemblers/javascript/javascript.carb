@@ -19,6 +19,14 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 			return "";
 		}
 
+		if (this.compiler.useOldTemplates == false) {
+			if (root.templateClass) {
+				if (root.instances.length > 0) {
+					return this.root(root.instances[0].instance);
+				}
+			}
+		}
+
 		var <string>array props = new <string>array();
 		var <string>array fixedProps = new <string>array();
 

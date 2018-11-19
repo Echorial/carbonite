@@ -546,6 +546,8 @@ Carbonite.Compiler = function () {
 
 	this.status = new Carbonite.Status();
 
+	this.useOldTemplates = false;
+
 	this.pipeReference = {};
 
 	this.pipeConfig = {};
@@ -652,6 +654,13 @@ Carbonite.Compiler.prototype.getClass = function () {
 	}
 }
 
+Carbonite.Compiler.prototype.getOrCreateInstance = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var type = arguments[0];
+
+	}
+}
+
 Carbonite.Compiler.prototype.findClass = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
@@ -701,6 +710,16 @@ Carbonite.Compiler.prototype.pipe = function () {
 			}else if (type == "call") {
 
 			}
+	}
+}
+
+Carbonite.Compiler.prototype.copyClass = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var baseClass = arguments[0];
+		var cls = new Carbonite.Class();
+		cls.loadFromRaw(baseClass.raw);
+		cls.source = baseClass.source;
+		return cls;
 	}
 }
 
@@ -833,6 +852,7 @@ Carbonite.Compiler.prototype.build = function () {
 			var root = this.roots[i];
 			if (root.alreadyBuilt == false && root.raw != null) {
 				root.buildMembers();
+				root.membersBuilt = true;
 				if (root.base == "extend") {
 					this.findClass(root.route, root).extend(root);
 					this.roots.splice(i, 1);
@@ -1138,6 +1158,8 @@ Carbonite.Router.prototype.bake = function () {
 }
 
 Carbonite.Class = function () {
+	this.uid = 0;
+
 	this.raw = null;
 
 	this.headerData = null;
@@ -1168,11 +1190,23 @@ Carbonite.Class = function () {
 
 	this.alreadyBuilt = false;
 
+	this.membersBuilt = false;
+
 	this.codeBuilt = false;
 
 	this.inherited = false;
 
 	this.doc = null;
+
+	this.templateClass = false;
+
+	this.templateInstance = false;
+
+	this.templateBase = null;
+
+	this.instances = [];
+
+	this.resolvedTemplates = [];
 
 	this.base = "";
 
@@ -1250,6 +1284,42 @@ Carbonite.Class.prototype.doExport = function () {
 				}
 			}
 		return true;
+	}
+}
+
+Carbonite.Class.prototype.findInstance = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var type = arguments[0];
+		for (var i = 0; i < this.instances.length; i++) {
+			if (this.instances[i].compare(type)) {
+				return this.instances[i];
+				}
+			}
+		return null;
+	}
+}
+
+Carbonite.Class.prototype.createInstance = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var type = arguments[0];
+		var cpy = this.compiler.copyClass(this);
+		cpy.compiler = this.compiler;
+		cpy.templateInstance = true;
+		cpy.templateBase = this;
+		cpy.buildTemplates();
+		var inst = new Carbonite.TemplateInstance(cpy, this);
+		for (var i = 0; i < type.templates.length; i++) {
+			inst.templates.push(type.templates[i]);
+			cpy.resolvedTemplates.push(type.templates[i]);
+			}
+		this.instances.push(inst);
+		if (this.membersBuilt) {
+			cpy.buildMembers();
+			}
+		if (this.alreadyBuilt) {
+			cpy.buildCode();
+			}
+		return inst;
 	}
 }
 
@@ -1469,18 +1539,24 @@ Carbonite.Class.prototype.executeInherits = function () {
 Carbonite.Class.prototype.buildCode = function () {
 	if (arguments.length == 0) {
 		this.executeInherits();
-		for (var i = 0; i < this.members.length; i++) {
-			var member = this.members[i];
-			if (member.raw == null) {
-				continue;
+		if (this.compiler.useOldTemplates == false && this.templateClass) {
+			for (var i = 0; i < this.instances.length; i++) {
+				this.instances[i].instance.buildCode();
 				}
-			if (member.type != "property") {
-				var method = member;
-				method.buildBody();
-				}else{
-					var property = member;
-					property.buildDefault();
-				}
+			}else{
+				for (var i = 0; i < this.members.length; i++) {
+					var member = this.members[i];
+					if (member.raw == null) {
+						continue;
+						}
+					if (member.type != "property") {
+						var method = member;
+						method.buildBody();
+						}else{
+							var property = member;
+							property.buildDefault();
+						}
+					}
 			}
 	}
 }
@@ -1515,40 +1591,50 @@ Carbonite.Class.prototype.makeMember = function () {
 
 Carbonite.Class.prototype.buildMembers = function () {
 	if (arguments.length == 0) {
-		var members = this.raw["members"];
-		for (var i = members.length - 1;i >= 0;i--) {
-			var mem = members[i];
-			if (mem["attribute"] != null) {
-				var cst = mem["attribute"];
-				var attr = this.getAttribute(cst, "operator");
-				if (attr != null) {
-					var member = new Carbonite.Members.Operator(this, mem);
-					var op = member.getAttributes("operator");
-					var cAttr = op[0];
-					member.operator = cAttr["value"];
-					member.realName = member.name;
-					member.name = member.operator;
-					var order = member.getAttributes("order");
-					if (order.length > 0) {
-						var mainOrder = order[0];
-						member.order = mainOrder["value"];
+		var shouldDo = true;
+		if (this.compiler.useOldTemplates == false && this.templateClass && this.templateInstance == false) {
+			shouldDo = false;
+			}
+		if (shouldDo) {
+			var members = this.raw["members"];
+			for (var i = members.length - 1;i >= 0;i--) {
+				var mem = members[i];
+				if (mem["attribute"] != null) {
+					var cst = mem["attribute"];
+					var attr = this.getAttribute(cst, "operator");
+					if (attr != null) {
+						var member = new Carbonite.Members.Operator(this, mem);
+						var op = member.getAttributes("operator");
+						var cAttr = op[0];
+						member.operator = cAttr["value"];
+						member.realName = member.name;
+						member.name = member.operator;
+						var order = member.getAttributes("order");
+						if (order.length > 0) {
+							var mainOrder = order[0];
+							member.order = mainOrder["value"];
+							}
+						this.compiler.operatorOrders[member.operator] = member.order;
+						this.members.push(member);
 						}
-					this.compiler.operatorOrders[member.operator] = member.order;
+					}
+				}
+			for (var i = 0; i < members.length; i++) {
+				var mem = members[i];
+				var cst = mem["attribute"];
+				var attr = null;
+				if (cst != null) {
+					this.getAttribute(cst, "operator");
+					}
+				if (attr == null) {
+					var member = Carbonite.Member.make(this, members[i]);
 					this.members.push(member);
 					}
 				}
 			}
-		for (var i = 0; i < members.length; i++) {
-			var mem = members[i];
-			var cst = mem["attribute"];
-			var attr = null;
-			if (cst != null) {
-				this.getAttribute(cst, "operator");
-				}
-			if (attr == null) {
-				var member = Carbonite.Member.make(this, members[i]);
-				this.members.push(member);
-				}
+		for (var i = 0; i < this.instances.length; i++) {
+			var inst = this.instances[i];
+			inst.instance.buildMembers();
 			}
 		var arr = [];
 		arr.push(VirtualClass.create(this));
@@ -1568,6 +1654,7 @@ Carbonite.Class.prototype.buildTemplates = function () {
 				this.templates.push(template);
 				}
 			}
+		this.templateClass = ((this.templates.length > 0) && (this.templateInstance == false));
 	}
 }
 
@@ -1713,6 +1800,19 @@ Carbonite.Class.prototype.hasTemplate = function () {
 				}
 			}
 		return false;
+	}
+}
+
+Carbonite.Class.prototype.getResolvedTemplate = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var name = arguments[0];
+		for (var i = 0; i < this.templates.length; i++) {
+			var template = this.templates[i];
+			if (template.name == name) {
+				return this.resolvedTemplates[i];
+				}
+			}
+		return null;
 	}
 }
 
@@ -2485,6 +2585,7 @@ Carbonite.Members.Method.prototype.build = function () {
 				this.body = new Carbonite.Body(this, this.raw["value"]["body"]);
 				var ownType = new Carbonite.Type(this.parent.compiler, this.parent);
 				ownType.loadFromName(this.parent.route, this.raw);
+				ownType.reference = this.parent;
 				var thisName = "this";
 				var defThis = new Carbonite.Define(thisName, ownType);
 				if ((this.binding == "fixed") && (this.name != "@construct")) {
@@ -2542,6 +2643,8 @@ Carbonite.Members.Method.prototype.stringify = function () {
 					if (level == 1) {
 						if (dot.text == "instance") {
 							return ctx.instance;
+							}else if (dot.text == "type") {
+							return ctx.type;
 							}else if (dot.text == "arguments") {
 							level = 2;
 							}else if (dot.text == "templates") {
@@ -3290,6 +3393,7 @@ Carbonite.Members.Operator.prototype.build = function () {
 				this.body = new Carbonite.Body(this, this.raw["value"]["body"]);
 				var ownType = new Carbonite.Type(this.parent.compiler, this.parent);
 				ownType.loadFromName(this.parent.route, this.raw);
+				ownType.reference = this.parent;
 				var thisName = "this";
 				var defThis = new Carbonite.Define(thisName, ownType);
 				if ((this.binding == "fixed") && (this.name != "@construct")) {
@@ -3347,6 +3451,8 @@ Carbonite.Members.Operator.prototype.stringify = function () {
 					if (level == 1) {
 						if (dot.text == "instance") {
 							return ctx.instance;
+							}else if (dot.text == "type") {
+							return ctx.type;
 							}else if (dot.text == "arguments") {
 							level = 2;
 							}else if (dot.text == "templates") {
@@ -3622,6 +3728,49 @@ Carbonite.Template.prototype.buildError = function () {
 		var msg = arguments[0];
 		this.source.error(this, msg);
 		throw new Error("Build error");
+	}
+}
+
+Carbonite.TemplateInstance = function () {
+	this.instance = null;
+
+	this.base = null;
+
+	this.templates = [];
+
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var instance = arguments[0];
+		var base = arguments[1];
+		this.instance = instance;
+		this.base = base;
+	}
+
+}
+
+Carbonite.TemplateInstance.prototype.compare = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var type = arguments[0];
+		if (type.templates.length != this.templates.length) {
+			type.buildError("Illegal template comparison");
+			}
+		for (var i = 0; i < this.templates.length; i++) {
+			var tmp = this.templates[i];
+			if (type.late == false && tmp.late == false) {
+				if (tmp.reference.route == type.templates[i].reference.route) {
+					if (tmp.reference.templates.length > 0) {
+						for (var r = 0; r < tmp.reference.instances.length; r++) {
+							var inst = tmp.reference.instances[r];
+							if (inst.compare(type.templates[i]) == false) {
+								return false;
+								}
+							}
+						}
+					}else{
+						return false;
+					}
+				}
+			}
+		return true;
 	}
 }
 
@@ -6727,6 +6876,8 @@ Carbonite.Terms.Function.prototype.buildError = function () {
 Carbonite.Type = function () {
 	this.reference = null;
 
+	this.targetRoute = "";
+
 	this.late = false;
 
 	this.lateReference = null;
@@ -6738,6 +6889,8 @@ Carbonite.Type = function () {
 	this.autoCast = false;
 
 	this.castTo = null;
+
+	this.templateInstance = null;
 
 	this.templates = [];
 
@@ -6800,6 +6953,7 @@ Carbonite.Type.prototype.loadFromName = function () {
 		this.raw = raw;
 		this.startOffset = this.raw["start"];
 		this.endOffset = this.raw["end"];
+		this.targetRoute = className;
 		this.setReference(this.compiler.findClass(className, this));
 		for (var i = 0; i < this.reference.templates.length; i++) {
 			var template = this.reference.templates[i];
@@ -6822,6 +6976,7 @@ Carbonite.Type.prototype.loadFromRaw = function () {
 			this.loadLocation(this.parent, raw);
 			}
 		var name = this.raw["name"];
+		this.targetRoute = name;
 		if (name == "this") {
 			name = this.parent.route;
 			}
@@ -6839,31 +6994,75 @@ Carbonite.Type.prototype.loadFromRaw = function () {
 			}else{
 				this.setReference(this.compiler.findClass(this.raw["name"], this));
 			}
-		if ("template" in this.raw) {
+		if (this.compiler.useOldTemplates == false && this.late) {
+			this.late = false;
+			this.reference = this.parent.getResolvedTemplate(name).reference;
+			}
+		if (this.compiler.useOldTemplates == false) {
+			if (("template" in this.raw) == false && this.reference.templates.length > 0) {
+				for (var i = 0; i < this.reference.templates.length; i++) {
+					var tmp = this.reference.templates[i];
+					var type = new Carbonite.Type(this.compiler, this.parent);
+					type.loadFromRaw(tmp.raw["default"]);
+					this.templates.push(type);
+					this.instanceTemplates();
+					}
+				}
+			}
+		if ("template" in this.raw && this.late == false) {
 			var pTemp = this.raw["template"];
 			if ((typeof pTemp == 'object' ? (Array.isArray(pTemp) ? 'array' : 'map') : (typeof pTemp == 'number' ? 'float' : typeof pTemp)) != "boolean") {
 				var templates = pTemp;
-				for (var i = 0; i < templates.length; i++) {
-					var type = new Carbonite.Type(this.compiler, this.parent);
-					type.loadFromRaw(templates[i]);
-					this.templates.push(type);
+				if (this.compiler.useOldTemplates) {
+					for (var i = 0; i < templates.length; i++) {
+						var type = new Carbonite.Type(this.compiler, this.parent);
+						type.loadFromRaw(templates[i]);
+						this.templates.push(type);
+						}
+					}else if (templates.length > 0) {
+					for (var i = 0; i < templates.length; i++) {
+						var type = new Carbonite.Type(this.compiler, this.parent);
+						type.loadFromRaw(templates[i]);
+						this.templates.push(type);
+						}
+					this.instanceTemplates();
 					}
 				}
 			}
 		if ((this.late == false) && (this.reference.route != "function") && (this.magicType != 1)) {
-			for (var i = 0; i < this.reference.templates.length; i++) {
-				var template = this.reference.templates[i];
-				if (i >= this.templates.length) {
-					if (template.optional) {
-						this.templates.push(template.default);
-						}else{
-							this.buildError("Type '" + this.reference.name + "' requires " + this.reference.templates.length + " templates, " + this.templates.length + " provided");
-						}
-					}
-				}
+			this.finishTemplates();
 			}
 		this.startOffset = this.raw["start"];
 		this.endOffset = this.raw["end"];
+	}
+}
+
+Carbonite.Type.prototype.instanceTemplates = function () {
+	if (arguments.length == 0) {
+		if ((this.reference.route != "function") && (this.magicType != 1)) {
+			var inst = this.reference.findInstance(this);
+			if (inst != null) {
+				this.reference = inst.instance;
+				}else{
+					var nInstance = this.reference.createInstance(this);
+					this.reference = nInstance.instance;
+				}
+			}
+	}
+}
+
+Carbonite.Type.prototype.finishTemplates = function () {
+	if (arguments.length == 0) {
+		for (var i = 0; i < this.reference.templates.length; i++) {
+			var template = this.reference.templates[i];
+			if (i >= this.templates.length) {
+				if (template.optional) {
+					this.templates.push(template.default);
+					}else{
+						this.buildError("Type '" + this.reference.name + "' requires " + this.reference.templates.length + " templates, " + this.templates.length + " provided");
+					}
+				}
+			}
 	}
 }
 
@@ -7052,6 +7251,8 @@ Carbonite.ReferenceType = function () {
 
 	this.reference = null;
 
+	this.targetRoute = "";
+
 	this.late = false;
 
 	this.lateReference = null;
@@ -7063,6 +7264,8 @@ Carbonite.ReferenceType = function () {
 	this.autoCast = false;
 
 	this.castTo = null;
+
+	this.templateInstance = null;
 
 	this.templates = [];
 
@@ -7139,6 +7342,7 @@ Carbonite.ReferenceType.prototype.loadFromName = function () {
 		this.raw = raw;
 		this.startOffset = this.raw["start"];
 		this.endOffset = this.raw["end"];
+		this.targetRoute = className;
 		this.setReference(this.compiler.findClass(className, this));
 		for (var i = 0; i < this.reference.templates.length; i++) {
 			var template = this.reference.templates[i];
@@ -7161,6 +7365,7 @@ Carbonite.ReferenceType.prototype.loadFromRaw = function () {
 			this.loadLocation(this.parent, raw);
 			}
 		var name = this.raw["name"];
+		this.targetRoute = name;
 		if (name == "this") {
 			name = this.parent.route;
 			}
@@ -7178,31 +7383,75 @@ Carbonite.ReferenceType.prototype.loadFromRaw = function () {
 			}else{
 				this.setReference(this.compiler.findClass(this.raw["name"], this));
 			}
-		if ("template" in this.raw) {
+		if (this.compiler.useOldTemplates == false && this.late) {
+			this.late = false;
+			this.reference = this.parent.getResolvedTemplate(name).reference;
+			}
+		if (this.compiler.useOldTemplates == false) {
+			if (("template" in this.raw) == false && this.reference.templates.length > 0) {
+				for (var i = 0; i < this.reference.templates.length; i++) {
+					var tmp = this.reference.templates[i];
+					var type = new Carbonite.Type(this.compiler, this.parent);
+					type.loadFromRaw(tmp.raw["default"]);
+					this.templates.push(type);
+					this.instanceTemplates();
+					}
+				}
+			}
+		if ("template" in this.raw && this.late == false) {
 			var pTemp = this.raw["template"];
 			if ((typeof pTemp == 'object' ? (Array.isArray(pTemp) ? 'array' : 'map') : (typeof pTemp == 'number' ? 'float' : typeof pTemp)) != "boolean") {
 				var templates = pTemp;
-				for (var i = 0; i < templates.length; i++) {
-					var type = new Carbonite.Type(this.compiler, this.parent);
-					type.loadFromRaw(templates[i]);
-					this.templates.push(type);
+				if (this.compiler.useOldTemplates) {
+					for (var i = 0; i < templates.length; i++) {
+						var type = new Carbonite.Type(this.compiler, this.parent);
+						type.loadFromRaw(templates[i]);
+						this.templates.push(type);
+						}
+					}else if (templates.length > 0) {
+					for (var i = 0; i < templates.length; i++) {
+						var type = new Carbonite.Type(this.compiler, this.parent);
+						type.loadFromRaw(templates[i]);
+						this.templates.push(type);
+						}
+					this.instanceTemplates();
 					}
 				}
 			}
 		if ((this.late == false) && (this.reference.route != "function") && (this.magicType != 1)) {
-			for (var i = 0; i < this.reference.templates.length; i++) {
-				var template = this.reference.templates[i];
-				if (i >= this.templates.length) {
-					if (template.optional) {
-						this.templates.push(template.default);
-						}else{
-							this.buildError("Type '" + this.reference.name + "' requires " + this.reference.templates.length + " templates, " + this.templates.length + " provided");
-						}
-					}
-				}
+			this.finishTemplates();
 			}
 		this.startOffset = this.raw["start"];
 		this.endOffset = this.raw["end"];
+	}
+}
+
+Carbonite.ReferenceType.prototype.instanceTemplates = function () {
+	if (arguments.length == 0) {
+		if ((this.reference.route != "function") && (this.magicType != 1)) {
+			var inst = this.reference.findInstance(this);
+			if (inst != null) {
+				this.reference = inst.instance;
+				}else{
+					var nInstance = this.reference.createInstance(this);
+					this.reference = nInstance.instance;
+				}
+			}
+	}
+}
+
+Carbonite.ReferenceType.prototype.finishTemplates = function () {
+	if (arguments.length == 0) {
+		for (var i = 0; i < this.reference.templates.length; i++) {
+			var template = this.reference.templates[i];
+			if (i >= this.templates.length) {
+				if (template.optional) {
+					this.templates.push(template.default);
+					}else{
+						this.buildError("Type '" + this.reference.name + "' requires " + this.reference.templates.length + " templates, " + this.templates.length + " provided");
+					}
+				}
+			}
 	}
 }
 
@@ -7438,7 +7687,7 @@ Carbonite.Parts.Reference = function () {
 				this.isConstructor = true;
 				}
 			var rawName = parent.raw["name"];
-			if (parent.parent.parent.compiler.getClass(rawName) != null) {
+			if (parent.parent.parent.compiler.getClass(rawName) != null || parent.parent.parent.hasTemplate(rawName)) {
 				this.isConstructor = true;
 				}
 			if (this.isConstructor) {
@@ -7462,7 +7711,7 @@ Carbonite.Parts.Reference = function () {
 						this.isConstructor = true;
 						}
 					var rawName = parent.raw["name"];
-					if (parent.parent.parent.compiler.getClass(rawName) != null) {
+					if (parent.parent.parent.compiler.getClass(rawName) != null || parent.parent.parent.hasTemplate(rawName)) {
 						this.isConstructor = true;
 						}
 					if (this.isConstructor) {
@@ -8441,6 +8690,13 @@ Carbonite.Assemblers.Javascript.prototype.root = function () {
 			return "/" + "/Relative " + root.name + "\n";
 			}else if (root.isFromHeader) {
 			return "";
+			}
+		if (this.compiler.useOldTemplates == false) {
+			if (root.templateClass) {
+				if (root.instances.length > 0) {
+					return this.root(root.instances[0].instance);
+					}
+				}
 			}
 		var props = [];
 		var fixedProps = [];
@@ -9611,6 +9867,13 @@ Carbonite.Assemblers.Php.prototype.root = function () {
 			return "/" + "/Relative " + root.name + "\n";
 			}else if (root.isFromHeader) {
 			return "";
+			}
+		if (this.compiler.useOldTemplates == false) {
+			if (root.templateClass) {
+				if (root.instances.length > 0) {
+					return this.root(root.instances[0].instance);
+					}
+				}
 			}
 		var propDefs = [];
 		var props = [];

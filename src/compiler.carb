@@ -31,6 +31,8 @@ class Carbonite.Compiler {
 
 	bound public Carbonite.Status status = new Carbonite.Status();
 
+	bound public bool useOldTemplates = false;
+
 	bound public map pipeReference = new map();
 
 	bound public map pipeConfig = new map();
@@ -137,6 +139,10 @@ class Carbonite.Compiler {
 		return emp;
 	}
 
+	bound public <Carbonite.TemplateInstance>function getOrCreateInstance(Carbonite.Type type) {
+
+	}
+
 	bound public <Carbonite.Class>function findClass(string name, Carbonite.Range req) {
 		for (var int i in this.roots) {
 			var Carbonite.Class root = this.roots[i];
@@ -177,6 +183,14 @@ class Carbonite.Compiler {
 		}else if (type == "call") {
 
 		}
+	}
+
+	Carbonite.Class copyClass(Carbonite.Class baseClass) {
+		var Carbonite.Class cls = new Carbonite.Class();
+		cls.loadFromRaw(baseClass.raw);
+		cls.source = baseClass.source;
+
+		return cls;
 	}
 
 	void loadHeader(map data) {
@@ -303,6 +317,7 @@ class Carbonite.Compiler {
 				var Carbonite.Class root = this.roots[i];
 				if (root.alreadyBuilt == false and root.raw != null) {
 					root.buildMembers();
+					root.membersBuilt = true;
 					if (root.base == "extend") {
 						this.findClass(root.route, root).extend(root);
 						this.roots.remove(i);
@@ -319,7 +334,7 @@ class Carbonite.Compiler {
 			}
 
 			/*var clss = new <Carbide.Virtual.Value>array();
-			clss.push(VirutalClasses.create(this.roots));*/
+			clss.push(VirtualClasses.create(this.roots));*/
 			this.virtualEvents.emit("classes.end", new <Carbide.Virtual.Value>array());
 
 			for (var int i in this.roots) {

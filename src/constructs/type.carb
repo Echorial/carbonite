@@ -1,6 +1,9 @@
 class Carbonite.Type inherits Carbonite.Range {
 	bound public Carbonite.Class reference = empty;
 
+	`Raw parsed route including any magic.`
+	bound public string targetRoute = "";
+
 	bound public bool late = false;
 	bound public Carbonite.Template lateReference = empty;
 
@@ -9,6 +12,8 @@ class Carbonite.Type inherits Carbonite.Range {
 
 	bound public bool autoCast = false;
 	bound public Carbonite.Class castTo = null;
+
+	bound public Carbonite.TemplateInstance templateInstance = null;
 
 	bound public <Carbonite.Type>array templates = new <Carbonite.Type>array();
 	bound public Carbonite.Compiler compiler = empty;
@@ -46,6 +51,7 @@ class Carbonite.Type inherits Carbonite.Range {
 		this.raw = raw;
 		this.startOffset = this.raw["start"];
 		this.endOffset = this.raw["end"];
+		this.targetRoute = className;
 		this.setReference(this.compiler.findClass(className, this));
 		for (var int i in this.reference.templates) {
 			var Carbonite.Template template = this.reference.templates[i];
@@ -65,6 +71,7 @@ class Carbonite.Type inherits Carbonite.Range {
 			this.loadLocation(this.parent, raw);
 
 		var string name = this.raw["name"];
+		this.targetRoute = name;
 
 		if (name == "this") {
 			name = this.parent.route;
@@ -84,33 +91,80 @@ class Carbonite.Type inherits Carbonite.Range {
 		}else{
 			this.setReference(this.compiler.findClass(this.raw["name"], this));
 		}
-		if ("template" in this.raw) {
+
+		if (this.compiler.useOldTemplates == false and this.late) {
+			this.late = false;
+			this.reference = this.parent.getResolvedTemplate(name).reference;
+		}
+
+		if (this.compiler.useOldTemplates == false)
+		if (("template" in this.raw) == false and this.reference.templates.length > 0) {
+			for (var int i in this.reference.templates) {
+				var tmp = this.reference.templates[i];
+
+				var Carbonite.Type type = new Carbonite.Type(this.compiler, this.parent);
+				type.loadFromRaw(tmp.raw["default"]);
+				this.templates.push(type);
+
+				this.instanceTemplates();
+			}
+		}
+
+		if ("template" in this.raw and this.late == false) {
 			var pTemp = this.raw["template"];
 			if (pTemp.typeAsString() != "boolean") {
 				var <map>array templates = pTemp;
 
-				for (var int i in templates) {
-					var Carbonite.Type type = new Carbonite.Type(this.compiler, this.parent);
-					type.loadFromRaw(templates[i]);
-					this.templates.push(type);
+				if (this.compiler.useOldTemplates) {
+					for (var int i in templates) {
+						var Carbonite.Type type = new Carbonite.Type(this.compiler, this.parent);
+						type.loadFromRaw(templates[i]);
+						this.templates.push(type);
+					}
+				}else if (templates.length > 0) {
+					for (var int i in templates) {
+						var Carbonite.Type type = new Carbonite.Type(this.compiler, this.parent);
+						type.loadFromRaw(templates[i]);
+						this.templates.push(type);
+					}
+
+					this.instanceTemplates();
 				}
 			}
 		}
+		
 		if ((this.late == false) and (this.reference.route != "function") and (this.magicType != 1)) {
-			for (var int i in this.reference.templates) {
-				var Carbonite.Template template = this.reference.templates[i];
-				if (i >= this.templates.length()) {
-					if (template.optional) {
-						this.templates.push(template.default);
-					}else{
-						this.buildError("Type '" + this.reference.name + "' requires " + this.reference.templates.length() + " templates, " + this.templates.length() + " provided");
-					}
-				}
-			}
+			this.finishTemplates();
 		}
 
 		this.startOffset = this.raw["start"];
 		this.endOffset = this.raw["end"];
+	}
+
+	bound public <void>function instanceTemplates() {
+		if ((this.reference.route != "function") and (this.magicType != 1)) {
+			var inst = this.reference.findInstance(this);
+			// I don't like changing reference.
+			if (inst != null) {
+				this.reference = inst.instance;
+			}else{
+				var nInstance = this.reference.createInstance(this);
+				this.reference = nInstance.instance;
+			}
+		}
+	}
+
+	bound public <void>function finishTemplates() {
+		for (var int i in this.reference.templates) {
+			var Carbonite.Template template = this.reference.templates[i];
+			if (i >= this.templates.length()) {
+				if (template.optional) {
+					this.templates.push(template.default);
+				}else{
+					this.buildError("Type '" + this.reference.name + "' requires " + this.reference.templates.length() + " templates, " + this.templates.length() + " provided");
+				}
+			}
+		}
 	}
 
 	bound public <bool>function check(Carbonite.Type what) {

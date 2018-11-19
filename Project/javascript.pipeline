@@ -9,3 +9,5 @@ type = "package"
 javascript.module = "Carbonite"
 
 autoCache = true
+
+useOldTemplates = true

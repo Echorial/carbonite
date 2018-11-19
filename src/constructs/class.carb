@@ -1,4 +1,6 @@
 class Carbonite.Class inherits Carbonite.Named {
+	bound public int uid = 0;
+
 	bound public map raw = empty;
 	bound public map headerData = null;
 	bound public bool isFromHeader = false;
@@ -21,9 +23,23 @@ class Carbonite.Class inherits Carbonite.Named {
 	bound public Carbonite.Class link = null;
 
 	bound public bool alreadyBuilt = false;
+	bound public bool membersBuilt = false;
 	bound public bool codeBuilt = false;
 	bound public bool inherited = false;
 	bound public Carbonite.Doc doc = null;
+
+	bound public bool templateClass = false;
+
+	`If this class has its templates filled in.
+	@note This is always off unless the templateBase class has templates.`
+	bound public bool templateInstance = false;
+
+	`A templateInstance base class reference.`
+	bound public Carbonite.Class templateBase = null;
+
+	bound public <Carbonite.TemplateInstance>array instances = new <Carbonite.TemplateInstance>array();
+
+	bound public <Carbonite.Type>array resolvedTemplates = new <Carbonite.Type>array();
 
 	bound public string base = "";
 	bound public <string>array flags = null;
@@ -71,6 +87,41 @@ class Carbonite.Class inherits Carbonite.Named {
 				return false;
 		}
 		return true;
+	}
+
+	bound public <Carbonite.TemplateInstance>function findInstance(Carbonite.Type type) {
+		for (var int i in this.instances)
+			if (this.instances[i].compare(type))
+				return this.instances[i];
+		
+		return null;
+	}
+
+	bound public <Carbonite.TemplateInstance>function createInstance(Carbonite.Type type) {
+		var cpy = this.compiler.copyClass(this);
+		cpy.compiler = this.compiler;
+		cpy.templateInstance = true;
+		cpy.templateBase = this;
+		cpy.buildTemplates();
+
+		var inst = new Carbonite.TemplateInstance(cpy, this);
+
+		for (var int i in type.templates) {
+			inst.templates.push(type.templates[i]);
+			cpy.resolvedTemplates.push(type.templates[i]);
+		}
+
+		this.instances.push(inst);
+
+		if (this.membersBuilt) {
+			cpy.buildMembers();
+		}
+
+		if (this.alreadyBuilt) {
+			cpy.buildCode();
+		}
+
+		return inst;
 	}
 
 	bound public <bool>function descendantOf(Carbonite.Class of) {
@@ -250,18 +301,24 @@ class Carbonite.Class inherits Carbonite.Named {
 
 	bound public <void>function buildCode() {
 		this.executeInherits();
-		for (var int i in this.members) {
-			var Carbonite.Member member = this.members[i];
+		if (this.compiler.useOldTemplates == false and this.templateClass) {
+			for (var int i in this.instances) {
+				this.instances[i].instance.buildCode();
+			}
+		}else{
+			for (var int i in this.members) {
+				var Carbonite.Member member = this.members[i];
 
-			if (member.raw == null) //Header
-				continue;
+				if (member.raw == null) //Header
+					continue;
 
-			if (member.type != "property") {
-				var Carbonite.Members.Method method = member;
-				method.buildBody();
-			}else{
-				var Carbonite.Members.Property property = member;
-				property.buildDefault();
+				if (member.type != "property") {
+					var Carbonite.Members.Method method = member;
+					method.buildBody();
+				}else{
+					var Carbonite.Members.Property property = member;
+					property.buildDefault();
+				}
 			}
 		}
 	}
@@ -292,38 +349,51 @@ class Carbonite.Class inherits Carbonite.Named {
 	}
 
 	bound public <void>function buildMembers() {
-		var <map>array members = this.raw["members"];
-		for (var int i = members.length() - 1; i >= 0; i--) {
-			var map mem = members[i];
-			if (mem["attribute"] != empty) {
-				var <map>array cst = mem["attribute"];
-				var map attr = this.getAttribute(cst, "operator");
-				if (attr != empty) {
-					var Carbonite.Members.Operator member = new Carbonite.Members.Operator(this, mem);
-					var <map>array op = member.getAttributes("operator");
-					var map cAttr = op[0];
-					member.operator = cAttr["value"];
-					member.realName = member.name;
-					member.name = member.operator;
-					var <map>array order = member.getAttributes("order");
-					if (order.length() > 0) {
-						var map mainOrder = order[0];
-						member.order = mainOrder["value"];
+		var shouldDo = true;
+
+		if (this.compiler.useOldTemplates == false and this.templateClass and this.templateInstance == false)
+			shouldDo = false;
+
+		if (shouldDo) {
+			var <map>array members = this.raw["members"];
+			for (var int i = members.length() - 1; i >= 0; i--) {
+				var map mem = members[i];
+				if (mem["attribute"] != empty) {
+					var <map>array cst = mem["attribute"];
+					var map attr = this.getAttribute(cst, "operator");
+					if (attr != empty) {
+						var Carbonite.Members.Operator member = new Carbonite.Members.Operator(this, mem);
+						var <map>array op = member.getAttributes("operator");
+						var map cAttr = op[0];
+						member.operator = cAttr["value"];
+						member.realName = member.name;
+						member.name = member.operator;
+						var <map>array order = member.getAttributes("order");
+						if (order.length() > 0) {
+							var map mainOrder = order[0];
+							member.order = mainOrder["value"];
+						}
+						this.compiler.operatorOrders[member.operator] = member.order;
+						this.members.push(member);
 					}
-					this.compiler.operatorOrders[member.operator] = member.order;
+				}
+			}
+
+			for (var int i in members) {
+				var map mem = members[i];
+				var <map>array cst = mem["attribute"];
+				var map attr = null;
+				if (cst != null) this.getAttribute(cst, "operator");
+				if (attr == null) {
+					var Carbonite.Member member = Carbonite.Member.make(this, members[i]);
 					this.members.push(member);
 				}
 			}
 		}
-		for (var int i in members) {
-			var map mem = members[i];
-			var <map>array cst = mem["attribute"];
-			var map attr = null;
-			if (cst != null) this.getAttribute(cst, "operator");
-			if (attr == null) {
-				var Carbonite.Member member = Carbonite.Member.make(this, members[i]);
-				this.members.push(member);
-			}
+
+		for (var int i in this.instances) {
+			var inst = this.instances[i];
+			inst.instance.buildMembers();
 		}
 
 		var arr = new <Carbide.Virtual.Value>array();
@@ -342,6 +412,8 @@ class Carbonite.Class inherits Carbonite.Named {
 				this.templates.push(template);
 			}
 		}
+
+		this.templateClass = ((this.templates.length > 0) and (this.templateInstance == false));
 	}
 
 	bound public <void>function buildInheritance() {
@@ -470,6 +542,16 @@ class Carbonite.Class inherits Carbonite.Named {
 		return false;
 	}
 
+	bound public override <Carbonite.Type>function getResolvedTemplate(string name) {
+		for (var int i in this.templates) {
+			var Carbonite.Template template = this.templates[i];
+			if (template.name == name) {
+				return this.resolvedTemplates[i];
+			}
+		}
+		
+		return null;
+	}
 
 	bound public override <Carbonite.Template>function getTemplate(string name) {
 		for (var int i in this.templates) {

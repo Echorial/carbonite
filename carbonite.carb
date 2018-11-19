@@ -18,6 +18,7 @@
 	#include "src/constructs/members/property.carb"
 	#include "src/constructs/members/operator.carb"
 #include "src/constructs/template.carb"
+#include "src/constructs/templateInstance.carb"
 #include "src/constructs/scope.carb"
 #include "src/constructs/define.carb"
 #include "src/constructs/function.carb"
