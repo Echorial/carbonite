@@ -104,6 +104,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 
 			var Carbonite.Type ownType = new Carbonite.Type(this.parent.compiler, this.parent);
 			ownType.loadFromName(this.parent.route, this.raw);
+			ownType.reference = this.parent; //warn: hack: todo: Fix
 			var string thisName = "this";
 			var Carbonite.Define defThis = new Carbonite.Define(thisName, ownType);
 			if ((this.binding == "fixed") and (this.name != "@construct"))
@@ -160,6 +161,8 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 					if (level == 1) {
 						if (dot.text == "instance") {
 							return ctx.instance;
+						}else if (dot.text == "type") {
+							return ctx.type;
 						}else if (dot.text == "arguments") {
 							level = 2;
 						}else if (dot.text == "templates") {
