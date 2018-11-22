@@ -20,6 +20,9 @@ class Carbonite.Expression inherits Carbonite.Range {
 	bound public Carbonite.Members.Operator reference = empty;
 
 	bound public Carbonite.Function function = null; //Hack
+
+	bound public bool doesCast = false;
+	bound public Carbonite.Method castMethod = null;
 	
 	fixed public <Carbonite.Expression>function @construct(Carbonite.Class parent, Carbonite.Body container) {
 		this.parent = parent;
@@ -182,6 +185,9 @@ class Carbonite.Expression inherits Carbonite.Range {
 			arg.push(this.last.output);
 
 			this.reference = this.first.output.reference.overload(this.operator, arg, this);
+
+			// Smart overloads
+
 			this.output = this.reference.output;
 			if (normal == false)
 				this.output = castOutput;
