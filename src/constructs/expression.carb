@@ -22,7 +22,7 @@ class Carbonite.Expression inherits Carbonite.Range {
 	bound public Carbonite.Function function = null; //Hack
 
 	bound public bool doesCast = false;
-	bound public Carbonite.Method castMethod = null;
+	bound public Carbonite.Members.Method castMethod = null;
 	
 	fixed public <Carbonite.Expression>function @construct(Carbonite.Class parent, Carbonite.Body container) {
 		this.parent = parent;
@@ -96,6 +96,12 @@ class Carbonite.Expression inherits Carbonite.Range {
 				}
 			}
 		}
+	}
+
+	bound public Carbonite.Type getOutput() {
+		if (this.doesCast)
+			return this.castMethod.output;
+		return this.output;
 	}
 
 	bound public <void>function loadTerms(<map>array realTerms) {
@@ -184,9 +190,14 @@ class Carbonite.Expression inherits Carbonite.Range {
 			var <Carbonite.Type>array arg = new <Carbonite.Type>array();
 			arg.push(this.last.output);
 
-			this.reference = this.first.output.reference.overload(this.operator, arg, this);
+			var info = this.first.output.reference.overloadWithCast(this.operator, arg, this);
 
-			// Smart overloads
+			if (info.casts.length > 0) {
+				this.last.doesCast = true;
+				this.last.castMethod = info.casts[0].cast;
+			}
+
+			this.reference = info.method;
 
 			this.output = this.reference.output;
 			if (normal == false)
@@ -269,7 +280,15 @@ class Carbonite.Expression inherits Carbonite.Range {
 	void operate(string operator) {
 		var arg = new <Carbonite.Type>array();
 		arg.push(this.last.output);
-		var Carbonite.Members.Operator op = this.first.output.reference.overload(operator, arg, this);
+
+		var info = this.first.output.reference.overloadWithCast(operator, arg, this);
+		var Carbonite.Members.Operator op = info.method;
+
+		if (info.casts.length > 0) {
+			this.last.doesCast = true;
+			this.last.castMethod = info.casts[0].cast;
+		}
+
 		this.operator = operator;
 		this.reference = op;
 		this.output = this.reference.output;

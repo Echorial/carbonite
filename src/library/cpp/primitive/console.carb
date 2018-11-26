@@ -1,4 +1,4 @@
 relative Console {
-	fixed native inline void log(primitive message)
-	{return "std::cout << " + context.arguments[0] + " << std::endl";}
+	fixed native inline void log(string message)
+	{return "std::cout << (" + context.arguments[0] + ") << std::endl";}
 }

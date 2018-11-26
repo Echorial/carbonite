@@ -1,0 +1,23 @@
+class Carbonite.OverloadInfo {
+	Carbonite.Members.Method method = null;
+	<Carbonite.OverloadCast>array casts = new <Carbonite.OverloadCast>array();
+
+	void @construct(Carbonite.Members.Method method) {
+		this.method = method;
+	}
+
+	void @construct(Carbonite.Members.Method method, <Carbonite.OverloadCast>array casts) {
+		this.method = method;
+		this.casts = casts;
+	}
+}
+
+class Carbonite.OverloadCast {
+	int index = 0;
+	Carbonite.Members.Method cast = null;
+
+	void @construct(int index, Carbonite.Members.Method cast) {
+		this.index = index;
+		this.cast = cast;
+	}
+}

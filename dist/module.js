@@ -1373,7 +1373,7 @@ Carbonite.Class.prototype.dotMember = function () {
 		this.executeInherits();
 		for (var i = 0; i < this.members.length; i++) {
 			var member = this.members[i];
-			if (member.name == name) {
+			if (member.checkName(name)) {
 				return member;
 				}
 			}
@@ -1393,13 +1393,27 @@ Carbonite.Class.prototype.getMethods = function () {
 		var rtn = [];
 		for (var i = 0; i < this.members.length; i++) {
 			var member = this.members[i];
-			if (member.name == name) {
+			if (member.checkName(name)) {
 				if (member.type != "property") {
 					rtn.push(member);
 					}
 				}
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Class.prototype.findCastFor = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var type = arguments[0];
+		var methods = this.getMethods("@cast");
+		for (var i = 0; i < methods.length; i++) {
+			var method = methods[i];
+			if (method.output.check(type)) {
+				return method;
+				}
+			}
+		return null;
 	}
 }
 
@@ -1413,6 +1427,31 @@ Carbonite.Class.prototype.makeArgumentsPretty = function () {
 			types.push(arg.lookPretty());
 			}
 		return "Unable to overload for method or operator " + this.route + "." + name + "(" + types.join(", ") + ")";
+	}
+}
+
+Carbonite.Class.prototype.overloadWithCast = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var ___arguments = arguments[1];
+		var req = arguments[2];
+		this.executeInherits();
+		var methods = this.getMethods(name);
+		for (var i = 0; i < methods.length; i++) {
+			var method = methods[i];
+			if (method.check(___arguments)) {
+				return new Carbonite.OverloadInfo(method);
+				}
+			}
+		for (var i = 0; i < methods.length; i++) {
+			var method = methods[i];
+			var casts = method.checkWithCast(___arguments);
+			if (casts.length > 0) {
+				return new Carbonite.OverloadInfo(method, casts);
+				}
+			}
+		req.source.error(req, this.makeArgumentsPretty(name, ___arguments));
+		throw new Error("Build error");
 	}
 }
 
@@ -1517,6 +1556,9 @@ Carbonite.Class.prototype.executeInherits = function () {
 		if (this.inherited) {
 
 			}else{
+				if (this.route == "primitive") {
+					this.primitiveValue = true;
+					}
 				if (this.route != "everything") {
 					this.inherits.push(this.compiler.findClass("everything", this));
 					}
@@ -1624,7 +1666,7 @@ Carbonite.Class.prototype.buildMembers = function () {
 				var cst = mem["attribute"];
 				var attr = null;
 				if (cst != null) {
-					this.getAttribute(cst, "operator");
+					attr = this.getAttribute(cst, "operator");
 					}
 				if (attr == null) {
 					var member = Carbonite.Member.make(this, members[i]);
@@ -1996,6 +2038,38 @@ Carbonite.Class.prototype.buildError = function () {
 	}
 }
 
+Carbonite.OverloadInfo = function () {
+	this.method = null;
+
+	this.casts = [];
+
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var method = arguments[0];
+		this.method = method;
+	}
+else 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var method = arguments[0];
+		var casts = arguments[1];
+		this.method = method;
+		this.casts = casts;
+	}
+
+}
+
+Carbonite.OverloadCast = function () {
+	this.index = 0;
+
+	this.cast = null;
+
+	if (arguments.length == 2 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var index = arguments[0];
+		var cast = arguments[1];
+		this.index = index;
+		this.cast = cast;
+	}
+
+}
+
 Carbonite.Doc = function () {
 	this.raw = [];
 
@@ -2294,6 +2368,13 @@ Carbonite.Member.prototype.build = function () {
 	}
 }
 
+Carbonite.Member.prototype.checkName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var name = arguments[0];
+		return this.name == name;
+	}
+}
+
 Carbonite.Member.prototype.hasFlag = function () {
 	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var flag = arguments[0];
@@ -2528,11 +2609,37 @@ Carbonite.Members.Method.prototype.check = function () {
 		for (var i = 0; i < this.arguments.length; i++) {
 			var argument = this.arguments[i];
 			var parameter = parameters[i];
-			if (argument.type.check(parameter) == false) {
+			if (argument.type.checkCast(parameter) == false) {
 				return false;
 				}
 			}
 		return true;
+	}
+}
+
+Carbonite.Members.Method.prototype.checkWithCast = function () {
+	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var parameters = arguments[0];
+		var output = [];
+		if (this.variatic == false) {
+			if (parameters.length > this.arguments.length) {
+				return output;
+				}
+			if (this.arguments.length > parameters.length) {
+				return output;
+				}
+			}
+		for (var i = 0; i < this.arguments.length; i++) {
+			var argument = this.arguments[i];
+			var parameter = parameters[i];
+			if (argument.type.checkCast(parameter) == false) {
+				var found = parameter.reference.findCastFor(argument.type);
+				if (found != null) {
+					output.push(new Carbonite.OverloadCast(i, found));
+					}
+				}
+			}
+		return output;
 	}
 }
 
@@ -2800,6 +2907,13 @@ Carbonite.Members.Method.make = function () {
 			parent.compiler.operatorOrders[cast.operator] = cast.order;
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Members.Method.prototype.checkName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var name = arguments[0];
+		return this.name == name;
 	}
 }
 
@@ -3101,6 +3215,13 @@ Carbonite.Members.Property.make = function () {
 	}
 }
 
+Carbonite.Members.Property.prototype.checkName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var name = arguments[0];
+		return this.name == name;
+	}
+}
+
 Carbonite.Members.Property.prototype.hasFlag = function () {
 	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var flag = arguments[0];
@@ -3276,6 +3397,13 @@ Carbonite.Members.Operator.prototype.getRealName = function () {
 	}
 }
 
+Carbonite.Members.Operator.prototype.checkName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var name = arguments[0];
+		return this.name == name || this.realName == name;
+	}
+}
+
 Carbonite.Members.Operator.prototype.getReference = function () {
 	if (arguments.length == 0) {
 		return this;
@@ -3336,11 +3464,37 @@ Carbonite.Members.Operator.prototype.check = function () {
 		for (var i = 0; i < this.arguments.length; i++) {
 			var argument = this.arguments[i];
 			var parameter = parameters[i];
-			if (argument.type.check(parameter) == false) {
+			if (argument.type.checkCast(parameter) == false) {
 				return false;
 				}
 			}
 		return true;
+	}
+}
+
+Carbonite.Members.Operator.prototype.checkWithCast = function () {
+	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var parameters = arguments[0];
+		var output = [];
+		if (this.variatic == false) {
+			if (parameters.length > this.arguments.length) {
+				return output;
+				}
+			if (this.arguments.length > parameters.length) {
+				return output;
+				}
+			}
+		for (var i = 0; i < this.arguments.length; i++) {
+			var argument = this.arguments[i];
+			var parameter = parameters[i];
+			if (argument.type.checkCast(parameter) == false) {
+				var found = parameter.reference.findCastFor(argument.type);
+				if (found != null) {
+					output.push(new Carbonite.OverloadCast(i, found));
+					}
+				}
+			}
+		return output;
 	}
 }
 
@@ -5753,6 +5907,10 @@ Carbonite.Expression = function () {
 
 	this.function = null;
 
+	this.doesCast = false;
+
+	this.castMethod = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5838,6 +5996,15 @@ Carbonite.Expression.prototype.reOrder = function () {
 	}
 }
 
+Carbonite.Expression.prototype.getOutput = function () {
+	if (arguments.length == 0) {
+		if (this.doesCast) {
+			return this.castMethod.output;
+			}
+		return this.output;
+	}
+}
+
 Carbonite.Expression.prototype.loadTerms = function () {
 	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var realTerms = arguments[0];
@@ -5920,7 +6087,12 @@ Carbonite.Expression.prototype.loadTerms = function () {
 					}
 				var arg = [];
 				arg.push(this.last.output);
-				this.reference = this.first.output.reference.overload(this.operator, arg, this);
+				var info = this.first.output.reference.overloadWithCast(this.operator, arg, this);
+				if (info.casts.length > 0) {
+					this.last.doesCast = true;
+					this.last.castMethod = info.casts[0].cast;
+					}
+				this.reference = info.method;
 				this.output = this.reference.output;
 				if (normal == false) {
 					this.output = castOutput;
@@ -5980,7 +6152,12 @@ Carbonite.Expression.prototype.operate = function () {
 		var operator = arguments[0];
 		var arg = [];
 		arg.push(this.last.output);
-		var op = this.first.output.reference.overload(operator, arg, this);
+		var info = this.first.output.reference.overloadWithCast(operator, arg, this);
+		var op = info.method;
+		if (info.casts.length > 0) {
+			this.last.doesCast = true;
+			this.last.castMethod = info.casts[0].cast;
+			}
 		this.operator = operator;
 		this.reference = op;
 		this.output = this.reference.output;
@@ -6158,6 +6335,10 @@ Carbonite.Term = function () {
 
 	this.type = "";
 
+	this.doesCast = false;
+
+	this.castMethod = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -6217,6 +6398,15 @@ Carbonite.Term.make = function () {
 	}
 }
 
+Carbonite.Term.prototype.getOutput = function () {
+	if (arguments.length == 0) {
+		if (this.doesCast) {
+			return this.castMethod.output;
+			}
+		return this.output;
+	}
+}
+
 Carbonite.Term.prototype.build = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -6266,6 +6456,10 @@ Carbonite.Terms.Literal = function () {
 	this.index = 0;
 
 	this.raw = null;
+
+	this.doesCast = false;
+
+	this.castMethod = null;
 
 	this.startOffset = 0;
 
@@ -6335,6 +6529,15 @@ Carbonite.Terms.Literal.make = function () {
 	}
 }
 
+Carbonite.Terms.Literal.prototype.getOutput = function () {
+	if (arguments.length == 0) {
+		if (this.doesCast) {
+			return this.castMethod.output;
+			}
+		return this.output;
+	}
+}
+
 Carbonite.Terms.Literal.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -6378,6 +6581,10 @@ Carbonite.Terms.Expression = function () {
 	this.index = 0;
 
 	this.raw = null;
+
+	this.doesCast = false;
+
+	this.castMethod = null;
 
 	this.startOffset = 0;
 
@@ -6449,6 +6656,15 @@ Carbonite.Terms.Expression.make = function () {
 	}
 }
 
+Carbonite.Terms.Expression.prototype.getOutput = function () {
+	if (arguments.length == 0) {
+		if (this.doesCast) {
+			return this.castMethod.output;
+			}
+		return this.output;
+	}
+}
+
 Carbonite.Terms.Expression.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -6494,6 +6710,10 @@ Carbonite.Terms.Sequence = function () {
 	this.index = 0;
 
 	this.raw = null;
+
+	this.doesCast = false;
+
+	this.castMethod = null;
 
 	this.startOffset = 0;
 
@@ -6615,6 +6835,15 @@ Carbonite.Terms.Sequence.make = function () {
 	}
 }
 
+Carbonite.Terms.Sequence.prototype.getOutput = function () {
+	if (arguments.length == 0) {
+		if (this.doesCast) {
+			return this.castMethod.output;
+			}
+		return this.output;
+	}
+}
+
 Carbonite.Terms.Sequence.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -6660,6 +6889,10 @@ Carbonite.Terms.Prefix = function () {
 	this.index = 0;
 
 	this.raw = null;
+
+	this.doesCast = false;
+
+	this.castMethod = null;
 
 	this.startOffset = 0;
 
@@ -6735,6 +6968,15 @@ Carbonite.Terms.Prefix.make = function () {
 	}
 }
 
+Carbonite.Terms.Prefix.prototype.getOutput = function () {
+	if (arguments.length == 0) {
+		if (this.doesCast) {
+			return this.castMethod.output;
+			}
+		return this.output;
+	}
+}
+
 Carbonite.Terms.Prefix.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -6778,6 +7020,10 @@ Carbonite.Terms.Function = function () {
 	this.index = 0;
 
 	this.raw = null;
+
+	this.doesCast = false;
+
+	this.castMethod = null;
 
 	this.startOffset = 0;
 
@@ -6845,6 +7091,15 @@ Carbonite.Terms.Function.make = function () {
 			rtn = new Carbonite.Terms.Prefix(parent, container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Terms.Function.prototype.getOutput = function () {
+	if (arguments.length == 0) {
+		if (this.doesCast) {
+			return this.castMethod.output;
+			}
+		return this.output;
 	}
 }
 
@@ -7066,6 +7321,45 @@ Carbonite.Type.prototype.finishTemplates = function () {
 	}
 }
 
+Carbonite.Type.prototype.checkCast = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var what = arguments[0];
+		if (what.reference.route == "null" || this.reference.route == "null") {
+			return true;
+			}
+		if (what.reference.route == "empty") {
+			return true;
+			}
+		if (what.reference.descendantOf(this.reference)) {
+			return true;
+			}
+		if (this.reference.descendantOf(what.reference)) {
+			if (what.reference.findCastFor(this)) {
+				return false;
+				}
+			return true;
+			}
+		if (this.reference.route != what.reference.route) {
+			return false;
+			}
+		if (this.templates.length > what.templates.length) {
+			return false;
+			}
+		for (var i = 0; i < this.templates.length; i++) {
+			var template = this.templates[i];
+			var whatTemplate = what.templates[i];
+			if (whatTemplate.late) {
+
+				}else{
+					if (template.check(whatTemplate) == false) {
+						return false;
+						}
+				}
+			}
+		return true;
+	}
+}
+
 Carbonite.Type.prototype.check = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var what = arguments[0];
@@ -7079,11 +7373,6 @@ Carbonite.Type.prototype.check = function () {
 			return true;
 			}
 		if (this.reference.descendantOf(what.reference)) {
-			return true;
-			}
-		if (what.reference.canCast(this.reference)) {
-			what.autoCast = true;
-			what.castTo = this.reference;
 			return true;
 			}
 		if (this.reference.route != what.reference.route) {
@@ -7452,6 +7741,45 @@ Carbonite.ReferenceType.prototype.finishTemplates = function () {
 					}
 				}
 			}
+	}
+}
+
+Carbonite.ReferenceType.prototype.checkCast = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var what = arguments[0];
+		if (what.reference.route == "null" || this.reference.route == "null") {
+			return true;
+			}
+		if (what.reference.route == "empty") {
+			return true;
+			}
+		if (what.reference.descendantOf(this.reference)) {
+			return true;
+			}
+		if (this.reference.descendantOf(what.reference)) {
+			if (what.reference.findCastFor(this)) {
+				return false;
+				}
+			return true;
+			}
+		if (this.reference.route != what.reference.route) {
+			return false;
+			}
+		if (this.templates.length > what.templates.length) {
+			return false;
+			}
+		for (var i = 0; i < this.templates.length; i++) {
+			var template = this.templates[i];
+			var whatTemplate = what.templates[i];
+			if (whatTemplate.late) {
+
+				}else{
+					if (template.check(whatTemplate) == false) {
+						return false;
+						}
+				}
+			}
+		return true;
 	}
 }
 
@@ -7839,7 +8167,13 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (
 								types.push(arg.output);
 								}
 							if (this.root == null) {
-								var method = refMeth.reference.parent.overload(cast.text, types, parent);
+								var info = refMeth.reference.parent.overloadWithCast(cast.text, types, parent);
+								var method = info.method;
+								for (var i = 0; i < info.casts.length; i++) {
+									var arg = this.arguments[info.casts[i].index];
+									arg.doesCast = true;
+									arg.castMethod = info.casts[i].cast;
+									}
 								this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
 								this.output = method.output;
 								if (method.binding == "bound") {
@@ -7847,9 +8181,21 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (
 									throw new Error("Build error");
 									}
 								}else{
-									var method = refMeth.reference.parent.overloadWithContext(cast.text, types, prev.context, parent);
-									this.reference = Carbonite.Member.makeReference(prev.output.reference, method, prev.context);
-									this.output = method.output.getWithContext(prev.context);
+									if (this.parent.parent.parent.compiler.useOldTemplates) {
+										var method = refMeth.reference.parent.overloadWithContext(cast.text, types, prev.context, parent);
+										this.reference = Carbonite.Member.makeReference(prev.output.reference, method, prev.context);
+										this.output = method.output.getWithContext(prev.context);
+										}else{
+											var info = refMeth.reference.parent.overloadWithCast(cast.text, types, parent);
+											var method = info.method;
+											for (var i = 0; i < info.casts.length; i++) {
+												var arg = this.arguments[info.casts[i].index];
+												arg.doesCast = true;
+												arg.castMethod = info.casts[i].cast;
+												}
+											this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
+											this.output = method.output;
+										}
 								}
 						}
 				}
@@ -9456,11 +9802,14 @@ Carbonite.Assemblers.Cpp.prototype.methods = function () {
 							prefix = "static ";
 							}
 						var rte = this.route(method.output);
-						var nme = method.name;
+						var nme = method.getRealName();
 						if (member.name == "@construct") {
 							rte = "";
 							prefix = "";
 							nme = root.getRoute();
+							}
+						if (member.name == "@cast") {
+							nme = this.getCastName(member, "");
 							}
 						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ") {\n" + this.body(method.body) + "\n}");
 						}
@@ -9468,6 +9817,18 @@ Carbonite.Assemblers.Cpp.prototype.methods = function () {
 				}
 			}
 		return methods.join("\n\n");
+	}
+}
+
+Carbonite.Assemblers.Cpp.prototype.getCastName = function () {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Member || (arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || (arguments[0] instanceof Carbonite.Members.Property)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var member = arguments[0];
+		var prefix = arguments[1];
+		var nme = "to" + member.output.reference.route.replace(new RegExp(".".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "");
+		if (member.parent.hasMember(nme)) {
+			return this.getCastName(member, "_" + prefix);
+			}
+		return nme;
 	}
 }
 
@@ -9553,15 +9914,15 @@ Carbonite.Assemblers.Cpp.prototype.native = function () {
 		var native = arguments[0];
 		if (native.type == "integer") {
 			var cast = native;
-			var rtn = cast.value;
+			var rtn = cast.value.toString();
 			return rtn;
 			}else if (native.type == "float") {
 			var cast = native;
-			var rtn = cast.value;
+			var rtn = cast.value.toString();
 			return rtn;
 			}else if (native.type == "number") {
 			var cast = native;
-			var rtn = cast.value;
+			var rtn = cast.value.toString();
 			return rtn;
 			}else if (native.type == "string") {
 			var cast = native;
@@ -9585,18 +9946,42 @@ Carbonite.Assemblers.Cpp.prototype.native = function () {
 	}
 }
 
+Carbonite.Assemblers.Cpp.prototype.cast = function () {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var method = arguments[0];
+		var src = arguments[1];
+		var ctx = "(" + src + ")->" + this.getCastName(method, "");
+		if (method.hasFlag("native") && method.hasFlag("inline")) {
+			ctx = src;
+			}
+		return "(" + this.callMethod(method, [], [], ctx) + ")";
+	}
+}
+
+Carbonite.Assemblers.Cpp.prototype.termCast = function () {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Term || (arguments[0] instanceof Carbonite.Terms.Literal) || (arguments[0] instanceof Carbonite.Terms.Expression) || (arguments[0] instanceof Carbonite.Terms.Sequence) || (arguments[0] instanceof Carbonite.Terms.Prefix) || (arguments[0] instanceof Carbonite.Terms.Function)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var term = arguments[0];
+		var src = arguments[1];
+		if (term.doesCast) {
+			return this.cast(term.castMethod, src);
+			}else{
+				return src;
+			}
+	}
+}
+
 Carbonite.Assemblers.Cpp.prototype.term = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Term || (arguments[0] instanceof Carbonite.Terms.Literal) || (arguments[0] instanceof Carbonite.Terms.Expression) || (arguments[0] instanceof Carbonite.Terms.Sequence) || (arguments[0] instanceof Carbonite.Terms.Prefix) || (arguments[0] instanceof Carbonite.Terms.Function)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var term = arguments[0];
 		if (term.type == "expression") {
 			var cast = term;
-			return this.expression(cast.expression);
+			return this.termCast(term, this.expression(cast.expression));
 			}else if (term.type == "literal") {
 			var cast = term;
-			return this.native(cast.native);
+			return this.termCast(term, this.native(cast.native));
 			}else if (term.type == "function") {
 			var cast = term;
-			return this.func(cast.function);
+			return this.termCast(term, this.func(cast.function));
 			}else if (term.type == "prefix") {
 			var cast = term;
 			var doNew = "new ";
@@ -9608,11 +9993,11 @@ Carbonite.Assemblers.Cpp.prototype.term = function () {
 					}
 				}
 			if (cast.prefix == "new") {
-				return "std::unique_ptr<" + this.route(cast.expression.output) + ">(" + doNew + this.expression(cast.expression) + ")";
+				return this.termCast(term, "std::unique_ptr<" + this.route(cast.expression.output) + ">(" + doNew + this.expression(cast.expression) + ")");
 				}
 			}else if (term.type == "sequence") {
 			var cast = term;
-			return this.sequence(cast);
+			return this.termCast(term, this.sequence(cast));
 			}
 	}
 }
@@ -9714,7 +10099,7 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 						for (var a = 0; a < cast.arguments.length; a++) {
 							var arg = cast.arguments[a];
 							var exp = this.expression(cast.arguments[a]);
-							if (arg.output.isPrimitiveValue() == false) {
+							if (arg.getOutput().isPrimitiveValue() == false) {
 								exp = "std::move(" + exp + ")";
 								}
 							args.push(exp);
@@ -9781,7 +10166,7 @@ Carbonite.Assemblers.Cpp.prototype.callMethod = function () {
 		for (var i = 0; i < ___arguments.length; i++) {
 			var arg = ___arguments[i];
 			var exp = this.expression(arg);
-			if (arg.output.isPrimitiveValue() == false) {
+			if (arg.getOutput().isPrimitiveValue() == false) {
 				exp = "std::move(" + exp + ")";
 				}
 			args.push(exp);
@@ -9810,7 +10195,7 @@ Carbonite.Assemblers.Cpp.prototype.expression = function () {
 		if (expression.reference != null) {
 			var args = [];
 			if (expression.last != null) {
-				if (expression.last.output.isPrimitiveValue() == false) {
+				if (expression.last.getOutput().isPrimitiveValue() == false) {
 					args.push("std::move(" + this.term(expression.last) + ")");
 					}else{
 						args.push(this.term(expression.last));
@@ -9823,7 +10208,11 @@ Carbonite.Assemblers.Cpp.prototype.expression = function () {
 					first += "->" + expression.reference.getRealName() + this.callMethodWithStrings(expression.reference, args, temps, "");
 				}
 			}
-		rtn = first;
+		if (expression.doesCast) {
+			rtn = this.cast(expression.castMethod, first);
+			}else{
+				rtn = first;
+			}
 		if (expression.grouped) {
 			return "(" + rtn + ")";
 			}else{

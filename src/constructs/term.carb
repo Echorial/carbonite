@@ -6,6 +6,9 @@ class Carbonite.Term inherits object, Carbonite.Range {
 	bound public int index = 0;
 	bound public map raw = empty;
 	bound public string type = "";
+
+	bound public bool doesCast = false;
+	bound public Carbonite.Members.Method castMethod = null;
 	
 	fixed public <Carbonite.Term>function @construct(Carbonite.Expression parent, Carbonite.Body container) {
 		this.parent = parent;
@@ -45,6 +48,12 @@ class Carbonite.Term inherits object, Carbonite.Range {
 			rtn = new Carbonite.Terms.Prefix(parent, container);
 		}
 		return rtn;
+	}
+
+	Carbonite.Type getOutput() {
+		if (this.doesCast)
+			return this.castMethod.output;
+		return this.output;
 	}
 
 	bound public <void>function build(Carbonite.Expression parent, Carbonite.Body container) {}

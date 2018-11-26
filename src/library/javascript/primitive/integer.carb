@@ -23,8 +23,7 @@ relative int inherits primitive {
 	fixed native inline int parse(string value) {return "parseInt(" + context.arguments[0] + ")";}
 	fixed native inline string toString() {return context.instance + ".toString()";}
 
-	native inline string @cast()
-	{return context.instance;}
+	
 }
 
 relative uint inherits int {}

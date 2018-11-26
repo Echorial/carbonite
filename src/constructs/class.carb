@@ -167,7 +167,7 @@ class Carbonite.Class inherits Carbonite.Named {
 		this.executeInherits();
 		for (var int i in this.members) {
 			var Carbonite.Member member = this.members[i];
-			if (member.name == name) {
+			if (member.checkName(name)) {
 				return member;
 			}
 		}
@@ -184,13 +184,27 @@ class Carbonite.Class inherits Carbonite.Named {
 		var <Carbonite.Members.Method>array rtn = new <Carbonite.Member>array();
 		for (var int i in this.members) {
 			var Carbonite.Member member = this.members[i];
-			if (member.name == name) {
+			if (member.checkName(name)) {
 				if (member.type != "property") {
 					rtn.push(member);
 				}
 			}
 		}
 		return rtn;
+	}
+
+	bound public <Carbonite.Members.Method>function findCastFor(Carbonite.Type type) {
+		var methods = this.getMethods("@cast"); // Maybe we should move constant specials out to another file for easy access.
+
+		for (var int i in methods) {
+			var method = methods[i];
+
+			if (method.output.check(type)) {
+				return method;
+			}
+		}
+
+		return null;
 	}
 
 	bound public <string>function makeArgumentsPretty(string name, <Carbonite.Type>array arguments) {
@@ -200,6 +214,31 @@ class Carbonite.Class inherits Carbonite.Named {
 			types.push(arg.lookPretty());
 		}
 		return "Unable to overload for method or operator " + this.route + "." + name + "(" + types.join(", ") + ")";
+	}
+
+	bound public <Carbonite.OverloadInfo>function overloadWithCast(string name, <Carbonite.Type>array arguments, Carbonite.Range req) {
+		this.executeInherits();
+		var <Carbonite.Members.Method>array methods = this.getMethods(name);
+
+		for (var int i in methods) { // Try without casting.
+			var Carbonite.Members.Method method = methods[i];
+
+			if (method.check(arguments)) {
+				return new Carbonite.OverloadInfo(method);
+			}
+		}
+
+		for (var int i in methods) { // Try with casting.
+			var method = methods[i];
+
+			var casts = method.checkWithCast(arguments);
+
+			if (casts.length > 0)
+				return new Carbonite.OverloadInfo(method, casts);
+		}
+		
+		req.source.error(req, this.makeArgumentsPretty(name, arguments));
+		Exception.throw("Build error");
 	}
 
 	bound public <Carbonite.Members.Method>function overload(string name, <Carbonite.Type>array arguments, Carbonite.Range req) {
@@ -281,6 +320,10 @@ class Carbonite.Class inherits Carbonite.Named {
 		if (this.inherited) {
 
 		}else{
+			if (this.route == "primitive") {
+				this.primitiveValue = true;
+			}
+
 			if (this.route != "everything") {
 				this.inherits.push(this.compiler.findClass("everything", this));
 			}
@@ -383,7 +426,7 @@ class Carbonite.Class inherits Carbonite.Named {
 				var map mem = members[i];
 				var <map>array cst = mem["attribute"];
 				var map attr = null;
-				if (cst != null) this.getAttribute(cst, "operator");
+				if (cst != null) attr = this.getAttribute(cst, "operator");
 				if (attr == null) {
 					var Carbonite.Member member = Carbonite.Member.make(this, members[i]);
 					this.members.push(member);

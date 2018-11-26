@@ -11,6 +11,7 @@
 #include "src/router/level.carb"
 #include "src/router/router.carb"
 #include "src/constructs/class.carb"
+#include "src/constructs/overloadInfo.carb"
 #include "src/constructs/doc.carb"
 #include "src/constructs/named.carb"
 #include "src/constructs/member.carb"

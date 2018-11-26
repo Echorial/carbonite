@@ -7,4 +7,8 @@ class Carbonite.Members.Operator inherits Carbonite.Members.Method {
 	bound public override <string>function getRealName() {
 		return this.realName;
 	}
+
+	bound public override <bool>function checkName(string name) {
+		return this.name == name or this.realName == name;
+	}
 }

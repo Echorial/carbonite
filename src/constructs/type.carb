@@ -167,6 +167,43 @@ class Carbonite.Type inherits Carbonite.Range {
 		}
 	}
 
+	bound public <bool>function checkCast(Carbonite.Type what) {
+		if (what.reference.route == "null" or this.reference.route == "null") {
+			return true;
+		}
+		if (what.reference.route == "empty") {
+			return true;
+		}
+		if (what.reference.descendantOf(this.reference)) {
+			return true;
+		}
+		if (this.reference.descendantOf(what.reference)) {
+			if (what.reference.findCastFor(this)) { // If our ancestor can cast to this pass control off to the cast overload.
+				return false;
+			}
+			
+			return true;
+		}
+		if (this.reference.route != what.reference.route) {
+			return false;
+		}
+		if (this.templates.length() > what.templates.length()) {
+			return false;
+		}
+		for (var int i in this.templates) {
+			var Carbonite.Type template = this.templates[i];
+			var Carbonite.Type whatTemplate = what.templates[i];
+			if (whatTemplate.late) {
+
+			}else{
+				if (template.check(whatTemplate) == false) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	bound public <bool>function check(Carbonite.Type what) {
 		if (what.reference.route == "null" or this.reference.route == "null") {
 			return true;
@@ -180,11 +217,11 @@ class Carbonite.Type inherits Carbonite.Range {
 		if (this.reference.descendantOf(what.reference)) {
 			return true;
 		}
-		if (what.reference.canCast(this.reference)) {
+		/*if (what.reference.canCast(this.reference)) {
 			what.autoCast = true;
 			what.castTo = this.reference;
 			return true;
-		}
+		}*/
 		if (this.reference.route != what.reference.route) {
 			return false;
 		}

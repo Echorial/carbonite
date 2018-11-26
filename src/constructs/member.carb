@@ -97,6 +97,10 @@ class Carbonite.Member inherits object, Carbonite.Range {
 
 	}
 
+	bound public <bool>function checkName(string name) {
+		return this.name == name;
+	}
+
 	bound public <bool>function hasFlag(string flag) {
 		for (var int i in this.flags) {
 			var string cur = this.flags[i];

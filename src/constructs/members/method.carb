@@ -49,14 +49,47 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 				return false;
 			}
 		}
+
 		for (var int i in this.arguments) {
 			var Carbonite.Argument argument = this.arguments[i];
 			var Carbonite.Type parameter = parameters[i];
-			if (argument.type.check(parameter) == false) {
+			if (argument.type.checkCast(parameter) == false) {
 				return false;
 			}
 		}
+
 		return true;
+	}
+
+	`If the Carbonite.Method.check failed call this to check if this can pass with casting.
+	
+	@return An array with 0 elements on failure, array of Carbon.OverloadCast.index set to $parameters index on success`
+	bound public override <<Carbonite.OverloadCast>array>function checkWithCast(<Carbonite.Type>array parameters) {
+		var output = new <Carbonite.OverloadCast>array();
+		
+		if (this.variatic == false) {
+			if (parameters.length() > this.arguments.length()) {
+				return output;
+			}
+			if (this.arguments.length() > parameters.length()) {
+				return output;
+			}
+		}
+
+		for (var int i in this.arguments) {
+			var Carbonite.Argument argument = this.arguments[i];
+			var Carbonite.Type parameter = parameters[i];
+
+			if (argument.type.checkCast(parameter) == false) {
+				var found = parameter.reference.findCastFor(argument.type);
+
+				if (found != null) {
+					output.push(new Carbonite.OverloadCast(i, found));
+				}
+			}
+		}
+
+		return output;
 	}
 
 	bound public override <bool>function checkWithContext(<Carbonite.Type>array parameters, Carbonite.Type context) {
@@ -68,6 +101,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 				return false;
 			}
 		}
+		
 		for (var int i in this.arguments) {
 			var Carbonite.Argument argument = this.arguments[i];
 			var Carbonite.Type parameter = parameters[i];
@@ -75,6 +109,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 				return false;
 			}
 		}
+
 		return true;
 	}
 

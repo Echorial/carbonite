@@ -115,12 +115,17 @@
 							prefix = "static ";
 						}
 						var rte = this.route(method.output);
-						var nme = method.name;
+						var nme = method.getRealName();
 						if (member.name == "@construct") {
 							rte = "";
 							prefix = "";
 							nme = root.getRoute();
 						}
+
+						if (member.name == "@cast") {
+							nme = this.getCastName(member, "");
+						}
+
 						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ") {\n" + this.body(method.body) + "\n}");
 					}
 					
@@ -131,6 +136,12 @@
 		return methods.join("\n\n");
 	}
 
+	bound public <string>function getCastName(Carbonite.Member member, string prefix) {
+		var nme = "to" + member.output.reference.route.replace(".", "");
+		if (member.parent.hasMember(nme))
+			return this.getCastName(member, "_" + prefix);
+		return nme;
+	}
 
 	bound public override <string>function body(Carbonite.Body body) {
 		var <string>array statements = new <string>array();
@@ -205,15 +216,15 @@
 	bound public override <string>function native(Carbonite.Native native) {
 		if (native.type == "integer") {
 			var Carbonite.Natives.Integer cast = native;
-			var string rtn = cast.value;
+			var string rtn = cast.value.toString();
 			return rtn;
 		}else if (native.type == "float") {
 			var Carbonite.Natives.Float cast = native;
-			var string rtn = cast.value;
+			var string rtn = cast.value.toString();
 			return rtn;
 		}else if (native.type == "number") {
 			var Carbonite.Natives.Integer cast = native;
-			var string rtn = cast.value;
+			var string rtn = cast.value.toString();
 			return rtn;
 		}else if (native.type == "string") {
 			var Carbonite.Natives.String cast = native;
@@ -236,16 +247,34 @@
 		}
 	}
 
+	bound public override <string>function cast(Carbonite.Members.Method method, string src) {
+		var ctx = "(" + src + ")->" + this.getCastName(method, "");
+
+		if (method.hasFlag("native") and method.hasFlag("inline")) {
+			ctx = src;
+		}
+
+		return "(" + this.callMethod(method, new <Carbonite.Expression>array(), new <Carbonite.Type>array(), ctx) + ")";
+	}
+
+	bound public override <string>function termCast(Carbonite.Term term, string src) {
+		if (term.doesCast) {
+			return this.cast(term.castMethod, src);
+		}else{
+			return src;
+		}
+	}
+
 	bound public override <string>function term(Carbonite.Term term) {
 		if (term.type == "expression") {
 			var Carbonite.Terms.Expression cast = term;
-			return this.expression(cast.expression);
+			return this.termCast(term, this.expression(cast.expression));
 		}else if (term.type == "literal") {
 			var Carbonite.Terms.Literal cast = term;
-			return this.native(cast.native);
+			return this.termCast(term, this.native(cast.native));
 		}else if (term.type == "function") {
 			var Carbonite.Terms.Function cast = term;
-			return this.func(cast.function);
+			return this.termCast(term, this.func(cast.function));
 		}else if (term.type == "prefix") {
 			var Carbonite.Terms.Prefix cast = term;
 			var string doNew = "new ";
@@ -256,11 +285,11 @@
 				doNew = "";
 			}
 			if (cast.prefix == "new") {
-				return "std::unique_ptr<" + this.route(cast.expression.output) + ">(" + doNew + this.expression(cast.expression) + ")";
+				return this.termCast(term, "std::unique_ptr<" + this.route(cast.expression.output) + ">(" + doNew + this.expression(cast.expression) + ")");
 			}
 		}else if (term.type == "sequence") {
 			var Carbonite.Terms.Sequence cast = term;
-			return this.sequence(cast);
+			return this.termCast(term, this.sequence(cast));
 		}
 	}
 
@@ -360,7 +389,7 @@
 					for (var int a in cast.arguments) {
 						var arg = cast.arguments[a];
 						var exp = this.expression(cast.arguments[a]);
-						if (arg.output.isPrimitiveValue() == false)
+						if (arg.getOutput().isPrimitiveValue() == false)
 							exp = "std::move(" + exp + ")";
 
 						args.push(exp);
@@ -416,7 +445,7 @@
 		for (var int i in arguments) {
 			var Carbonite.Expression arg = arguments[i];
 			var exp = this.expression(arg);
-			if (arg.output.isPrimitiveValue() == false)
+			if (arg.getOutput().isPrimitiveValue() == false)
 				exp = "std::move(" + exp + ")";
 
 			args.push(exp);
@@ -439,7 +468,7 @@
 		if (expression.reference != empty) {
 			var <string>array args = new <string>array();
 			if (expression.last != empty) {
-				if (expression.last.output.isPrimitiveValue() == false)
+				if (expression.last.getOutput().isPrimitiveValue() == false)
 					args.push("std::move(" + this.term(expression.last) + ")");
 				else
 					args.push(this.term(expression.last));
@@ -451,7 +480,13 @@
 				first += "->" + expression.reference.getRealName() + this.callMethodWithStrings(expression.reference, args, temps, "");
 			}
 		}
-		rtn = first;
+
+		if (expression.doesCast) {
+			rtn = this.cast(expression.castMethod, first);
+		}else{
+			rtn = first;
+		}
+
 		 /*or (expression.endOffset <= expression.output.ownedUntil) or (expression.output.owned and (expression.output.ownedUntil == -1))*/
 		if (expression.grouped)
 			return "(" + rtn + ")";

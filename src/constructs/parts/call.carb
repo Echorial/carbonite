@@ -45,7 +45,15 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 					}
 					
 					if (this.root == empty) {
-						var Carbonite.Members.Method method = refMeth.reference.parent.overload(cast.text, types, parent);
+						var info = refMeth.reference.parent.overloadWithCast(cast.text, types, parent);
+						var Carbonite.Members.Method method = info.method;
+
+						for (var int i in info.casts) {
+							var arg = this.arguments[info.casts[i].index];
+							arg.doesCast = true;
+							arg.castMethod = info.casts[i].cast;
+						}
+
 						this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
 						this.output = method.output;
 						if (method.binding == "bound") {
@@ -53,9 +61,23 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 							Exception.throw("Build error");
 						}
 					}else{
-						var Carbonite.Members.Method method = refMeth.reference.parent.overloadWithContext(cast.text, types, prev.context, parent);
-						this.reference = Carbonite.Member.makeReference(prev.output.reference, method, prev.context);
-						this.output = method.output.getWithContext(prev.context);
+						if (this.parent.parent.parent.compiler.useOldTemplates) {
+							var Carbonite.Members.Method method = refMeth.reference.parent.overloadWithContext(cast.text, types, prev.context, parent);
+							this.reference = Carbonite.Member.makeReference(prev.output.reference, method, prev.context);
+							this.output = method.output.getWithContext(prev.context);
+						}else{
+							var info = refMeth.reference.parent.overloadWithCast(cast.text, types, parent);
+							var Carbonite.Members.Method method = info.method;
+
+							for (var int i in info.casts) {
+								var arg = this.arguments[info.casts[i].index];
+								arg.doesCast = true;
+								arg.castMethod = info.casts[i].cast;
+							}
+
+							this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
+							this.output = method.output;
+						}
 					}
 				}
 			}
