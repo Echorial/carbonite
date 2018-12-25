@@ -20555,7 +20555,7 @@ CarboniteCarbonParser.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \r, \n", currentChar);
+								this.giveError(1, " , 	, \r, \r\n", currentChar);
 							}
 					}
 				}
@@ -22759,7 +22759,7 @@ CarbonitePreprocessor.prototype.RawLine = function () {
 						charPos--;
 						this.offset--;
 						}else{
-							this.giveError(1, "#, \n", currentChar);
+							this.giveError(1, "#, \r\n", currentChar);
 						}
 					this.error.vested++;
 					}else{
@@ -26624,7 +26624,7 @@ CarbonitePreprocessor.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \r, \n", currentChar);
+								this.giveError(1, " , 	, \r, \r\n", currentChar);
 							}
 					}
 				}
