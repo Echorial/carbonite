@@ -263,7 +263,6 @@ map|Multi_Define = ("var" / "let") __ name: Safe_Name _ ","? _ name2: Safe_Name?
 
 map|Inline_Define_Auto = ("var" / "let") __ name: Safe_Name {type: "define", name: {$name}, valueType: "", auto: {true}};
 
-
 string|String_Tick = '`' str:
 <string{
 var bool escaped = false;

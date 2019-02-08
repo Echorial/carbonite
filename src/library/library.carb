@@ -7,6 +7,8 @@
 #include "abstract/memory/memory.carb"
 #include "abstract/memory/buffer.carb"
 
+#include "util/include.carb"
+
 #if platform.javascript
 	#include "primitive.carb"
 	#include "javascript/primitive"

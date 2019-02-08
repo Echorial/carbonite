@@ -1,0 +1,26 @@
+[CarbonLibrary]
+class <class ...>Event {
+	<<void, ...>function>array listeners = null;
+
+	void @construct() {
+
+	}
+
+	void emit(... args) {
+		if (this.listeners != null)
+			for (let i in this.listeners)
+				this.listeners[i](...args);
+	}
+
+	void on(<void, T>function listener) {
+		if (this.listeners == null) {
+			this.listeners = new <<void, T>function>array();
+		}
+
+		listeners.push(listener);
+	}
+
+	void remove(<void, T>function listener) {
+		//TODO:
+	}
+}
