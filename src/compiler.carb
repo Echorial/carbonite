@@ -272,8 +272,12 @@ class Carbonite.Compiler {
 		Exception.try();
 			for (var int i in this.roots) {
 				var Carbonite.Class root = this.roots[i];
+				root.compiler = this; //BUG: Hack to fix core roots having no compiler reference when instancing templates.
+			}
+
+			for (var int i in this.roots) {
+				var Carbonite.Class root = this.roots[i];
 				if (root.alreadyBuilt == false) {
-					root.compiler = this;
 					if (root.getAttribute(root.attributes, "Reroute") != null) {
 						var mp = root.getAttribute(root.attributes, "Reroute");
 						if (mp["value"].typeAsString() == "boolean") {
@@ -282,6 +286,7 @@ class Carbonite.Compiler {
 							root.reroute = mp["value"];
 						}
 					}
+
 					if (root.isFromHeader)
 						root.fillFromHeader();
 					else

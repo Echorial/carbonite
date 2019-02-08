@@ -1,5 +1,5 @@
 relative string inherits primitive {
-	native inline void @construct() {return '""';}
+	native inline void @construct() {return 'std::string("")';}
 
 	[operator="="] native inline void set(string what) {return context.instance + " = " + context.arguments[0];}
 	[operator="+"] native inline string concat(string what) {return context.instance + " + " + context.arguments[0];}

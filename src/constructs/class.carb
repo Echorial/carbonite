@@ -76,6 +76,13 @@ class Carbonite.Class inherits Carbonite.Named {
 		return this.route;
 	}
 
+	bound public string getRoute(string join) {
+		if (this.reroute != "")
+			return this.reroute;
+		
+		return this.route.split(".").join(join); // TODO: Do not use split and join like this
+	}
+
 	bound public bool doExport() {
 		if (this.compiler.noCore)
 			if (this.hasFlag("core"))

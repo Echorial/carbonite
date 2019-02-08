@@ -79,7 +79,7 @@ T _c_index(std::unique_ptr<std::vector<_c_primitive>> &vec, std::size_t i) {
 }
 
 template <class T>
-T _c_index_map(std::unique_ptr<std::vector<_c_primitive>> &vec, std::string key) {
+T _c_index_map(std::unique_ptr<std::map<std::string, _c_primitive>> &vec, std::string key) {
 	return std::get<T>((*vec.get())[key].val);
 }
 

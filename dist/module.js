@@ -810,8 +810,11 @@ Carbonite.Compiler.prototype.build = function () {
 		try {;
 		for (var i = 0; i < this.roots.length; i++) {
 			var root = this.roots[i];
+			root.compiler = this;
+			}
+		for (var i = 0; i < this.roots.length; i++) {
+			var root = this.roots[i];
 			if (root.alreadyBuilt == false) {
-				root.compiler = this;
 				if (root.getAttribute(root.attributes, "Reroute") != null) {
 					var mp = root.getAttribute(root.attributes, "Reroute");
 					if ((typeof mp["value"] == 'object' ? (Array.isArray(mp["value"]) ? 'array' : 'map') : (typeof mp["value"] == 'number' ? 'float' : typeof mp["value"])) == "boolean") {
@@ -1267,6 +1270,13 @@ Carbonite.Class.prototype.getRoute = function () {
 			return this.reroute;
 			}
 		return this.route;
+	}
+else 	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var join = arguments[0];
+		if (this.reroute != "") {
+			return this.reroute;
+			}
+		return this.route.split(".").join(join);
 	}
 }
 
@@ -9683,10 +9693,15 @@ Carbonite.Assemblers.Cpp = function () {
 
 Carbonite.Assemblers.Cpp.prototype.build = function () {
 	if (arguments.length == 0) {
-		var rtn = "";
+		var rtn = "// ------- Header ------- //\n\n";
 		for (var i = 0; i < this.compiler.roots.length; i++) {
 			var root = this.compiler.roots[i];
-			rtn += this.root(root);
+			rtn += this.root(root, false);
+			}
+		rtn += "\n\n// ------- Source ------- //\n\n";
+		for (var i = 0; i < this.compiler.roots.length; i++) {
+			var root = this.compiler.roots[i];
+			rtn += this.root(root, true);
 			}
 		if (this.compiler.noCore == false) {
 			return this.compiler.getLibraryFile("cpp/native.cpp") + "\n\n\n\n" + rtn;
@@ -9696,13 +9711,17 @@ Carbonite.Assemblers.Cpp.prototype.build = function () {
 }
 
 Carbonite.Assemblers.Cpp.prototype.root = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'boolean' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var root = arguments[0];
+		var source = arguments[1];
 		if (root.base == "relative") {
 			return "/" + "/Relative " + root.name + "\n";
 			}
 		var body = "";
 		if (root.base == "namespace") {
+			if (source) {
+				return "";
+				}
 			var children = [];
 			for (var i = 0; i < root.children.length; i++) {
 				var cls = root.children[i];
@@ -9712,27 +9731,32 @@ Carbonite.Assemblers.Cpp.prototype.root = function () {
 				}
 			body = "{\npublic:\n" + children.join("\n") + "\n};";
 			}else{
-				var children = [];
-				for (var i = 0; i < root.children.length; i++) {
-					var cls = root.children[i];
-					if (cls.base != "relative") {
-						children.push("class " + cls.name + ";\n");
-						}
+				if (source) {
+					return this.methods(root, source);
+					}else{
+						var children = [];
+						for (var i = 0; i < root.children.length; i++) {
+							var cls = root.children[i];
+							if (cls.base != "relative") {
+								children.push("class " + cls.name + ";\n");
+								}
+							}
+						body = "{\npublic:\n" + children.join("\n") + this.properties(root, source) + this.methods(root, source) + "\n};\n\n";
 					}
-				body = "{\npublic:\n" + children.join("\n") + this.properties(root) + this.methods(root) + "\n};\n\n";
 			}
 		var pref = "";
 		if (root.parent != null) {
 			var castParent = root.parent;
-			pref = castParent.getRoute() + "::";
+			pref = castParent.getRoute("::") + "::";
 			}
 		return "class " + pref + root.name + body;
 	}
 }
 
 Carbonite.Assemblers.Cpp.prototype.properties = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'boolean' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var root = arguments[0];
+		var source = arguments[1];
 		var rtn = "";
 		for (var i = 0; i < root.members.length; i++) {
 			var member = root.members[i];
@@ -9751,7 +9775,11 @@ Carbonite.Assemblers.Cpp.prototype.properties = function () {
 				if (prop.binding == "fixed") {
 					prefix = "static ";
 					}
-				rtn += prefix + typeStr + " " + prop.name + " = " + this.expression(prop.default) + ";\n";
+				var body = ";\n";
+				if (source) {
+					body = this.expression(prop.default) + ";\n";
+					}
+				rtn += prefix + typeStr + " " + prop.name + body;
 				}
 			}
 		return rtn;
@@ -9770,13 +9798,14 @@ Carbonite.Assemblers.Cpp.prototype.route = function () {
 			}else if (what.reference.route == "primitive") {
 			return "_c_primitive";
 			}
-		return what.reference.getRoute();
+		return what.reference.getRoute("::");
 	}
 }
 
 Carbonite.Assemblers.Cpp.prototype.methods = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'boolean' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var root = arguments[0];
+		var source = arguments[1];
 		var methods = [];
 		for (var i = 0; i < root.members.length; i++) {
 			var member = root.members[i];
@@ -9806,12 +9835,17 @@ Carbonite.Assemblers.Cpp.prototype.methods = function () {
 						if (member.name == "@construct") {
 							rte = "";
 							prefix = "";
-							nme = root.getRoute();
+							nme = root.name;
 							}
 						if (member.name == "@cast") {
 							nme = this.getCastName(member, "");
 							}
-						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ") {\n" + this.body(method.body) + "\n}");
+						var body = ";\n";
+						if (source) {
+							body = "{\n" + this.body(method.body) + "\n}";
+							nme = root.getRoute("::") + "::" + nme;
+							}
+						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ")" + body);
 						}
 					}
 				}
@@ -9926,7 +9960,7 @@ Carbonite.Assemblers.Cpp.prototype.native = function () {
 			return rtn;
 			}else if (native.type == "string") {
 			var cast = native;
-			return "\"" + cast.value.replace(new RegExp("\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\r").replace(new RegExp("\\\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n") + "\"";
+			return "std::string(\"" + cast.value.replace(new RegExp("\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\r").replace(new RegExp("\\\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n") + "\")";
 			}else if (native.type == "array") {
 			var cast = native;
 			var expressions = [];
@@ -10015,7 +10049,7 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 						if (cast.constantReference.reference.name == "empty") {
 							rtn += "null";
 							}else{
-								rtn += cast.constantReference.reference.getRoute();
+								rtn += cast.constantReference.reference.getRoute("::");
 							}
 						}else{
 							rtn += cast.constantReference.reference.name;
@@ -20555,7 +20589,7 @@ CarboniteCarbonParser.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \r, \r\n", currentChar);
+								this.giveError(1, " , 	, \r, \n", currentChar);
 							}
 					}
 				}
@@ -22759,7 +22793,7 @@ CarbonitePreprocessor.prototype.RawLine = function () {
 						charPos--;
 						this.offset--;
 						}else{
-							this.giveError(1, "#, \r\n", currentChar);
+							this.giveError(1, "#, \n", currentChar);
 						}
 					this.error.vested++;
 					}else{
@@ -26624,7 +26658,7 @@ CarbonitePreprocessor.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \r, \r\n", currentChar);
+								this.giveError(1, " , 	, \r, \n", currentChar);
 							}
 					}
 				}

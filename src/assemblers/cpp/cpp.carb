@@ -1,10 +1,17 @@
  class Carbonite.Assemblers.Cpp inherits Carbonite.Assembler {
 	bound public override <string>function build() {
-		var string rtn = "";
+		var string rtn = "// ------- Header ------- //\n\n";
 		
 		for (var int i in this.compiler.roots) {
 			var Carbonite.Class root = this.compiler.roots[i];
-			rtn += this.root(root);
+			rtn += this.root(root, false);
+		}
+
+		rtn += "\n\n// ------- Source ------- //\n\n";
+		
+		for (var int i in this.compiler.roots) {
+			var Carbonite.Class root = this.compiler.roots[i];
+			rtn += this.root(root, true);
 		}
 
 		if (this.compiler.noCore == false) {
@@ -14,12 +21,15 @@
 		return rtn;
 	}
 
-	bound public <string>function root(Carbonite.Class root) {
+	bound public <string>function root(Carbonite.Class root, bool source) {
 		if (root.base == "relative") {
 			return "/" + "/Relative " + root.name + "\n";
 		}
 		var body = "";
 		if (root.base == "namespace") {
+			if (source)
+				return "";
+
 			var <string>array children = new <string>array();
 			for (var int i in root.children) {
 				var Carbonite.Class cls = root.children[i];
@@ -29,25 +39,30 @@
 			}
 			body = "{\npublic:\n" + children.join("\n") + "\n};";
 		}else{
-			var <string>array children = new <string>array();
-			for (var int i in root.children) {
-				var Carbonite.Class cls = root.children[i];
-				if (cls.base != "relative") {
-					children.push("class " + cls.name + ";\n");
+			if (source) {
+				return this.methods(root, source);
+			}else{
+				var <string>array children = new <string>array();
+				for (var int i in root.children) {
+					var Carbonite.Class cls = root.children[i];
+					if (cls.base != "relative") {
+						children.push("class " + cls.name + ";\n");
+					}
 				}
+				body = "{\npublic:\n" + children.join("\n") + this.properties(root, source) + this.methods(root, source) + "\n};\n\n";
 			}
-			body = "{\npublic:\n" + children.join("\n") + this.properties(root) +  this.methods(root) + "\n};\n\n";
 		}
 
 		var string pref = "";
 		if (root.parent != null) {
 			var Carbonite.Class castParent = root.parent;
-			pref = castParent.getRoute() + "::";
+			pref = castParent.getRoute("::") + "::";
 		}
+
 		return "class " + pref + root.name + body;
 	}
 
-	bound public <string>function properties(Carbonite.Class root) {
+	bound public <string>function properties(Carbonite.Class root, bool source) {
 		var string rtn = "";
 		for (var int i in root.members) {
 			var Carbonite.Member member = root.members[i];
@@ -62,11 +77,18 @@
 						typeStr = route + "*";
 					}
 				}
+
 				var string prefix = "";
 				if (prop.binding == "fixed") {
 					prefix = "static ";
 				}
-				rtn += prefix + typeStr + " " + prop.name + " = " + this.expression(prop.default) + ";\n";
+
+				var body = ";\n";
+
+				if (source)
+					body = this.expression(prop.default) + ";\n";
+
+				rtn += prefix + typeStr + " " + prop.name + body;
 			}
 		}
 		return rtn;
@@ -83,16 +105,15 @@
 			return "_c_primitive";
 		}
 
-		return what.reference.getRoute();
+		return what.reference.getRoute("::");
 	}
 
-	bound public override <string>function methods(Carbonite.Class root) {
+	bound public override <string>function methods(Carbonite.Class root, bool source) {
 		var <string>array methods = new <string>array();
 		for (var int i in root.members) {
 			var Carbonite.Member member = root.members[i];
 			if (member.type != "property") {
 				if (member.hasFlag("inline") == false) {
-					
 					if (member.hasFlag("relative") == false and member.abstract == false) {
 						var Carbonite.Members.Method method = member;
 						var <string>array args = new <string>array();
@@ -119,16 +140,23 @@
 						if (member.name == "@construct") {
 							rte = "";
 							prefix = "";
-							nme = root.getRoute();
+							nme = root.name;
 						}
 
 						if (member.name == "@cast") {
 							nme = this.getCastName(member, "");
 						}
+						
+						var body = ";\n";
 
-						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ") {\n" + this.body(method.body) + "\n}");
+						if (source) {
+							body = "{\n" + this.body(method.body) + "\n}";
+
+							nme = root.getRoute("::") + "::" + nme;
+						}
+
+						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ")" + body);
 					}
-					
 				}
 			}
 		}
@@ -228,7 +256,7 @@
 			return rtn;
 		}else if (native.type == "string") {
 			var Carbonite.Natives.String cast = native;
-			return "\"" + cast.value.replace("\r", "\\r").replace("\\\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"";
+			return "std::string(\"" + cast.value.replace("\r", "\\r").replace("\\\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\")";
 		}else if (native.type == "array") {
 			var Carbonite.Natives.Array cast = native;
 			var <string>array expressions = new <string>array();
@@ -305,7 +333,7 @@
 						if (cast.constantReference.reference.name == "empty") {
 							rtn += "null";
 						}else{
-							rtn += cast.constantReference.reference.getRoute();
+							rtn += cast.constantReference.reference.getRoute("::");
 						}
 					}else{
 						rtn += cast.constantReference.reference.name;
