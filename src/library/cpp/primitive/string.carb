@@ -10,7 +10,7 @@ relative string inherits primitive {
 	
 	native inline property int length() {return context.instance + ".length";}
 
-	native inline int charCodeAt(int index) {return context.instance + ".charCodeAt(" + context.arguments[0] + ")";}
+	native inline int charCodeAt(int index) {return "((int) " + context.instance + ".at(" + context.arguments[0] + "))";}
 	
 	native inline string replace(string regex, string with){return context.instance + ".replace(" + context.arguments[0] + ", " + context.arguments[1] + ")";}
 

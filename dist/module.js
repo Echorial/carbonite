@@ -15,6 +15,7 @@ Memory = function () {
 //Relative array
 //Relative bool
 //Relative byte
+//Relative char
 //Relative Console
 //Relative everything
 //Relative Exception
@@ -472,6 +473,7 @@ Carbonite.Source.prototype.bake = function () {
 					var cls = new Carbonite.Class();
 					cls.loadFromRaw(rawClass);
 					cls.source = this;
+					cls.setupPropertyContext();
 					this.parent.roots.push(cls);
 					temp.push(cls);
 				}
@@ -719,6 +721,7 @@ Carbonite.Compiler.prototype.copyClass = function () {
 		var cls = new Carbonite.Class();
 		cls.loadFromRaw(baseClass.raw);
 		cls.source = baseClass.source;
+		cls.setupPropertyContext();
 		return cls;
 	}
 }
@@ -1234,13 +1237,19 @@ Carbonite.Class = function () {
 	this.source = null;
 
 	if (arguments.length == 0) {
-		var hackMap = {};
-		var emp = null;
-		var hack = new Carbonite.Member(this, emp);
-		hack.name = "propertyContext";
-		this.propertyContext = new Carbonite.Body(hack, hackMap);
+
 	}
 
+}
+
+Carbonite.Class.prototype.setupPropertyContext = function () {
+	if (arguments.length == 0) {
+		var hackMap = {};
+		var emp = null;
+		var hack = new Carbonite.Member(this, this, emp);
+		hack.name = "propertyContext";
+		this.propertyContext = new Carbonite.Body(hack, this, hackMap);
+	}
 }
 
 Carbonite.Class.evaluate = function () {
@@ -1460,7 +1469,11 @@ Carbonite.Class.prototype.overloadWithCast = function () {
 				return new Carbonite.OverloadInfo(method, casts);
 				}
 			}
-		req.source.error(req, this.makeArgumentsPretty(name, ___arguments));
+		if (req.source != null) {
+			req.source.error(req, this.makeArgumentsPretty(name, ___arguments));
+			}else{
+				this.source.error(req, this.makeArgumentsPretty(name, ___arguments));
+			}
 		throw new Error("Build error");
 	}
 }
@@ -1616,11 +1629,17 @@ Carbonite.Class.prototype.buildCode = function () {
 Carbonite.Class.prototype.makeMember = function () {
 	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var mem = arguments[0];
+		return this.makeMember(this, mem);
+	}
+else 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var cls = arguments[0];
+		var mem = arguments[1];
 		if (mem["attribute"] != null) {
 			var cst = mem["attribute"];
 			var attr = this.getAttribute(cst, "operator");
 			if (attr != null) {
-				var member = new Carbonite.Members.Operator(this, mem);
+				var member = new Carbonite.Members.Operator(this, this, mem);
+				member.loadLocation(cls, mem);
 				var op = member.getAttributes("operator");
 				var cAttr = op[0];
 				member.operator = cAttr["value"];
@@ -1633,10 +1652,10 @@ Carbonite.Class.prototype.makeMember = function () {
 					}
 				return member;
 				}else{
-					return Carbonite.Member.make(this, mem);
+					return Carbonite.Member.make(this, cls, mem);
 				}
 			}else{
-				return Carbonite.Member.make(this, mem);
+				return Carbonite.Member.make(this, cls, mem);
 			}
 	}
 }
@@ -1655,7 +1674,7 @@ Carbonite.Class.prototype.buildMembers = function () {
 					var cst = mem["attribute"];
 					var attr = this.getAttribute(cst, "operator");
 					if (attr != null) {
-						var member = new Carbonite.Members.Operator(this, mem);
+						var member = new Carbonite.Members.Operator(this, this, mem);
 						var op = member.getAttributes("operator");
 						var cAttr = op[0];
 						member.operator = cAttr["value"];
@@ -1792,7 +1811,7 @@ Carbonite.Class.prototype.inherit = function () {
 				if (mem.abstract) {
 					this.buildError("Class '" + this.route + "' must implement the abstract member '" + mem.name + "'");
 					}else{
-						var member = this.makeMember(mem.raw);
+						var member = this.makeMember(from, mem.raw);
 						member.inheritedFrom = from;
 						if (from.route == "everything") {
 							var castMethod = member;
@@ -2277,9 +2296,10 @@ Carbonite.Member = function () {
 
 	this.source = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var parent = arguments[0];
-		var raw = arguments[1];
+		var location = arguments[1];
+		var raw = arguments[2];
 		this.parent = parent;
 		if (raw == null) {
 
@@ -2290,7 +2310,7 @@ Carbonite.Member = function () {
 				if (this.attributes == null) {
 					this.attributes = [];
 					}
-				this.loadLocation(this.parent, this.raw);
+				this.loadLocation(location, this.raw);
 				this.name = this.raw["name"];
 				this.output = new Carbonite.Type(parent.compiler, parent);
 				var rawOutput = this.raw["output"];
@@ -2315,7 +2335,7 @@ Carbonite.Member = function () {
 						this.flags.push(flag);
 						}
 					}
-				this.build();
+				this.build(location);
 			}
 	}
 
@@ -2354,16 +2374,22 @@ Carbonite.Member.make = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
+		return Carbonite.Member.make(parent, parent, raw);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
 		var type = raw["type"];
 		var rtn = null;
 		if (type == "method") {
-			rtn = new Carbonite.Members.Method(parent, raw);
+			rtn = new Carbonite.Members.Method(parent, location, raw);
 			rtn.type = "method";
 			}else if (type == "property") {
-			rtn = new Carbonite.Members.Property(parent, raw);
+			rtn = new Carbonite.Members.Property(parent, location, raw);
 			rtn.type = "property";
 			}else if (type == "operator") {
-			rtn = new Carbonite.Members.Operator(parent, raw);
+			rtn = new Carbonite.Members.Operator(parent, location, raw);
 			rtn.type = "operator";
 			var cast = rtn;
 			parent.compiler.operatorOrders[cast.operator] = cast.order;
@@ -2373,7 +2399,8 @@ Carbonite.Member.make = function () {
 }
 
 Carbonite.Member.prototype.build = function () {
-	if (arguments.length == 0) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var location = arguments[0];
 
 	}
 }
@@ -2515,9 +2542,10 @@ Carbonite.Members.Method = function () {
 
 	this.source = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var parent = arguments[0];
-		var raw = arguments[1];
+		var location = arguments[1];
+		var raw = arguments[2];
 		this.parent = parent;
 		if (raw == null) {
 
@@ -2528,7 +2556,7 @@ Carbonite.Members.Method = function () {
 				if (this.attributes == null) {
 					this.attributes = [];
 					}
-				this.loadLocation(this.parent, this.raw);
+				this.loadLocation(location, this.raw);
 				this.name = this.raw["name"];
 				this.output = new Carbonite.Type(parent.compiler, parent);
 				var rawOutput = this.raw["output"];
@@ -2553,7 +2581,7 @@ Carbonite.Members.Method = function () {
 						this.flags.push(flag);
 						}
 					}
-				this.build();
+				this.build(location);
 			}
 	}
 
@@ -2694,17 +2722,19 @@ Carbonite.Members.Method.prototype.buildBody = function () {
 }
 
 Carbonite.Members.Method.prototype.build = function () {
-	if (arguments.length == 0) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var location = arguments[0];
 		var type = this.raw["value"]["body"]["type"];
 		if (type == "interface") {
 			this.abstract = true;
 			}else{
-				this.body = new Carbonite.Body(this, this.raw["value"]["body"]);
+				this.body = new Carbonite.Body(this, location, this.raw["value"]["body"]);
 				var ownType = new Carbonite.Type(this.parent.compiler, this.parent);
 				ownType.loadFromName(this.parent.route, this.raw);
 				ownType.reference = this.parent;
 				var thisName = "this";
 				var defThis = new Carbonite.Define(thisName, ownType);
+				defThis.isLocal = false;
 				if ((this.binding == "fixed") && (this.name != "@construct")) {
 					defThis.isConstantReference = true;
 					}
@@ -2807,6 +2837,8 @@ Carbonite.Members.Method.prototype.generate = function () {
 		if (this.simpleNative) {
 			var ret = this.body.statements[0];
 			return this.concat(ctx, ret.expression.first, ret.expression.last);
+			}else{
+
 			}
 	}
 }
@@ -2838,7 +2870,7 @@ Carbonite.Members.Method.fromHeader = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
-		var method = new Carbonite.Members.Method(parent, null);
+		var method = new Carbonite.Members.Method(parent, parent, null);
 		method.type = "method";
 		method.name = data["name"];
 		method.binding = data["binding"];
@@ -2902,16 +2934,22 @@ Carbonite.Members.Method.make = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
+		return Carbonite.Member.make(parent, parent, raw);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
 		var type = raw["type"];
 		var rtn = null;
 		if (type == "method") {
-			rtn = new Carbonite.Members.Method(parent, raw);
+			rtn = new Carbonite.Members.Method(parent, location, raw);
 			rtn.type = "method";
 			}else if (type == "property") {
-			rtn = new Carbonite.Members.Property(parent, raw);
+			rtn = new Carbonite.Members.Property(parent, location, raw);
 			rtn.type = "property";
 			}else if (type == "operator") {
-			rtn = new Carbonite.Members.Operator(parent, raw);
+			rtn = new Carbonite.Members.Operator(parent, location, raw);
 			rtn.type = "operator";
 			var cast = rtn;
 			parent.compiler.operatorOrders[cast.operator] = cast.order;
@@ -3065,9 +3103,10 @@ Carbonite.Members.Property = function () {
 
 	this.source = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var parent = arguments[0];
-		var raw = arguments[1];
+		var location = arguments[1];
+		var raw = arguments[2];
 		this.parent = parent;
 		if (raw == null) {
 
@@ -3078,7 +3117,7 @@ Carbonite.Members.Property = function () {
 				if (this.attributes == null) {
 					this.attributes = [];
 					}
-				this.loadLocation(this.parent, this.raw);
+				this.loadLocation(location, this.raw);
 				this.name = this.raw["name"];
 				this.output = new Carbonite.Type(parent.compiler, parent);
 				var rawOutput = this.raw["output"];
@@ -3103,7 +3142,7 @@ Carbonite.Members.Property = function () {
 						this.flags.push(flag);
 						}
 					}
-				this.build();
+				this.build(location);
 			}
 	}
 
@@ -3130,6 +3169,9 @@ Carbonite.Members.Property.prototype.buildDefault = function () {
 		if (type == "interface") {
 			this.abstract = true;
 			}else{
+				if (this.parent.propertyContext == null) {
+					this.parent.setupPropertyContext();
+					}
 				this.default = new Carbonite.Expression(this.parent, this.parent.propertyContext);
 				this.default.loadFromRaw(this.raw["value"]["value"]);
 			}
@@ -3137,7 +3179,8 @@ Carbonite.Members.Property.prototype.buildDefault = function () {
 }
 
 Carbonite.Members.Property.prototype.build = function () {
-	if (arguments.length == 0) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var location = arguments[0];
 
 	}
 }
@@ -3158,7 +3201,7 @@ Carbonite.Members.Property.fromHeader = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
-		var property = new Carbonite.Members.Property(parent, null);
+		var property = new Carbonite.Members.Property(parent, parent, null);
 		property.type = "property";
 		property.name = data["name"];
 		property.binding = data["binding"];
@@ -3207,16 +3250,22 @@ Carbonite.Members.Property.make = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
+		return Carbonite.Member.make(parent, parent, raw);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
 		var type = raw["type"];
 		var rtn = null;
 		if (type == "method") {
-			rtn = new Carbonite.Members.Method(parent, raw);
+			rtn = new Carbonite.Members.Method(parent, location, raw);
 			rtn.type = "method";
 			}else if (type == "property") {
-			rtn = new Carbonite.Members.Property(parent, raw);
+			rtn = new Carbonite.Members.Property(parent, location, raw);
 			rtn.type = "property";
 			}else if (type == "operator") {
-			rtn = new Carbonite.Members.Operator(parent, raw);
+			rtn = new Carbonite.Members.Operator(parent, location, raw);
 			rtn.type = "operator";
 			var cast = rtn;
 			parent.compiler.operatorOrders[cast.operator] = cast.order;
@@ -3357,9 +3406,10 @@ Carbonite.Members.Operator = function () {
 
 	this.source = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var parent = arguments[0];
-		var raw = arguments[1];
+		var location = arguments[1];
+		var raw = arguments[2];
 		this.parent = parent;
 		if (raw == null) {
 
@@ -3370,7 +3420,7 @@ Carbonite.Members.Operator = function () {
 				if (this.attributes == null) {
 					this.attributes = [];
 					}
-				this.loadLocation(this.parent, this.raw);
+				this.loadLocation(location, this.raw);
 				this.name = this.raw["name"];
 				this.output = new Carbonite.Type(parent.compiler, parent);
 				var rawOutput = this.raw["output"];
@@ -3395,7 +3445,7 @@ Carbonite.Members.Operator = function () {
 						this.flags.push(flag);
 						}
 					}
-				this.build();
+				this.build(location);
 			}
 	}
 
@@ -3549,17 +3599,19 @@ Carbonite.Members.Operator.prototype.buildBody = function () {
 }
 
 Carbonite.Members.Operator.prototype.build = function () {
-	if (arguments.length == 0) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var location = arguments[0];
 		var type = this.raw["value"]["body"]["type"];
 		if (type == "interface") {
 			this.abstract = true;
 			}else{
-				this.body = new Carbonite.Body(this, this.raw["value"]["body"]);
+				this.body = new Carbonite.Body(this, location, this.raw["value"]["body"]);
 				var ownType = new Carbonite.Type(this.parent.compiler, this.parent);
 				ownType.loadFromName(this.parent.route, this.raw);
 				ownType.reference = this.parent;
 				var thisName = "this";
 				var defThis = new Carbonite.Define(thisName, ownType);
+				defThis.isLocal = false;
 				if ((this.binding == "fixed") && (this.name != "@construct")) {
 					defThis.isConstantReference = true;
 					}
@@ -3662,6 +3714,8 @@ Carbonite.Members.Operator.prototype.generate = function () {
 		if (this.simpleNative) {
 			var ret = this.body.statements[0];
 			return this.concat(ctx, ret.expression.first, ret.expression.last);
+			}else{
+
 			}
 	}
 }
@@ -3681,7 +3735,7 @@ Carbonite.Members.Operator.fromHeader = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
-		var method = new Carbonite.Members.Method(parent, null);
+		var method = new Carbonite.Members.Method(parent, parent, null);
 		method.type = "method";
 		method.name = data["name"];
 		method.binding = data["binding"];
@@ -3745,16 +3799,22 @@ Carbonite.Members.Operator.make = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
+		return Carbonite.Member.make(parent, parent, raw);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
 		var type = raw["type"];
 		var rtn = null;
 		if (type == "method") {
-			rtn = new Carbonite.Members.Method(parent, raw);
+			rtn = new Carbonite.Members.Method(parent, location, raw);
 			rtn.type = "method";
 			}else if (type == "property") {
-			rtn = new Carbonite.Members.Property(parent, raw);
+			rtn = new Carbonite.Members.Property(parent, location, raw);
 			rtn.type = "property";
 			}else if (type == "operator") {
-			rtn = new Carbonite.Members.Operator(parent, raw);
+			rtn = new Carbonite.Members.Operator(parent, location, raw);
 			rtn.type = "operator";
 			var cast = rtn;
 			parent.compiler.operatorOrders[cast.operator] = cast.order;
@@ -3991,6 +4051,8 @@ Carbonite.Define = function () {
 
 	this.blockIndex = 0;
 
+	this.isLocal = true;
+
 	this.outOfScope = true;
 
 	this.reference = false;
@@ -4140,6 +4202,26 @@ Carbonite.Body = function () {
 		this.parent = parent;
 		this.raw = raw;
 		this.loadLocation(parent.parent, raw);
+		var emp = null;
+		this.scope = new Carbonite.Scope(this, emp);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Member || (arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || (arguments[0] instanceof Carbonite.Members.Property)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
+		this.parent = parent;
+		this.raw = raw;
+		this.loadLocation(location, raw);
+		var emp = null;
+		this.scope = new Carbonite.Scope(this, emp);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Member || (arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || (arguments[0] instanceof Carbonite.Members.Property)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Source) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
+		this.parent = parent;
+		this.raw = raw;
+		this.loadLocation(location, raw);
 		var emp = null;
 		this.scope = new Carbonite.Scope(this, emp);
 	}
@@ -4339,7 +4421,7 @@ Carbonite.Statements.If.prototype.build = function () {
 		var container = arguments[1];
 		this.check = new Carbonite.Expression(container.parent.parent, container);
 		this.check.loadFromRaw(raw["check"]["expression"]);
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.body.build();
 		var alternatives = raw["alternatives"];
@@ -4750,7 +4832,7 @@ Carbonite.Statements.For.prototype.build = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var raw = arguments[0];
 		var container = arguments[1];
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.define = Carbonite.Define.make(raw["define"], this.body);
 		this.check = new Carbonite.Expression(container.parent.parent, this.body);
@@ -4986,7 +5068,7 @@ Carbonite.Statements.While.prototype.build = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var raw = arguments[0];
 		var container = arguments[1];
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.check = new Carbonite.Expression(container.parent.parent, this.body);
 		this.check.loadFromRaw(raw["check"]["expression"]);
@@ -5315,7 +5397,7 @@ Carbonite.Statements.Try.prototype.build = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var raw = arguments[0];
 		var container = arguments[1];
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		var catches = raw["catch"];
 		for (var i = 0; i < catches.length; i++) {
@@ -5417,7 +5499,7 @@ Carbonite.Catch = function () {
 		this.name = raw["input"]["name"];
 		this.overload = new Carbonite.Type(container.parent.parent.compiler, container.parent.parent);
 		this.overload.loadFromRaw(raw["input"]["type"]);
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.body.build();
 	}
@@ -5941,7 +6023,7 @@ Carbonite.Expression.prototype.spawnChild = function () {
 		var terms = arguments[0];
 		var exp = new Carbonite.Terms.Expression(this, this.container);
 		exp.loadFromRaw(this.raw, this.terms, this.terms.length);
-		exp.expression.loadLocation(this.parent, this.raw);
+		exp.expression.loadLocation(this.container.source, this.raw);
 		exp.expression.relativeParent = this.relativeParent;
 		exp.expression.raw = this.raw;
 		exp.expression.loadTerms(terms);
@@ -6032,7 +6114,7 @@ Carbonite.Expression.prototype.loadTerms = function () {
 			this.operator = term["operator"];
 			var exp = new Carbonite.Terms.Expression(this, this.container);
 			exp.loadFromRaw(this.raw, this.terms, this.terms.length);
-			exp.expression.loadLocation(this.parent, this.raw);
+			exp.expression.loadLocation(this.container.source, this.raw);
 			exp.expression.relativeParent = this.relativeParent;
 			exp.expression.raw = this.raw;
 			exp.expression.loadTerms(terms.slice().splice(1));
@@ -6151,7 +6233,7 @@ Carbonite.Expression.prototype.loadFromRaw = function () {
 		var raw = arguments[0];
 		this.raw = raw;
 		var terms = raw["terms"];
-		this.loadLocation(this.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.relativeParent = this;
 		Carbonite.Expression.buildTermsIntoExpression(this, terms, 0, terms.length - 1);
 	}
@@ -6372,7 +6454,7 @@ Carbonite.Term.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -6394,7 +6476,7 @@ Carbonite.Term.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -6503,7 +6585,7 @@ Carbonite.Terms.Literal.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -6525,7 +6607,7 @@ Carbonite.Terms.Literal.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -6630,7 +6712,7 @@ Carbonite.Terms.Expression.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -6652,7 +6734,7 @@ Carbonite.Terms.Expression.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -6809,7 +6891,7 @@ Carbonite.Terms.Sequence.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -6831,7 +6913,7 @@ Carbonite.Terms.Sequence.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -6942,7 +7024,7 @@ Carbonite.Terms.Prefix.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -6964,7 +7046,7 @@ Carbonite.Terms.Prefix.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -7068,7 +7150,7 @@ Carbonite.Terms.Function.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -7090,7 +7172,7 @@ Carbonite.Terms.Function.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -9207,7 +9289,7 @@ Carbonite.Assemblers.Javascript.prototype.compareClass = function () {
 		var native = "";
 		if ((to.route == "int") || (to.route == "uint64") || (to.route == "int64") || (to.route == "uint32") || (to.route == "int32") || (to.route == "uint16") || (to.route == "int16") || (to.route == "uint8") || (to.route == "int8")) {
 			native = "number";
-			}else if (to.route == "string") {
+			}else if (to.route == "string" || to.route == "char") {
 			native = "string";
 			}else if (to.route == "function") {
 			native = "function";
@@ -9381,7 +9463,7 @@ Carbonite.Assemblers.Javascript.prototype.native = function () {
 			var cast = native;
 			var rtn = cast.value;
 			return "" + rtn;
-			}else if (native.type == "string") {
+			}else if (native.type == "string" || native.type == "char") {
 			var cast = native;
 			return "\"" + this.escape(cast.value) + "\"";
 			return "\"" + cast.value.replace(new RegExp("\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n").replace(new RegExp("\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\r") + "\"";
@@ -9824,7 +9906,7 @@ Carbonite.Assemblers.Cpp.prototype.methods = function () {
 										typeStr = "std::unique_ptr<" + typeStr + ">";
 									}
 								}
-							args.push(typeStr + " " + arg.name);
+							args.push(typeStr + " " + this.localName(arg.name));
 							}
 						var prefix = "";
 						if (method.binding == "fixed") {
@@ -9889,7 +9971,14 @@ Carbonite.Assemblers.Cpp.prototype.define = function () {
 		if (define.output.isPrimitiveValue() == false || define.output.reference.name == "array" || define.output.reference.name == "map") {
 			typeStr = "std::unique_ptr<" + typeStr + ">";
 			}
-		return typeStr + " " + define.name + set;
+		return typeStr + " " + this.localName(define.name) + set;
+	}
+}
+
+Carbonite.Assemblers.Cpp.prototype.localName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var name = arguments[0];
+		return "_L" + name;
 	}
 }
 
@@ -9927,7 +10016,7 @@ Carbonite.Assemblers.Cpp.prototype.statement = function () {
 			var forState = statement;
 			var str = "";
 			if (forState.iterate.output.reference.route == "array") {
-				str = "for (" + this.define(forState.define) + " = 0; " + forState.define.name + " < " + this.expression(forState.iterate) + ".size(); " + forState.define.name + "++) {\n" + this.body(forState.body) + "}";
+				str = "for (" + this.define(forState.define) + " = 0; " + this.localName(forState.define.name) + " < " + this.expression(forState.iterate) + ".size(); " + this.localName(forState.define.name) + "++) {\n" + this.body(forState.body) + "}";
 				}else{
 					str = "for (" + this.define(forState.define) + " in " + this.expression(forState.iterate) + ") {\n" + this.body(forState.body) + "}";
 				}
@@ -10055,7 +10144,11 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 							rtn += cast.constantReference.reference.name;
 						}
 					}else{
-						rtn += cast.reference.name;
+						if (cast.reference.isLocal) {
+							rtn += this.localName(cast.reference.name);
+							}else{
+								rtn += cast.reference.name;
+							}
 					}
 				}else if (part.type == "dot") {
 				var cast = part;
@@ -10512,7 +10605,7 @@ Carbonite.Assemblers.Php.prototype.compareClass = function () {
 		var native = "";
 		if (to.route == "int") {
 			native = "integer";
-			}else if (to.route == "string") {
+			}else if (to.route == "string" || to.route == "char") {
 			native = "string";
 			}else if (to.route == "function") {
 			return "is_callable(" + varName + ")";
@@ -10674,7 +10767,7 @@ Carbonite.Assemblers.Php.prototype.native = function () {
 			var cast = native;
 			var rtn = cast.value;
 			return "" + rtn;
-			}else if (native.type == "string") {
+			}else if (native.type == "string" || native.type == "char") {
 			var cast = native;
 			return "\"" + cast.value.replace(new RegExp("\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("$".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\$").replace(new RegExp("	".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\t").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n").replace(new RegExp("\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\ r") + "\"";
 			}else if (native.type == "array") {
@@ -29283,7 +29376,7 @@ VirtualArguments.prototype.compare = function () {
 }
 
 VirtualArguments.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -29462,7 +29555,7 @@ VirtualArgument.prototype.compare = function () {
 }
 
 VirtualArgument.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -29675,7 +29768,7 @@ VirtualClass.prototype.compare = function () {
 }
 
 VirtualClass.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -29865,7 +29958,7 @@ VirtualClasses.prototype.compare = function () {
 }
 
 VirtualClasses.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -30054,7 +30147,7 @@ VirtualMembers.prototype.compare = function () {
 }
 
 VirtualMembers.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -30257,7 +30350,7 @@ VirtualMember.prototype.compare = function () {
 }
 
 VirtualMember.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -30447,7 +30540,7 @@ VirtualTypes.prototype.compare = function () {
 }
 
 VirtualTypes.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -30623,7 +30716,7 @@ VirtualType.prototype.compare = function () {
 }
 
 VirtualType.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -38905,7 +38998,7 @@ Carbide.Virtual.Value.prototype.compare = function () {
 }
 
 Carbide.Virtual.Value.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -39139,7 +39232,7 @@ Carbide.Virtual.Values.String.prototype.getValue = function () {
 }
 
 Carbide.Virtual.Values.String.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -39331,7 +39424,7 @@ Carbide.Virtual.Values.Number.prototype.getValue = function () {
 }
 
 Carbide.Virtual.Values.Number.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -39543,7 +39636,7 @@ Carbide.Virtual.Values.Array.prototype.setValue = function () {
 }
 
 Carbide.Virtual.Values.Array.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -39750,7 +39843,7 @@ Carbide.Virtual.Values.Map.prototype.getValue = function () {
 }
 
 Carbide.Virtual.Values.Map.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -39946,7 +40039,7 @@ Carbide.Virtual.Values.Function.prototype.duplicate = function () {
 }
 
 Carbide.Virtual.Values.Function.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -40117,7 +40210,7 @@ Carbide.Virtual.Values.Bool.prototype.getValue = function () {
 }
 
 Carbide.Virtual.Values.Bool.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -40335,7 +40428,7 @@ Carbide.Virtual.Values.ProxyMap.prototype.duplicate = function () {
 }
 
 Carbide.Virtual.Values.ProxyMap.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -40530,7 +40623,7 @@ Carbide.Virtual.Values.ProxyArray.prototype.duplicate = function () {
 }
 
 Carbide.Virtual.Values.ProxyArray.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -40730,7 +40823,7 @@ Carbide.Virtual.Values.AutoArray.prototype.compare = function () {
 }
 
 Carbide.Virtual.Values.AutoArray.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -40863,7 +40956,7 @@ Carbide.Virtual.Values.Null.prototype.duplicate = function () {
 }
 
 Carbide.Virtual.Values.Null.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -41029,7 +41122,7 @@ Carbide.Virtual.Values.Reference.prototype.duplicate = function () {
 }
 
 Carbide.Virtual.Values.Reference.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -41884,7 +41977,7 @@ carbide_proxy_Carbonite_Statement.prototype.compare = function () {
 }
 
 carbide_proxy_Carbonite_Statement.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -42057,7 +42150,7 @@ carbide_proxy_Carbonite_Body.prototype.compare = function () {
 }
 
 carbide_proxy_Carbonite_Body.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -42263,7 +42356,7 @@ carbide_valueArray_Carbonite_Statement.prototype.compare = function () {
 }
 
 carbide_valueArray_Carbonite_Statement.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();

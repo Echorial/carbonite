@@ -84,6 +84,7 @@ class Carbonite.Source inherits object {
 				var Carbonite.Class cls = new Carbonite.Class();
 				cls.loadFromRaw(rawClass);
 				cls.source = this;
+				cls.setupPropertyContext();
 				this.parent.roots.push(cls);
 				temp.push(cls);
 			}

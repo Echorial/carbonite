@@ -129,19 +129,20 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 		}
 	}
 
-	bound public override <void>function build() {
+	bound public override <void>function build(Carbonite.Class location) {
 		var string type = this.raw["value"]["body"]["type"];
 
 		if (type == "interface") {
 			this.abstract = true;
 		}else{
-			this.body = new Carbonite.Body(this, this.raw["value"]["body"]);
+			this.body = new Carbonite.Body(this, location, this.raw["value"]["body"]);
 
 			var Carbonite.Type ownType = new Carbonite.Type(this.parent.compiler, this.parent);
 			ownType.loadFromName(this.parent.route, this.raw);
 			ownType.reference = this.parent; //warn: hack: todo: Fix
 			var string thisName = "this";
 			var Carbonite.Define defThis = new Carbonite.Define(thisName, ownType);
+			defThis.isLocal = false;
 			if ((this.binding == "fixed") and (this.name != "@construct"))
 				defThis.isConstantReference = true;
 
@@ -235,6 +236,8 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 		if (this.simpleNative) {
 			var Carbonite.Statements.Return ret = this.body.statements[0];
 			return this.concat(ctx, ret.expression.first, ret.expression.last);
+		}else{
+			
 		}
 	}
 
@@ -258,7 +261,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 	}
 
 	override fixed Carbonite.Member fromHeader(Carbonite.Class parent, map data) {
-		var method = new Carbonite.Members.Method(parent, null);
+		var method = new Carbonite.Members.Method(parent, parent, null);
 		method.type = "method";
 		method.name = data["name"];
 		method.binding = data["binding"];

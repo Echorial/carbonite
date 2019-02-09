@@ -168,7 +168,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		var string native = "";
 		if ((to.route == "int") or (to.route == "uint64") or (to.route == "int64") or (to.route == "uint32") or (to.route == "int32") or (to.route == "uint16") or (to.route == "int16") or (to.route == "uint8") or (to.route == "int8")) {
 			native = "number";
-		}else if (to.route == "string") {
+		}else if (to.route == "string" or to.route == "char") {
 			native = "string";
 		}else if (to.route == "function") {
 			native = "function";
@@ -320,7 +320,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 			var Carbonite.Natives.Integer cast = native;
 			var string rtn = cast.value;
 			return "" + rtn; //Hack until @cast
-		}else if (native.type == "string") {
+		}else if (native.type == "string" or native.type == "char") {
 			var Carbonite.Natives.String cast = native;
 			return '"' + this.escape(cast.value) + '"';
 			return "\"" + cast.value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\""; //Warn

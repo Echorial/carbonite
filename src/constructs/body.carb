@@ -22,6 +22,22 @@ class Carbonite.Body inherits object, Carbonite.Range {
 		this.scope = new Carbonite.Scope(this, emp);
 	}
 
+	fixed public <Carbonite.Body>function @construct(Carbonite.Member parent, Carbonite.Class location, map raw) {
+		this.parent = parent;
+		this.raw = raw;
+		this.loadLocation(location, raw);
+		var Carbonite.Scope emp = empty;
+		this.scope = new Carbonite.Scope(this, emp);
+	}
+
+	fixed public <Carbonite.Body>function @construct(Carbonite.Member parent, Carbonite.Source location, map raw) {
+		this.parent = parent;
+		this.raw = raw;
+		this.loadLocation(location, raw);
+		var Carbonite.Scope emp = empty;
+		this.scope = new Carbonite.Scope(this, emp);
+	}
+
 	bound public <void>function build() {
 		var <map>array statements = this.raw["code"];
 		for (var int i in statements) {

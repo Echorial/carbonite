@@ -189,6 +189,7 @@ class Carbonite.Compiler {
 		var Carbonite.Class cls = new Carbonite.Class();
 		cls.loadFromRaw(baseClass.raw);
 		cls.source = baseClass.source;
+		cls.setupPropertyContext();
 
 		return cls;
 	}

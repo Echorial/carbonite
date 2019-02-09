@@ -1,0 +1,12 @@
+relative char inherits primitive {
+	native inline void @construct() {return '""';}
+
+	[operator="=", order = 10] native inline void set(string what) {return context.instance + " = " + context.arguments[0];}
+	[operator="==", order=5] native inline bool equal(string compare) {return context.instance + " == " + context.arguments[0];}
+	[operator="!=", order=5] native inline bool notEqual(string compare) {return context.instance + " != " + context.arguments[0];}
+
+	native inline int charCode() {return context.instance + ".charCodeAt(0)";}
+
+	native inline string toLower() {return context.instance + ".toLowerCase()";}
+	native inline string toUpper() {return context.instance + ".toUpperCase()";}
+}

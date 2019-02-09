@@ -19,7 +19,7 @@ class Carbonite.Term inherits object, Carbonite.Range {
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 
@@ -36,7 +36,7 @@ class Carbonite.Term inherits object, Carbonite.Range {
 			var Carbonite.Terms.Expression exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var <map>array cast = raw["expression"]["terms"];

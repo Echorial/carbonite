@@ -5,7 +5,7 @@ class Carbonite.Statements.While inherits Carbonite.Statement {
 	bound public Carbonite.Body body = empty;
 
 	bound public override <void>function build(map raw, Carbonite.Body container) {
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.check = new Carbonite.Expression(container.parent.parent, this.body);
 		this.check.loadFromRaw(raw["check"]["expression"]);

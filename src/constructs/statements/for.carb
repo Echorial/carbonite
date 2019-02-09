@@ -7,7 +7,7 @@ class Carbonite.Statements.For inherits Carbonite.Statement {
 	bound public Carbonite.Body body = empty;
 
 	bound public override <void>function build(map raw, Carbonite.Body container) {
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 
 		this.define = Carbonite.Define.make(raw["define"], this.body);

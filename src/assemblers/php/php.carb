@@ -234,7 +234,7 @@ class Carbonite.Assemblers.Php inherits Carbonite.Assemblers.Loose {
 		var string native = "";
 		if (to.route == "int") {
 			native = "integer";
-		}else if (to.route == "string") {
+		}else if (to.route == "string" or to.route == "char") {
 			native = "string";
 		}else if (to.route == "function") {
 			return "is_callable(" + varName + ")";
@@ -379,7 +379,7 @@ class Carbonite.Assemblers.Php inherits Carbonite.Assemblers.Loose {
 			var Carbonite.Natives.Integer cast = native;
 			var string rtn = cast.value;
 			return "" + rtn; //Hack until @cast
-		}else if (native.type == "string") {
+		}else if (native.type == "string" or native.type == "char") {
 			var Carbonite.Natives.String cast = native;
 			return "\"" + cast.value.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$").replace("\t", "\\t").replace("\n", "\\n").replace("\r", "\\ r") + "\""; //Warn
 		}else if (native.type == "array") {

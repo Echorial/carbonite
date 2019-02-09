@@ -19,13 +19,16 @@ class Carbonite.Members.Property inherits Carbonite.Member {
 		if (type == "interface") {
 			this.abstract = true;
 		}else{
+			if (this.parent.propertyContext == null)
+				this.parent.setupPropertyContext();
+
 			this.default = new Carbonite.Expression(this.parent, this.parent.propertyContext);
 			
 			this.default.loadFromRaw(this.raw["value"]["value"]);
 		}
 	}
 
-	bound public override <void>function build() {
+	bound public override <void>function build(Carbonite.Class location) {
 		
 	}
 
@@ -38,7 +41,7 @@ class Carbonite.Members.Property inherits Carbonite.Member {
 	}
 
 	override fixed Carbonite.Member fromHeader(Carbonite.Class parent, map data) {
-		var property = new Carbonite.Members.Property(parent, null);
+		var property = new Carbonite.Members.Property(parent, parent, null);
 		property.type = "property";
 		property.name = data["name"];
 		property.binding = data["binding"];

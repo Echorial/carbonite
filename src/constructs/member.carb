@@ -13,7 +13,7 @@ class Carbonite.Member inherits object, Carbonite.Range {
 	bound public string type = "";
 	bound public map raw = empty;
 
-	fixed public <Carbonite.Member>function @construct(Carbonite.Class parent, map raw) {
+	fixed public <Carbonite.Member>function @construct(Carbonite.Class parent, Carbonite.Class location, map raw) {
 		this.parent = parent;
 		if (raw == empty) {
 
@@ -24,7 +24,7 @@ class Carbonite.Member inherits object, Carbonite.Range {
 			if (this.attributes == empty) {
 				this.attributes = new <map>array();
 			}
-			this.loadLocation(this.parent, this.raw);
+			this.loadLocation(location, this.raw);
 			this.name = this.raw["name"];
 			this.output = new Carbonite.Type(parent.compiler, parent);
 			var map rawOutput = this.raw["output"];
@@ -50,7 +50,7 @@ class Carbonite.Member inherits object, Carbonite.Range {
 					this.flags.push(flag);
 				}
 			}
-			this.build();
+			this.build(location);
 		}
 	}
 
@@ -76,16 +76,20 @@ class Carbonite.Member inherits object, Carbonite.Range {
 	}
 
 	fixed public <Carbonite.Member>function make(Carbonite.Class parent, map raw) {
+		return Carbonite.Member.make(parent, parent, raw);
+	}
+
+	fixed public <Carbonite.Member>function make(Carbonite.Class parent, Carbonite.Class location, map raw) {
 		var string type = raw["type"];
 		var Carbonite.Member rtn = empty;
 		if (type == "method") {
-			rtn = new Carbonite.Members.Method(parent, raw);
+			rtn = new Carbonite.Members.Method(parent, location, raw);
 			rtn.type = "method";
 		}else if (type == "property") {
-			rtn = new Carbonite.Members.Property(parent, raw);
+			rtn = new Carbonite.Members.Property(parent, location, raw);
 			rtn.type = "property";
 		}else if (type == "operator") {
-			rtn = new Carbonite.Members.Operator(parent, raw);
+			rtn = new Carbonite.Members.Operator(parent, location, raw);
 			rtn.type = "operator";
 			var Carbonite.Members.Operator cast = rtn;
 			parent.compiler.operatorOrders[cast.operator] = cast.order;
@@ -93,7 +97,7 @@ class Carbonite.Member inherits object, Carbonite.Range {
 		return rtn;
 	}
 
-	bound public <void>function build() {
+	bound public <void>function build(Carbonite.Class location) {
 
 	}
 

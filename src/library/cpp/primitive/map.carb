@@ -5,4 +5,5 @@ relative <class T = primitive>map inherits primitive {
 	[operator="==", order=5] native inline bool equal(<T>map compare) {return context.instance + " == " + context.arguments[0];}
 	[operator="!=", order=5] native inline bool notEqual(<T>map compare) {return context.instance + " != " + context.arguments[0];}
 	native inline primitive @index(string key) {return context.instance + "[" + context.arguments[0] + "]";}
+	native inline bool hasKey(string key) {return context.instance + "[" + context.arguments[0] + "]";}
 }

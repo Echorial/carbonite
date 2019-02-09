@@ -9,7 +9,7 @@ class Carbonite.Statements.If inherits Carbonite.Statement {
 		this.check = new Carbonite.Expression(container.parent.parent, container);
 		this.check.loadFromRaw(raw["check"]["expression"]);
 		
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.body.build();
 

@@ -45,11 +45,15 @@ class Carbonite.Class inherits Carbonite.Named {
 	bound public <string>array flags = null;
 
 	fixed public <Carbonite.Class>function @construct()	{
+		
+	}
+
+	void setupPropertyContext() {
 		var map hackMap = new map();
 		var map emp = empty;
-		var Carbonite.Member hack = new Carbonite.Member(this, emp);
+		var Carbonite.Member hack = new Carbonite.Member(this, this, emp);
 		hack.name = "propertyContext";
-		this.propertyContext = new Carbonite.Body(hack, hackMap);
+		this.propertyContext = new Carbonite.Body(hack, this, hackMap);
 	}
 
 	fixed public <Carbonite.Class>function evaluate(string raw, Carbonite.Source parent) {
@@ -244,7 +248,11 @@ class Carbonite.Class inherits Carbonite.Named {
 				return new Carbonite.OverloadInfo(method, casts);
 		}
 		
-		req.source.error(req, this.makeArgumentsPretty(name, arguments));
+		if (req.source != null)
+			req.source.error(req, this.makeArgumentsPretty(name, arguments));
+		else
+			this.source.error(req, this.makeArgumentsPretty(name, arguments));
+
 		Exception.throw("Build error");
 	}
 
@@ -374,11 +382,16 @@ class Carbonite.Class inherits Carbonite.Named {
 	}
 
 	bound public <Carbonite.Member>function makeMember(map mem) {
+		return this.makeMember(this, mem);
+	}
+
+	bound public <Carbonite.Member>function makeMember(Carbonite.Class cls, map mem) {
 		if (mem["attribute"] != empty) {
 			var <map>array cst = mem["attribute"];
 			var map attr = this.getAttribute(cst, "operator");
 			if (attr != empty) {
-				var Carbonite.Members.Operator member = new Carbonite.Members.Operator(this, mem);
+				var Carbonite.Members.Operator member = new Carbonite.Members.Operator(this, this, mem);
+				member.loadLocation(cls, mem);
 				var <map>array op = member.getAttributes("operator");
 				var map cAttr = op[0];
 				member.operator = cAttr["value"];
@@ -391,10 +404,10 @@ class Carbonite.Class inherits Carbonite.Named {
 				}
 				return member;
 			}else{
-				return Carbonite.Member.make(this, mem);
+				return Carbonite.Member.make(this, cls, mem);
 			}
 		}else{
-			return Carbonite.Member.make(this, mem);
+			return Carbonite.Member.make(this, cls, mem);
 		}
 	}
 
@@ -412,7 +425,7 @@ class Carbonite.Class inherits Carbonite.Named {
 					var <map>array cst = mem["attribute"];
 					var map attr = this.getAttribute(cst, "operator");
 					if (attr != empty) {
-						var Carbonite.Members.Operator member = new Carbonite.Members.Operator(this, mem);
+						var Carbonite.Members.Operator member = new Carbonite.Members.Operator(this, this, mem);
 						var <map>array op = member.getAttributes("operator");
 						var map cAttr = op[0];
 						member.operator = cAttr["value"];
@@ -536,7 +549,7 @@ class Carbonite.Class inherits Carbonite.Named {
 				if (mem.abstract) {
 					this.buildError("Class '" + this.route + "' must implement the abstract member '" + mem.name + "'"); //Force abstract members to be implemented
 				}else{
-					var Carbonite.Member member = this.makeMember(mem.raw);
+					var Carbonite.Member member = this.makeMember(from, mem.raw);
 					member.inheritedFrom = from;
 
 					if (from.route == "everything") { //WARN: Hack for header inherits. TODO: Add check for its simpleNative

@@ -129,7 +129,7 @@
 								}
 							}
 
-							args.push(typeStr + " " + arg.name);
+							args.push(typeStr + " " + this.localName(arg.name));
 						}
 						var string prefix = "";
 						if (method.binding == "fixed") {
@@ -192,7 +192,11 @@
 			typeStr = "std::unique_ptr<" + typeStr + ">";
 		}
 
-		return typeStr + " " + define.name + set;
+		return typeStr + " " + this.localName(define.name) + set;
+	}
+
+	bound public string localName(string name) {
+		return "_L" + name;
 	}
 
 	bound public override <string>function statement(Carbonite.Statement statement) {
@@ -227,7 +231,7 @@
 			var Carbonite.Statements.ForIn forState = statement;
 			var string str = "";
 			if (forState.iterate.output.reference.route == "array") {
-				str = "for (" + this.define(forState.define) + " = 0; " + forState.define.name + " < " + this.expression(forState.iterate) + ".size(); " + forState.define.name + "++) {\n" + this.body(forState.body) + "}";
+				str = "for (" + this.define(forState.define) + " = 0; " + this.localName(forState.define.name) + " < " + this.expression(forState.iterate) + ".size(); " + this.localName(forState.define.name) + "++) {\n" + this.body(forState.body) + "}";
 			}else{
 				str = "for (" + this.define(forState.define) + " in " + this.expression(forState.iterate) + ") {\n" + this.body(forState.body) + "}";
 			}
@@ -339,7 +343,10 @@
 						rtn += cast.constantReference.reference.name;
 					}
 				}else{
-					rtn += cast.reference.name;
+					if (cast.reference.isLocal)
+						rtn += this.localName(cast.reference.name);
+					else
+						rtn += cast.reference.name;
 				}
 			}else if (part.type == "dot") {
 				var Carbonite.Parts.Dot cast = part;

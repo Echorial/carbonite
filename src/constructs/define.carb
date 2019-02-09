@@ -6,6 +6,9 @@ class Carbonite.Define inherits Carbonite.Range, object {
 	bound public bool isConstantReference = false;
 	bound public int blockIndex = 0;
 
+	`Local to function/method block`
+	bound public bool isLocal = true;
+
 	`If this define has been lost out of scope, used by cpp to determine stack vs heap allocation`
 	bound public bool outOfScope = true;
 	bound public bool reference = false;
