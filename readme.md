@@ -20,6 +20,12 @@ $ npm install carbonite
 ```
 $ carbonite pipe Project/javascript.pipeline output="dist/module.js"
 ```
+
+### Building the carbon parser
+```
+$ carpeg generate src/parser/Carbon.cpeg src/parser/carbon.carb --name="CarboniteCarbonParser"
+```
+
 ## Development with carbonite-cli
 carbonite/
 ```
