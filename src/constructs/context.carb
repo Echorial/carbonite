@@ -1,8 +1,29 @@
+[Carbide]
 class Carbonite.Context inherits object {
+	[Expose]
 	bound public string type = "";
+
+	[Expose]
 	bound public string instance = "";
+
+	[Expose]
+	bound public Carbonite.Class reference = null;
+
+	[Expose]
 	bound public <string>array arguments = new <string>array();
+
+	[Expose]
 	bound public <string>array templates = new <string>array();
+
+	[Expose]
+	bound public Carbonite.Class parent = null;
+
+	[Expose]
+	bound public string route(Carbonite.Class cls) {
+		return this.router(cls);
+	}
+
+	bound public <string, Carbonite.Class>function router = null;
 
 	fixed public <Carbonite.Context>function @construct(string instance, <string>array args, <string>array templates) {
 		this.instance = instance;

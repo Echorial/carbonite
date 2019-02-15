@@ -10,4 +10,6 @@ relative <class T = primitive>map inherits primitive {
 
 	native inline string toJson()
 	{return "JSON.stringify(" + context.instance + ")";}
+
+	native inline <T>map clone() {return "JSON.parse(JSON.stringify(" + context.instance + "))";}
 }

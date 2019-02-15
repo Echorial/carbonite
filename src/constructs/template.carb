@@ -1,8 +1,13 @@
+[Carbide]
 class Carbonite.Template inherits object, Carbonite.Range {
+	[Expose]
 	bound public string name = "";
+	
 	bound public Carbonite.Type default = empty;
 	bound public bool optional = false;
 	bound public string type = "class";
+
+	[Expose]
 	bound public Carbonite.Class parent = empty;
 	bound public map raw = empty;
 	bound public int index = 0;

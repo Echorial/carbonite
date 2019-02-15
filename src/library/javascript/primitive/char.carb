@@ -1,3 +1,4 @@
+[Primitive]
 relative char inherits primitive {
 	native inline void @construct() {return '""';}
 
@@ -9,4 +10,6 @@ relative char inherits primitive {
 
 	native inline string toLower() {return context.instance + ".toLowerCase()";}
 	native inline string toUpper() {return context.instance + ".toUpperCase()";}
+
+	native inline string @cast() {return context.instance;}
 }

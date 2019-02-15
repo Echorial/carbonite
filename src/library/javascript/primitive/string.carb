@@ -1,3 +1,4 @@
+[Primitive]
 relative string inherits primitive {
 	native inline void @construct() {return '""';}
 
@@ -11,6 +12,9 @@ relative string inherits primitive {
 	native inline property int length() {return context.instance + ".length";}
 
 	native inline int charCodeAt(int index) {return context.instance + ".charCodeAt(" + context.arguments[0] + ")";}
+	
+	native inline char charAt(int index) {return context.instance + "[" + context.arguments[0] + "]";}
+
 	native inline bool contains(string what) {return context.instance + ".includes(" + context.arguments[0] + ")";}
 	
 	native inline string replace(string regex, string with) {return context.instance + ".replace(new RegExp(" + context.arguments[0] + ".replace(/[\\-\\[\\]\\/\\{\\}\\(\\)\\*\\+\\?\\.\\\\\\^\\$\\|]/g, '\\\\$&'), 'g'), " + context.arguments[1] + ")";}

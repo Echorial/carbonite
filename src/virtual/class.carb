@@ -16,6 +16,8 @@ class VirtualClass inherits Carbide.Virtual.Value {
 			return Carbide.Virtual.Values.String.create(this.value.route);
 		}else if (name == "reroute") {
 			return Carbide.Virtual.Values.String.create(this.value.reroute);
+		}else if (name == "primitiveValue") {
+			return Carbide.Virtual.Values.Bool.create(this.value.primitiveValue);
 		}else if (name == "base") {
 			return Carbide.Virtual.Values.String.create(this.value.base);
 		}else if (name == "attributes") {

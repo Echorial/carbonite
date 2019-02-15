@@ -9,7 +9,18 @@ class Carbonite.Members.Property inherits Carbonite.Member {
 			parent.compiler.status.give(Carbonite.Notice.fromParser(parent.source, output));
 		}else{
 			var property = Carbonite.Member.make(parent, output.data["data"]);
+			
+			if (property.hasFlag("destroy")) {
+				parent.destroyMembers(property.name);
+			}
+
 			parent.members.push(property);
+			
+			if (parent.compiler.currentLevel >= 3) {
+				var Carbonite.Members.Property cast = property;
+				cast.buildDefault();
+			}
+
 			return property;
 		}
 	}

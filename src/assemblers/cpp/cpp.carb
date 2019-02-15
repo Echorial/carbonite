@@ -1,6 +1,11 @@
  class Carbonite.Assemblers.Cpp inherits Carbonite.Assembler {
 	bound public override <string>function build() {
 		var string rtn = "// ------- Header ------- //\n\n";
+
+		/*for (var int i in this.compiler.roots) {
+			var Carbonite.Class root = this.compiler.roots[i];
+			rtn += "class " + root.
+		}*/
 		
 		for (var int i in this.compiler.roots) {
 			var Carbonite.Class root = this.compiler.roots[i];
@@ -72,9 +77,9 @@
 				var typeStr = route;
 				if (prop.output.isPrimitiveValue() == false) {
 					if (prop.reference == false) {
-						typeStr = "std::unique_ptr<" + route + ">";
+						typeStr = "" + route + "";
 					}else{
-						typeStr = route + "*";
+						typeStr = route;
 					}
 				}
 
@@ -94,15 +99,38 @@
 		return rtn;
 	}
 
+	bound public <string>function route(Carbonite.Class what) {
+		if (what.route == "array") {
+			return "std::unique_ptr<std::vector<" + this.route(what.resolvedTemplates[0]) + ">>";
+		}else if (what.route == "map") {
+			return "std::unique_ptr<std::map<std::string, " + this.route(what.resolvedTemplates[0]) + ">>";
+		}else if (what.route == "string") {
+			return "std::string";
+		}else if (what.route == "primitive") {
+			return "_c_primitive";
+		}else if (what.primitiveValue == false) {
+			return "std::unique_ptr<" + what.getRoute("::") + ">";
+		}
+
+		return what.getRoute("::");
+	}
+
 	bound public <string>function route(Carbonite.Type what) {
+		var refFlag = "";
+
+		if (what.containsReference)
+			refFlag = "&";
+
 		if (what.reference.route == "array") {
-			return "std::vector<" + this.route(what.templates[0]) + ">";
+			return "std::unique_ptr<std::vector<" + this.route(what.templates[0]) + ">>" + refFlag;
 		}else if (what.reference.route == "map") {
-			return "std::map<std::string, " + this.route(what.templates[0]) + ">";
+			return "std::unique_ptr<std::map<std::string, " + this.route(what.templates[0]) + ">>" + refFlag;
 		}else if (what.reference.route == "string") {
 			return "std::string";
 		}else if (what.reference.route == "primitive") {
 			return "_c_primitive";
+		}else if (what.reference.primitiveValue == false) {
+			return "std::unique_ptr<" + what.reference.getRoute("::") + ">" + refFlag;
 		}
 
 		return what.reference.getRoute("::");
@@ -123,9 +151,9 @@
 							
 							if (arg.isByValue() == false) {
 								if (arg.reference) {
-									typeStr = typeStr + "*";
+									typeStr = typeStr;
 								}else{
-									typeStr = "std::unique_ptr<" + typeStr + ">";
+									typeStr = "" + typeStr + "";
 								}
 							}
 
@@ -189,7 +217,7 @@
 		}
 		var typeStr = this.route(define.output);
 		if (define.output.isPrimitiveValue() == false or define.output.reference.name == "array" or define.output.reference.name == "map") {
-			typeStr = "std::unique_ptr<" + typeStr + ">";
+			typeStr = "" + typeStr + "";
 		}
 
 		return typeStr + " " + this.localName(define.name) + set;
@@ -317,7 +345,7 @@
 				doNew = "";
 			}
 			if (cast.prefix == "new") {
-				return this.termCast(term, "std::unique_ptr<" + this.route(cast.expression.output) + ">(" + doNew + this.expression(cast.expression) + ")");
+				return this.termCast(term, this.route(cast.expression.output) + "(" + doNew + this.expression(cast.expression) + ")");
 			}
 		}else if (term.type == "sequence") {
 			var Carbonite.Terms.Sequence cast = term;
@@ -424,7 +452,7 @@
 					for (var int a in cast.arguments) {
 						var arg = cast.arguments[a];
 						var exp = this.expression(cast.arguments[a]);
-						if (arg.getOutput().isPrimitiveValue() == false)
+						if (arg.getOutput().isPrimitiveValue() == false and cast.reference.reference.arguments[a].reference == false)
 							exp = "std::move(" + exp + ")";
 
 						args.push(exp);
@@ -455,6 +483,8 @@
 	}
 
 	bound public override <string>function callMethodWithStrings(Carbonite.Members.Method method, <string>array arguments, <Carbonite.Type>array templates, string context) {
+		var that = this;
+
 		var bool normal = true;
 		if (method.hasFlag("native")) {
 			if (method.hasFlag("inline")) {
@@ -470,6 +500,11 @@
 				temps.push(this.route(temp));
 			}
 			var Carbonite.Context ctx = new Carbonite.Context(context, arguments, temps);
+			ctx.router = string (Carbonite.Class cls) => {
+				return that.route(cls);
+			};
+
+			ctx.parent = method.parent;
 			ctx.type = this.route(method.output);
 			return method.generate(ctx);
 		}
@@ -480,7 +515,7 @@
 		for (var int i in arguments) {
 			var Carbonite.Expression arg = arguments[i];
 			var exp = this.expression(arg);
-			if (arg.getOutput().isPrimitiveValue() == false)
+			if (arg.getOutput().isPrimitiveValue() == false and method.arguments[i].reference == false)
 				exp = "std::move(" + exp + ")";
 
 			args.push(exp);
@@ -503,10 +538,15 @@
 		if (expression.reference != empty) {
 			var <string>array args = new <string>array();
 			if (expression.last != empty) {
-				if (expression.last.getOutput().isPrimitiveValue() == false)
-					args.push("std::move(" + this.term(expression.last) + ")");
-				else
+				if (expression.last.getOutput().isPrimitiveValue() == false) {
+					if (expression.first.getOutput().containsReference) {
+						args.push(this.term(expression.last));
+					}else{
+						args.push("std::move(" + this.term(expression.last) + ")");
+					}
+				}else{
 					args.push(this.term(expression.last));
+				}
 			}
 			var <Carbonite.Type>array temps = new <Carbonite.Type>array();
 			if (expression.reference.hasFlag("native")) {

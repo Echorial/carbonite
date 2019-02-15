@@ -1,3 +1,4 @@
+[Primitive]
 relative int inherits primitive {
 	native inline void @construct() {return '0';}
 
@@ -22,6 +23,10 @@ relative int inherits primitive {
 
 	native inline float @cast() {
 		return "((float) " + context.instance + ")";
+	}
+
+	override native inline string @cast() {
+		return "std::to_string(" + context.instance + ")";
 	}
 
 	fixed native inline int parse(string value) {return "parseInt(" + context.arguments[0] + ")";}

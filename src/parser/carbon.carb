@@ -1512,6 +1512,8 @@ dataStore["temp"] = new map();
 	
 
 
+data["reference"] = new <string>array();
+
 			var int literalChar = 0;
 	for (var int charPos = startPos; charPos < input.length(); charPos++) {
 		var string currentChar = input[charPos];
@@ -1552,11 +1554,20 @@ if (ruleOut2.hadError) {
 	}else{
 		var string ruleOutCast2 = ruleOut2.data["data"];
 charPos = this.offset;
-		data["name"] = ruleOutCast2;if (true) {
+		data["name"] = ruleOutCast2;
+		c = 3;
+		this.error.vested++;
+	}
+}else if (c == 3) {
+	if (currentCode == 38) {
+			var <string>array castreference3 = data["reference"];
+castreference3.push("&");
+if (true) {
 
-var map castacname0 = data["name"];
-var string actionCap0name = data["name"];var map actionCap0template = data["template"];
+var map castacreference0 = data["reference"];
+var string actionCap0name = data["name"];var <string>array actionCap0reference = data["reference"];var map actionCap0template = data["template"];
 dataStore["data"]["name"] = actionCap0name;
+dataStore["data"]["reference"] = actionCap0reference.length;
 dataStore["data"]["start"] = startPos;
 dataStore["data"]["end"] = charPos;
 if (actionCap0template != empty) {
@@ -1565,8 +1576,23 @@ if (actionCap0template != empty) {
 }else{
 	dataStore["data"]["template"] = false;
 }}
-		c = 0 - 1;
-		this.error.vested++;
+			c = 3;
+			this.error.vested++;
+	}else{
+		if (true) {
+
+var map castacreference0 = data["reference"];
+var string actionCap0name = data["name"];var <string>array actionCap0reference = data["reference"];var map actionCap0template = data["template"];
+dataStore["data"]["name"] = actionCap0name;
+dataStore["data"]["reference"] = actionCap0reference.length;
+dataStore["data"]["start"] = startPos;
+dataStore["data"]["end"] = charPos;
+if (actionCap0template != empty) {
+	var <map>array tt = actionCap0template["types"];
+	dataStore["data"]["template"] = tt;
+}else{
+	dataStore["data"]["template"] = false;
+}}c = 0 - 1; charPos--; this.offset--;
 	}
 }		this.offset++; this.column++;
 		if (c == 0 - 1) {this.offset = charPos; break;}

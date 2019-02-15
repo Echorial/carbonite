@@ -85,6 +85,8 @@ class Carbonite.Compiler {
 				var rtn = that.getClass(cast.value);
 				if (rtn != null) {
 					return VirtualClass.create(rtn);
+				}else{
+					return Carbide.Virtual.Values.Null.create();
 				}
 			}
 		});
@@ -364,6 +366,16 @@ class Carbonite.Compiler {
 		}
 
 		return this.status;
+	}
+
+	bound public bool hasConfigFlag(string name) {
+		if (name in this.pipeConfig) {
+			var bool flag = this.pipeConfig[name];
+			if (flag == true)
+				return true;
+		}
+
+		return false;
 	}
 
 	bound public bool doExport(string route) {

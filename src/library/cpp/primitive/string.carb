@@ -1,3 +1,4 @@
+[Primitive]
 relative string inherits primitive {
 	native inline void @construct() {return 'std::string("")';}
 
@@ -12,6 +13,8 @@ relative string inherits primitive {
 
 	native inline int charCodeAt(int index) {return "((int) " + context.instance + ".at(" + context.arguments[0] + "))";}
 	
+	native inline char charAt(int index) {return context.instance + "[" + context.arguments[0] + "]";}
+
 	native inline string replace(string regex, string with){return context.instance + ".replace(" + context.arguments[0] + ", " + context.arguments[1] + ")";}
 
 	fixed native inline string fromCharCode(int code) {return "String.fromCharCode(" + context.arguments[0] + ")";}	

@@ -1,3 +1,4 @@
+[Primitive]
 relative float inherits primitive {
 	[operator="=", order = 10] native inline void set(float what) {return context.instance + " = " + context.arguments[0];}
 	[operator="+"] native inline float add(float what) {return context.instance + " + " + context.arguments[0];}

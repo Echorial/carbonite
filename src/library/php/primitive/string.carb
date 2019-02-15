@@ -9,6 +9,7 @@ core class cbonStringShiv {
 	{return "preg_match(" + context.arguments[1] + ", " + context.arguments[0] + ", " + context.arguments[2] + ")";}
 }
 
+[Primitive]
 relative string inherits primitive {
 	native inline void @construct() {return '""';}
 
@@ -22,6 +23,9 @@ relative string inherits primitive {
 	native inline property int length() {return "strlen(" + context.instance + ")";}
 
 	native inline int charCodeAt(int index) {return "ord(" + context.instance + "[" + context.arguments[0] + "])";}
+
+	native inline int charAt(int index) {return context.instance + "[" + context.arguments[0] + "]";}
+
 	native inline bool contains(string what) {return "(strpos(" + context.instance + ", " + context.arguments[0] + ") !== false)";}
 	
 	native inline string replace(string regex, string with) {return "preg_replace('/'." + context.arguments[0] + ".'/', " + context.arguments[1] + ", " + context.instance + ")";}

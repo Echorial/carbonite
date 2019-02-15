@@ -176,8 +176,10 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 			native = "boolean";
 		}else if (to.route == "float") {
 			native = "number";
+		}else if (to.route == "Exception") {
+			return varName + " instanceof Error";
 		}else if (to.route == "array") {
-			return varName + "instanceof Array";
+			return varName + " instanceof Array";
 		}else if (to.route == "map") {
 			native = "object";
 		}

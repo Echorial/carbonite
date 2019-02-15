@@ -1,8 +1,10 @@
 class Carbonite.Members.Method inherits Carbonite.Member {
 	bound public Carbonite.Body body = empty;
 	bound public <Carbonite.Argument>array arguments = new <Carbonite.Argument>array();
-	bound public bool variatic = false;
+	bound public bool variadic = false;
 	bound public bool simpleNative = false;
+
+	bound public Carbide.Virtual.Block nativeBlock = null;
 
 	bound public <Carbonite.Members.Method>function getReference() {
 		return this;
@@ -19,13 +21,24 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 			parent.compiler.status.give(Carbonite.Notice.fromParser(parent.source, output));
 		}else{
 			var method = Carbonite.Member.make(parent, output.data["data"]);
+
+			if (method.hasFlag("destroy")) {
+				parent.destroyMembers(method.name);
+			}
+
 			parent.members.push(method);
+
+			if (parent.compiler.currentLevel >= 3) {
+				var Carbonite.Members.Method cast = method;
+				cast.buildBody();
+			}
+
 			return method;
 		}
 	}
 
 	bound public override <bool>function checkExpressions(<Carbonite.Expression>array parameters) {
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length() > this.arguments.length()) {
 				return false;
 			}
@@ -41,7 +54,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 	}
 
 	bound public override <bool>function check(<Carbonite.Type>array parameters) {
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length() > this.arguments.length()) {
 				return false;
 			}
@@ -67,7 +80,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 	bound public override <<Carbonite.OverloadCast>array>function checkWithCast(<Carbonite.Type>array parameters) {
 		var output = new <Carbonite.OverloadCast>array();
 		
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length() > this.arguments.length()) {
 				return output;
 			}
@@ -93,7 +106,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 	}
 
 	bound public override <bool>function checkWithContext(<Carbonite.Type>array parameters, Carbonite.Type context) {
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length() > this.arguments.length()) {
 				return false;
 			}
@@ -117,13 +130,15 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 		if (this.abstract)
 			return null;
 
-		this.body.build();
+		if (this.body != null) {
+			this.body.build();
 
-		if (this.hasFlag("native")) {
-			if (this.body.statements.length() == 1) {
-				var Carbonite.Statement state = this.body.statements[0];
-				if (state.type == "return") {
-					this.simpleNative = true;
+			if (this.hasFlag("native")) {
+				if (this.body.statements.length() == 1) {
+					var Carbonite.Statement state = this.body.statements[0];
+					if (state.type == "return") {
+						this.simpleNative = true;
+					}
 				}
 			}
 		}
@@ -135,25 +150,31 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 		if (type == "interface") {
 			this.abstract = true;
 		}else{
-			this.body = new Carbonite.Body(this, location, this.raw["value"]["body"]);
+			var <map>array states = this.raw["value"]["body"]["code"];
 
-			var Carbonite.Type ownType = new Carbonite.Type(this.parent.compiler, this.parent);
-			ownType.loadFromName(this.parent.route, this.raw);
-			ownType.reference = this.parent; //warn: hack: todo: Fix
-			var string thisName = "this";
-			var Carbonite.Define defThis = new Carbonite.Define(thisName, ownType);
-			defThis.isLocal = false;
-			if ((this.binding == "fixed") and (this.name != "@construct"))
-				defThis.isConstantReference = true;
+			if (this.hasFlag("native") and states.length > 0 and states[0]["type"] != "return") {
+				// Future
+			}else{
+				this.body = new Carbonite.Body(this, location, this.raw["value"]["body"]);
 
-			this.body.scope.add(defThis);
-			
-			if (this.hasFlag("native")) {
-				var Carbonite.Type cc = new Carbonite.Type(this.parent.compiler, this.parent);
-				cc.loadFromName("Carbon.Context", this.raw);
-				var string cStr = "context";
-				var Carbonite.Define context = new Carbonite.Define(cStr, cc);
-				this.body.scope.add(context);
+				var Carbonite.Type ownType = new Carbonite.Type(this.parent.compiler, this.parent);
+				ownType.loadFromName(this.parent.route, this.raw);
+				ownType.reference = this.parent; //warn: hack: todo: Fix
+				var string thisName = "this";
+				var Carbonite.Define defThis = new Carbonite.Define(thisName, ownType);
+				defThis.isLocal = false;
+				if ((this.binding == "fixed") and (this.name != "@construct"))
+					defThis.isConstantReference = true;
+
+				this.body.scope.add(defThis);
+				
+				if (this.hasFlag("native")) {
+					var Carbonite.Type cc = new Carbonite.Type(this.parent.compiler, this.parent);
+					cc.loadFromName("Carbon.Context", this.raw);
+					var string cStr = "context";
+					var Carbonite.Define context = new Carbonite.Define(cStr, cc);
+					this.body.scope.add(context);
+				}
 			}
 
 			if (this.name == "@index") {
@@ -237,7 +258,44 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 			var Carbonite.Statements.Return ret = this.body.statements[0];
 			return this.concat(ctx, ret.expression.first, ret.expression.last);
 		}else{
-			
+			if (this.nativeBlock == null) {
+				var map blockMap = this.raw["value"]["body"]["code"];
+				this.nativeBlock = Carbide.Languages.Carbon.virtualizeIntoProcessor(this.parent.source.file + " native carbon script", blockMap.clone(), this.parent.source.parent.buildScript);
+			}
+
+			ctx.reference = this.output.reference;
+
+			var proc = this.parent.source.parent.buildScript;
+			var scope = new Carbide.Virtual.Scope(proc);
+			scope.setParentScope(proc.scope);
+			scope.addVariable(new Carbide.Virtual.Variable("context", ctx.toCarbideValue()));
+
+			try {
+				this.nativeBlock.run(scope);
+			}catch (Exception e) {
+
+			}
+
+			if (proc.hadError) {
+				var baseNotice = proc.notices[0];
+				var notice = new Carbonite.Notice(baseNotice.message);
+				notice.start = new Carbonite.Location(0, 0, baseNotice.start);
+				notice.end = new Carbonite.Location(0, 0, baseNotice.end);
+				notice.module = "Script";
+				notice.type = "Runtime";
+				notice.source = this.parent.source;
+				this.parent.source.parent.status.give(notice);
+				Exception.throw("Execution error");
+			}else{
+				var Carbide.Virtual.Variable str = scope.search("functionReturn"); //TODO: BUG: Make sure to only search this scope and not parents
+
+				if (str == null) {
+					this.buildError("Expected string output from native method");
+				}else{
+					var Carbide.Virtual.Values.String cast = str.value;
+					return cast.value;
+				}
+			}
 		}
 	}
 
@@ -310,7 +368,7 @@ class Carbonite.Members.ReferenceMethod inherits Carbonite.ReferenceMember {
 	}
 
 	bound public override <bool>function check(<Carbonite.Type>array parameters) {
-		if (this.reference.variatic == false) {
+		if (this.reference.variadic == false) {
 			if (parameters.length() > this.reference.arguments.length()) {
 				return false;
 			}

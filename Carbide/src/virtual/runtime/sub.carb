@@ -44,10 +44,14 @@ class Carbide.Virtual.Sub {
 				var Carbide.Virtual.Expression arg = this.arguments[i];
 				args.push(arg.run(scope));
 			}
-			if (on.type == "function") {
-				return on.call(args, scope);
+			if (this.type == 3) {
+				return on.method("index", args, scope);
 			}else{
-				return on.method(this.property, args, scope);
+				if (on.type == "function") {
+					return on.call(args, scope);
+				}else{
+					return on.method(this.property, args, scope);
+				}
 			}
 		}
 	}

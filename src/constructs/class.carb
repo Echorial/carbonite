@@ -1,47 +1,80 @@
+[Carbide]
 class Carbonite.Class inherits Carbonite.Named {
+	[Expose]
 	bound public int uid = 0;
 
 	bound public map raw = empty;
 	bound public map headerData = null;
+
+	[Expose]
 	bound public bool isFromHeader = false;
 
+	[Expose]
 	bound public bool primitiveValue = false;
 
 	bound public <Carbonite.Member>array members = new <Carbonite.Member>array();
+
+	[Expose]
 	bound public <Carbonite.Class>array inherits = new <Carbonite.Class>array();
+
+	[Expose]
 	bound public <Carbonite.Class>array headerInherits = new <Carbonite.Class>array();
 
+	[Expose]
 	bound public <Carbonite.Template>array templates = new <Carbonite.Template>array();
-	bound public <Carbonite.Class>array descendants = new <Carbonite.Class>array();
-	bound public <map>array attributes = empty;
-	bound public string reroute = "";
-	bound public bool autoReroute = false;
 
+	[Expose]
+	bound public <Carbonite.Class>array descendants = new <Carbonite.Class>array();
+
+	[Expose]
+	bound public <map>array attributes = empty;
+
+	[Expose]
+	bound public string reroute = "";
+
+	[Expose]
+	bound public bool autoReroute = false;
+	
 	bound public Carbonite.Body propertyContext = empty;
 
 	`When set, types will route to the link class instead of this one. This property can be used as a way to build alias classes.`
+	[Expose]
 	bound public Carbonite.Class link = null;
 
+	[Expose]
 	bound public bool alreadyBuilt = false;
+
+	[Expose]
 	bound public bool membersBuilt = false;
+
+	[Expose]
 	bound public bool codeBuilt = false;
+
+	[Expose]
 	bound public bool inherited = false;
 	bound public Carbonite.Doc doc = null;
 
+	[Expose]
 	bound public bool templateClass = false;
 
 	`If this class has its templates filled in.
 	@note This is always off unless the templateBase class has templates.`
+	[Expose]
 	bound public bool templateInstance = false;
 
 	`A templateInstance base class reference.`
+	[Expose]
 	bound public Carbonite.Class templateBase = null;
 
 	bound public <Carbonite.TemplateInstance>array instances = new <Carbonite.TemplateInstance>array();
 
+	[Expose]
 	bound public <Carbonite.Type>array resolvedTemplates = new <Carbonite.Type>array();
 
+	[Expose]
 	bound public string base = "";
+
+	[Expose]
 	bound public <string>array flags = null;
 
 	fixed public <Carbonite.Class>function @construct()	{
@@ -296,6 +329,11 @@ class Carbonite.Class inherits Carbonite.Named {
 		if (this.attributes == empty) {
 			this.attributes = new <map>array();
 		}
+
+		if (this.getAttribute(this.attributes, "Primitive") != null) {
+			this.primitiveValue = true;
+		}
+
 		this.doc = new Carbonite.Doc(this.raw["doc"]);
 	}
 
@@ -354,7 +392,15 @@ class Carbonite.Class inherits Carbonite.Named {
 				cls.descendants.push(this);
 			}
 			this.inherited = true;
+
+			var arr = new <Carbide.Virtual.Value>array();
+			arr.push(VirtualClass.create(this));
+			this.compiler.virtualEvents.emit("members.end", arr);
 		}
+	}
+
+	bound public void emitMemberEnd() {
+		
 	}
 
 	bound public <void>function buildCode() {
@@ -458,10 +504,6 @@ class Carbonite.Class inherits Carbonite.Named {
 			var inst = this.instances[i];
 			inst.instance.buildMembers();
 		}
-
-		var arr = new <Carbide.Virtual.Value>array();
-		arr.push(VirtualClass.create(this));
-		this.compiler.virtualEvents.emit("members.end", arr);
 	}
 
 	bound public <void>function buildTemplates() {
@@ -488,6 +530,14 @@ class Carbonite.Class inherits Carbonite.Named {
 				var Carbonite.Class cls = this.compiler.findClass(name, this);
 				this.inherits.push(cls);
 			}
+		}
+	}
+
+	bound public <void>function destroyMembers(string name) {
+		for (var int i = this.members.length - 1; i >= 0; i--) {
+			var Carbonite.Member member = this.members[i];
+			if (member.name == name)
+				this.members.remove(i);
 		}
 	}
 

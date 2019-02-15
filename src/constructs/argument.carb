@@ -43,6 +43,7 @@ class Carbonite.Argument inherits Carbonite.Range {
 
 		this.type = new Carbonite.Type(compiler, parent);
 		this.type.loadFromRaw(raw["type"]);
+		this.reference = this.type.containsReference;
 		this.define.output = this.type;
 		this.loadLocation(parent, raw);
 

@@ -1,3 +1,4 @@
+[Primitive]
 relative int inherits primitive {
 	native inline void @construct() {return '0';}
 

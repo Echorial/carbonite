@@ -1,4 +1,6 @@
+[Carbide]
 class Carbonite.Type inherits Carbonite.Range {
+	[Expose]
 	bound public Carbonite.Class reference = empty;
 
 	`Raw parsed route including any magic.`
@@ -26,6 +28,8 @@ class Carbonite.Type inherits Carbonite.Range {
 
 	bound public bool owned = false;
 	bound public int ownedUntil = -1;
+
+	bound public bool containsReference = false;
 
 	fixed public <Carbonite.Type>function @construct(Carbonite.Compiler compiler, Carbonite.Class parent) {
 		this.compiler = compiler;
@@ -75,6 +79,10 @@ class Carbonite.Type inherits Carbonite.Range {
 
 		if (name == "this") {
 			name = this.parent.route;
+		}
+
+		if ("reference" in this.raw and this.raw["reference"] == 1) {
+			this.containsReference = true;
 		}
 		
 		if (name[0] == "@") {
@@ -352,6 +360,8 @@ class Carbonite.ReferenceType inherits Carbonite.Type {
 	fixed public override <Carbonite.ReferenceType>function @construct(Carbonite.Type type, Carbonite.Type context) {
 		this.context = context;
 		this.typeReference = type;
+		this.containsReference = type.containsReference;
+		
 		if (type.late == true) {
 			var Carbonite.Type cast = context.templates[type.lateReference.index];
 			this.setReference(cast.reference);

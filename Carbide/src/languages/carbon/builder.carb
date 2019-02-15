@@ -14,6 +14,15 @@ class Carbide.Languages.Carbon inherits Carbide.Language {
 		return proc;
 	}
 
+	fixed public <Carbide.Virtual.Block>function virtualizeIntoProcessor(string label, map ast, Carbide.Virtual.Processor processor) {
+		var Carbide.Virtual.Block root = empty;
+		var <map>array exps = ast;
+		root = Carbide.Languages.Carbon.buildBlock(processor, exps, root);
+		root.label = label;
+		processor.addBlock(root);
+		return root;
+	}
+
 	fixed public <Carbide.Virtual.Block>function virtualizeIntoProcessor(string label, string input, Carbide.Virtual.Processor processor) {
 		var <map>CarboniteCarbonParserOutput po = CarboniteCarbonParser.parse("Block", "{" + input + "}");
 		if (po.hadError) {
@@ -172,6 +181,11 @@ class Carbide.Languages.Carbon inherits Carbide.Language {
 						}
 						if (doPush)
 							rtn.subs.push(sub);
+					}else if (append["type"] == "index") {
+						var Carbide.Virtual.Sub sub = new Carbide.Virtual.Sub(null);
+						sub.type = 3;
+						sub.arguments.push(Carbide.Languages.Carbon.buildExpression(append["expression"], proc, parentBlock));
+						rtn.subs.push(sub);
 					}else{
 						var Carbide.Virtual.Sub sub = new Carbide.Virtual.Sub(null);
 						sub.type = 2;

@@ -3,8 +3,13 @@ class Carbonite.NamedHack inherits object, Carbonite.Range {
 }
 
 class Carbonite.Named inherits Carbonite.Range {
+	[Expose]
 	bound public string route = "";
+	
+	[Expose]
 	bound public string name = "";
+
+	[Expose]
 	bound public bool leveled = false;
 	bound public Carbonite.Compiler compiler = empty;
 

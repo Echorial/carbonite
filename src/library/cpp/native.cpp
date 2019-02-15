@@ -73,6 +73,42 @@ struct _c_primitive {
 
 inline _c_primitive::~_c_primitive() = default;
 
+
+template <typename T>
+typename std::enable_if<
+    std::is_integral<T>::value,
+	std::string
+>::type _c_join(std::unique_ptr<std::vector<T>> &vec, std::string glue) {
+	std::string output = "";
+
+	for (size_t i = 0; i < vec->size(); i++) {
+		output += std::to_string((*vec.get())[i]);
+
+		if (i < vec->size() - 1)
+			output += glue;
+	}
+
+	return output;
+}
+
+std::string _c_join(std::unique_ptr<std::vector<std::string>> &vec, std::string glue) {
+	std::string output = "";
+
+	for (size_t i = 0; i < vec->size(); i++) {
+		output += (*vec.get())[i];
+
+		if (i < vec->size() - 1)
+			output += glue;
+	}
+
+	return output;
+}
+
+template <class T>
+T& _c_index_n(std::unique_ptr<std::vector<T>> &vec, std::size_t i) {
+	return (*vec.get())[i];
+}
+
 template <class T>
 T _c_index(std::unique_ptr<std::vector<_c_primitive>> &vec, std::size_t i) {
 	return std::get<T>((*vec.get())[i].val);
