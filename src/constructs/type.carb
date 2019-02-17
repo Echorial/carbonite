@@ -212,6 +212,19 @@ class Carbonite.Type inherits Carbonite.Range {
 		return true;
 	}
 
+	bound public bool polymorph(Carbonite.Type what) {
+		if (what.reference.route == "null" or this.reference.route == "null" or what.reference.route == "empty")
+			return false;
+
+		if (what.reference.descendantOf(this.reference))
+			return true;
+
+		if (this.reference.descendantOf(what.reference))
+			return true;
+		
+		return false;
+	}
+
 	bound public <bool>function check(Carbonite.Type what) {
 		if (what.reference.route == "null" or this.reference.route == "null") {
 			return true;
