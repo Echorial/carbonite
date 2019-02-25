@@ -19,6 +19,7 @@ relative <class T = primitive>array inherits primitive {
 	native inline <T>array concat(<everything>array with) {return "array_merge(" + context.instance + ", " + context.arguments[0] + ")";}
 
 	native inline T @index(int index) {return "_c_lib__arrUtils::readIndex(" + context.instance + ", " + context.arguments[0] + ")";}
+	native inline T move(int index) {return "_c_lib__arrUtils::readIndex(" + context.instance + ", " + context.arguments[0] + ")";}
 	
 	native inline T @setIndex(string index, T value) {return context.instance + "[" + context.arguments[0] + "] = " + context.arguments[1];}
 
