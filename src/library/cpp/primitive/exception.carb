@@ -1,5 +1,5 @@
 relative Exception {
-	fixed native inline void throw(string msg) {return "throw new Error(" + context.arguments[0] + ")";}
+	fixed native inline void throw(string msg) {return "throw _c_error(" + context.arguments[0] + ")";}
 	fixed native inline void try() {return "try {";}
-	fixed native inline void endTry() {return "} catch(err) {}";}
+	fixed native inline void endTry() {return "} catch(_c_error& err) {}";}
 }
