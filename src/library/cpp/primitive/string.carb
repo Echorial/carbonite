@@ -9,7 +9,7 @@ relative string inherits primitive {
 	[operator="!=", order=5] native inline bool notEqual(string compare) {return context.instance + " != " + context.arguments[0];}
 	native inline string @index(int index) {return context.instance + "[" + context.arguments[0] + "]";}
 	
-	native inline property int length() {return context.instance + ".length";}
+	native inline property int length() {return context.instance + ".length()";}
 
 	native inline int charCodeAt(int index) {return "((int) " + context.instance + ".at(" + context.arguments[0] + "))";}
 	
