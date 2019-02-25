@@ -354,10 +354,12 @@ class Carbonite.Compiler {
 			}
 
 			this.currentLevel = 4;
-		Exception.endTry();
+		
 		if (this.status.hadError == false) {
 			platform.build();
 		}
+
+		Exception.endTry();
 
 		for (var int i in this.sources) {
 			var source = this.sources[i];
