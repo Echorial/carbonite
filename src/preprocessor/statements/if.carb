@@ -22,7 +22,7 @@ class Carbonite.Pre.Statements.If inherits Carbonite.Pre.Statement {
 		for (var int i in this.checks) {
 			var Carbonite.Pre.Expression check = this.checks[i];
 			var Carbonite.Pre.Values.Bool v = check.run();
-			if (v.value == false) {
+			if (v == null or v.value == false) {
 				ok = false;
 			}
 		}
