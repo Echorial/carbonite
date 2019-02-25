@@ -54,7 +54,7 @@ string|Flag = _ str: Safe_Name {string|export = $str;
 	if ($str == "interface") {@error(1, "", "")}
 };
 
-string|Member_Flag = _ str: Safe_Name __ {string|export = $str;};
+string|Member_Flag = _ str: Safe_Name {string|export = $str;};
 
 map|Optional = "=" _ exp: Expression {map|export = $exp;};
 
@@ -85,25 +85,19 @@ map|Member_Flagged = _ doc: String_Tick* _ attr: Attribute? _ flags: Member_Flag
 export["type"] = $val["type"];
 export["name"] = $name;
 export["value"] = $val;
-if ($name == empty) {
-	
+if ($type == empty) {
+
 	export["output"] = new map();
 	if ($flags.length() == 0) {
 		@error(1, "", "")
-	}else if ($type == null) {
+	}else if($flags.length() >= 2){
 		export["name"] = $flags[$flags.length() - 1];
 		$flags.pop();
-		
-		export["output"]["name"] = $flags[$flags.length() - 1];
-		$flags.pop();
-	}else if($flags.length() >= 1){
-		export["name"] = $type["name"];
 		export["output"]["name"] = $flags[$flags.length() - 1];
 		$flags.pop();
 	}
 	export["output"]["template"] = new <map>array();
 	export["flags"] = $flags;
-	
 }else{
 	export["flags"] = $flags;
 	export["output"] = $type;
