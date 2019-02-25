@@ -29,7 +29,7 @@ relative <class T = primitive>array inherits primitive {
 	native inline <T>array splice(int index) {return context.instance + ".slice().splice(" + context.arguments[0] + ")";}
 	native inline <T>array clone() {return "JSON.parse(JSON.stringify(" + context.instance + "))";}
 
-	native inline T @index(int index) {
+	native inline T move(int index) {
 		var primitive = false;
 		if (context.reference.primitiveValue)
 			primitive = true;
@@ -47,7 +47,57 @@ relative <class T = primitive>array inherits primitive {
 		}
 		
 		if (primitive == false) {
-			rtn = "_c_index_n<" + context.type + ">(" + context.instance + ", " + context.arguments[0] + ")";
+			rtn = "_c_index_n_move<" + context.type + ">(" + context.instance + ", " + context.arguments[0] + ")";
+		}
+
+		return rtn;
+	}
+
+	native inline void @setIndex(int index, T value) {
+		var primitive = false;
+		if (context.reference.primitiveValue)
+			primitive = true;
+
+		if (context.reference.route == "array")
+			primitive = true;
+
+		if (context.reference.route == "map")
+			primitive = true;
+		
+		let rtn = "";
+
+		if (primitive) {
+			rtn = "_c_index_set<" + context.type + ">(" + context.instance + ", " + context.arguments[0] + ")";
+		}
+		
+		if (primitive == false) {
+			let TType = context.parent.resolvedTemplates[0];
+			rtn = "_c_index_n_set<std::unique_ptr<" + TType.reference.getRoute("::") + ">>(" + context.instance + ", " + context.arguments[0] + ", " + context.arguments[1] + ")";
+		}
+
+		return rtn;
+	}
+
+	native inline T& @index(int index) {
+		var primitive = false;
+		if (context.reference.primitiveValue)
+			primitive = true;
+
+		if (context.reference.route == "array")
+			primitive = true;
+
+		if (context.reference.route == "map")
+			primitive = true;
+		
+		let rtn = "";
+
+		if (primitive) {
+			rtn = "_c_index<" + context.type + ">(" + context.instance + ", " + context.arguments[0] + ")";
+		}
+		
+		if (primitive == false) {
+			let TType = context.parent.resolvedTemplates[0];
+			rtn = "_c_index_n<std::unique_ptr<" + TType.reference.getRoute("::") + ">>(" + context.instance + ", " + context.arguments[0] + ").get()";
 		}
 
 		return rtn;
