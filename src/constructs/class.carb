@@ -113,6 +113,7 @@ class Carbonite.Class inherits Carbonite.Named {
 		return this.route;
 	}
 
+	[Expose]
 	bound public string getRoute(string join) {
 		if (this.reroute != "")
 			return this.reroute;
@@ -373,6 +374,8 @@ class Carbonite.Class inherits Carbonite.Named {
 		if (this.inherited) {
 
 		}else{
+			this.inherited = true;
+			
 			if (this.route == "primitive") {
 				this.primitiveValue = true;
 			}
@@ -391,7 +394,6 @@ class Carbonite.Class inherits Carbonite.Named {
 				this.inherit(cls);
 				cls.descendants.push(this);
 			}
-			this.inherited = true;
 
 			var arr = new <Carbide.Virtual.Value>array();
 			arr.push(VirtualClass.create(this));
