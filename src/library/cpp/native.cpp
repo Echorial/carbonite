@@ -1,13 +1,23 @@
 #include <string>
+#include <optional>
 #include <vector>
 #include <map>
 #include <memory>
 #include <iostream>
+#include <functional>
 #include <variant>
 
 #ifndef _C_NATIVE_TOOLS
 
 #define _C_NATIVE_TOOLS
+
+class _c_error {
+	std::string message;
+
+	_c_error(std::string msg) {
+		this->message = msg;
+	}
+};
 
 struct _c_primitive;
 using _c_r_vec = std::vector<_c_primitive>;
@@ -105,6 +115,11 @@ std::string _c_join(std::unique_ptr<std::vector<std::string>> &vec, std::string 
 }
 
 template <class T>
+T _c_index_n_move(std::unique_ptr<std::vector<T>> &vec, std::size_t i) {
+	return std::move((*vec.get())[i]);
+}
+
+template <class T>
 T& _c_index_n(std::unique_ptr<std::vector<T>> &vec, std::size_t i) {
 	return (*vec.get())[i];
 }
@@ -112,6 +127,17 @@ T& _c_index_n(std::unique_ptr<std::vector<T>> &vec, std::size_t i) {
 template <class T>
 T _c_index(std::unique_ptr<std::vector<_c_primitive>> &vec, std::size_t i) {
 	return std::get<T>((*vec.get())[i].val);
+}
+
+template <class T>
+void _c_index_n_set(std::unique_ptr<std::vector<T>> &vec, std::size_t i, T val) {
+	T deleted = _c_index_n_move(vec, i);
+	(*vec.get())[i] = std::move(val);
+}
+
+template <class T>
+T _c_index_set(std::unique_ptr<std::vector<_c_primitive>> &vec, std::size_t i, T val) {
+	(*vec.get())[i] = val;
 }
 
 template <class T>
