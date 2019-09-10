@@ -181,7 +181,7 @@ map|Expression_Operated = exp: Operation+ {map|export["terms"] = $exp; export["t
 
 map|Block = "{" _ code: Statement* _ "}" {type: "block", code: {$code}, start: {startPos}, end: {charPos}};
 
-map|Statement = _ state: (If / Define / Define_Auto / For / For_In / Break / Try / Throw / Continue / While / Return / Native / Expression_Line) {map|export = $state;export["start"] = startPos;export["end"] = charPos;};
+map|Statement = _ state: (If / Define / Define_Auto / For / For_In / Break / Try / Throw / Continue / While / Return / Yield / Native / Expression_Line) {map|export = $state;export["start"] = startPos;export["end"] = charPos;};
 
 map|Single_Statement = state: Statement {type: "block", code: {[$state]}, start: {startPos}, end: {charPos}};
 
@@ -209,7 +209,9 @@ map|Throw = "throw " _ exp: Expression _ ";" {type: "throw", expression: {$exp}}
 
 map|Return = "return " _ exp: Expression _ ";" {type: "return", expression: {$exp}};
 
-map|Native = "native " _ platform: Safe_Name _ "{" content:
+map|Yield = "yield " _ exp: Expression _ ";" {type: "yield", expression: {$exp}};
+
+map|Native = els: "else"? _ "native " _ platform: Safe_Name _ "{" content:
 	<string {
 		var bool inString = false;
 		var int open = 0;
@@ -252,7 +254,7 @@ map|Native = "native " _ platform: Safe_Name _ "{" content:
 		escape = true;
 	}
 	>**
-"}" {type: "native", platform: {$platform}, content: {$content}};
+"}" {type: "native", platform: {$platform}, else: {$els}, content: {$content}};
 
 map|Define_Auto = ("var" / "let") __ type: Type _ name: Safe_Name _ "=" _ exp: Expression _ ";" {type: "define", name: {$name}, valueType: {$type}, value: {$exp}};
 

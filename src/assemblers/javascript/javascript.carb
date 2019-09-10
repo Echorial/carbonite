@@ -237,6 +237,9 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		}else if (statement.type == "return") {
 			var Carbonite.Statements.Return exp = statement;
 			return "return " + this.expression(exp.expression, indent) + ";";
+		}else if (statement.type == "yield") {
+			var Carbonite.Statements.Yield exp = statement;
+			return "$_c_yield_cb(" + this.expression(exp.expression, indent) + ");";
 		}else if (statement.type == "if") {
 			var Carbonite.Statements.If ifState = statement;
 			var string str = "";

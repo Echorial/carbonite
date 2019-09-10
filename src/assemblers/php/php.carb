@@ -320,6 +320,9 @@ class Carbonite.Assemblers.Php inherits Carbonite.Assemblers.Loose {
 		}else if (statement.type == "return") {
 			var Carbonite.Statements.Return exp = statement;
 			return "return " + this.expression(exp.expression) + ";";
+		}else if (statement.type == "yield") {
+			var Carbonite.Statements.Yield exp = statement;
+			return "return " + this.expression(exp.expression) + ";";
 		}else if (statement.type == "if") {
 			var Carbonite.Statements.If ifState = statement;
 			var string str = "";

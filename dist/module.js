@@ -452,7 +452,7 @@ Carbonite.Source.prototype.build = function () {
 }
 
 Carbonite.Source.prototype.findClass = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression) || (arguments[1] instanceof Carbonite.Statements.Yield)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var req = arguments[1];
 		return this.parent.findClass(name, req);
@@ -483,7 +483,7 @@ Carbonite.Source.prototype.bake = function () {
 }
 
 Carbonite.Source.prototype.error = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Range || (arguments[0] instanceof Carbonite.Named || (arguments[0] instanceof Carbonite.Class)) || (arguments[0] instanceof Carbonite.Doc) || (arguments[0] instanceof Carbonite.NamedHack) || (arguments[0] instanceof Carbonite.Member || (arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || (arguments[0] instanceof Carbonite.Members.Property)) || (arguments[0] instanceof Carbonite.Template) || (arguments[0] instanceof Carbonite.Define) || (arguments[0] instanceof Carbonite.Body) || (arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || (arguments[0] instanceof Carbonite.Statements.IfAlternative) || (arguments[0] instanceof Carbonite.Argument) || (arguments[0] instanceof Carbonite.Expression) || (arguments[0] instanceof Carbonite.Term || (arguments[0] instanceof Carbonite.Terms.Literal) || (arguments[0] instanceof Carbonite.Terms.Expression) || (arguments[0] instanceof Carbonite.Terms.Sequence) || (arguments[0] instanceof Carbonite.Terms.Prefix) || (arguments[0] instanceof Carbonite.Terms.Function)) || (arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || (arguments[0] instanceof Carbonite.Implements) || (arguments[0] instanceof Carbonite.Native || (arguments[0] instanceof Carbonite.Natives.Integer) || (arguments[0] instanceof Carbonite.Natives.Float) || (arguments[0] instanceof Carbonite.Natives.Boolean) || (arguments[0] instanceof Carbonite.Natives.String) || (arguments[0] instanceof Carbonite.Natives.Array)) || (arguments[0] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Range || (arguments[0] instanceof Carbonite.Named || (arguments[0] instanceof Carbonite.Class)) || (arguments[0] instanceof Carbonite.Doc) || (arguments[0] instanceof Carbonite.NamedHack) || (arguments[0] instanceof Carbonite.Member || (arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || (arguments[0] instanceof Carbonite.Members.Property)) || (arguments[0] instanceof Carbonite.Template) || (arguments[0] instanceof Carbonite.Define) || (arguments[0] instanceof Carbonite.Body) || (arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || (arguments[0] instanceof Carbonite.Statements.IfAlternative) || (arguments[0] instanceof Carbonite.Argument) || (arguments[0] instanceof Carbonite.Expression) || (arguments[0] instanceof Carbonite.Term || (arguments[0] instanceof Carbonite.Terms.Literal) || (arguments[0] instanceof Carbonite.Terms.Expression) || (arguments[0] instanceof Carbonite.Terms.Sequence) || (arguments[0] instanceof Carbonite.Terms.Prefix) || (arguments[0] instanceof Carbonite.Terms.Function)) || (arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || (arguments[0] instanceof Carbonite.Implements) || (arguments[0] instanceof Carbonite.Native || (arguments[0] instanceof Carbonite.Natives.Integer) || (arguments[0] instanceof Carbonite.Natives.Float) || (arguments[0] instanceof Carbonite.Natives.Boolean) || (arguments[0] instanceof Carbonite.Natives.String) || (arguments[0] instanceof Carbonite.Natives.Array)) || (arguments[0] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var range = arguments[0];
 		var message = arguments[1];
 		var notice = new Carbonite.Notice(message);
@@ -686,7 +686,7 @@ Carbonite.Compiler.prototype.getOrCreateInstance = function () {
 }
 
 Carbonite.Compiler.prototype.findClass = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression) || (arguments[1] instanceof Carbonite.Statements.Yield)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var req = arguments[1];
 		for (var i = 0; i < this.roots.length; i++) {
@@ -1421,7 +1421,7 @@ Carbonite.Class.prototype.childOf = function () {
 }
 
 Carbonite.Class.prototype.dotMember = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression) || (arguments[1] instanceof Carbonite.Statements.Yield)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var req = arguments[1];
 		this.executeInherits();
@@ -1485,7 +1485,7 @@ Carbonite.Class.prototype.makeArgumentsPretty = function () {
 }
 
 Carbonite.Class.prototype.overloadWithCast = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression) || (arguments[2] instanceof Carbonite.Statements.Yield)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 		var req = arguments[2];
@@ -1514,7 +1514,7 @@ Carbonite.Class.prototype.overloadWithCast = function () {
 }
 
 Carbonite.Class.prototype.overload = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression) || (arguments[2] instanceof Carbonite.Statements.Yield)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 		var req = arguments[2];
@@ -1532,7 +1532,7 @@ Carbonite.Class.prototype.overload = function () {
 }
 
 Carbonite.Class.prototype.overloadWithContext = function () {
-	if (arguments.length == 4 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbonite.Range || (arguments[3] instanceof Carbonite.Named || (arguments[3] instanceof Carbonite.Class)) || (arguments[3] instanceof Carbonite.Doc) || (arguments[3] instanceof Carbonite.NamedHack) || (arguments[3] instanceof Carbonite.Member || (arguments[3] instanceof Carbonite.Members.Method || (arguments[3] instanceof Carbonite.Members.Operator)) || (arguments[3] instanceof Carbonite.Members.Property)) || (arguments[3] instanceof Carbonite.Template) || (arguments[3] instanceof Carbonite.Define) || (arguments[3] instanceof Carbonite.Body) || (arguments[3] instanceof Carbonite.Statement || (arguments[3] instanceof Carbonite.Statements.If) || (arguments[3] instanceof Carbonite.Statements.Return) || (arguments[3] instanceof Carbonite.Statements.Define) || (arguments[3] instanceof Carbonite.Statements.For) || (arguments[3] instanceof Carbonite.Statements.ForIn) || (arguments[3] instanceof Carbonite.Statements.While) || (arguments[3] instanceof Carbonite.Statements.Continue) || (arguments[3] instanceof Carbonite.Statements.Break) || (arguments[3] instanceof Carbonite.Statements.Try) || (arguments[3] instanceof Carbonite.Statements.Throw) || (arguments[3] instanceof Carbonite.Statements.Native) || (arguments[3] instanceof Carbonite.Statements.Expression)) || (arguments[3] instanceof Carbonite.Statements.IfAlternative) || (arguments[3] instanceof Carbonite.Argument) || (arguments[3] instanceof Carbonite.Expression) || (arguments[3] instanceof Carbonite.Term || (arguments[3] instanceof Carbonite.Terms.Literal) || (arguments[3] instanceof Carbonite.Terms.Expression) || (arguments[3] instanceof Carbonite.Terms.Sequence) || (arguments[3] instanceof Carbonite.Terms.Prefix) || (arguments[3] instanceof Carbonite.Terms.Function)) || (arguments[3] instanceof Carbonite.Type || (arguments[3] instanceof Carbonite.ReferenceType)) || (arguments[3] instanceof Carbonite.Implements) || (arguments[3] instanceof Carbonite.Native || (arguments[3] instanceof Carbonite.Natives.Integer) || (arguments[3] instanceof Carbonite.Natives.Float) || (arguments[3] instanceof Carbonite.Natives.Boolean) || (arguments[3] instanceof Carbonite.Natives.String) || (arguments[3] instanceof Carbonite.Natives.Array)) || (arguments[3] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+	if (arguments.length == 4 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbonite.Range || (arguments[3] instanceof Carbonite.Named || (arguments[3] instanceof Carbonite.Class)) || (arguments[3] instanceof Carbonite.Doc) || (arguments[3] instanceof Carbonite.NamedHack) || (arguments[3] instanceof Carbonite.Member || (arguments[3] instanceof Carbonite.Members.Method || (arguments[3] instanceof Carbonite.Members.Operator)) || (arguments[3] instanceof Carbonite.Members.Property)) || (arguments[3] instanceof Carbonite.Template) || (arguments[3] instanceof Carbonite.Define) || (arguments[3] instanceof Carbonite.Body) || (arguments[3] instanceof Carbonite.Statement || (arguments[3] instanceof Carbonite.Statements.If) || (arguments[3] instanceof Carbonite.Statements.Return) || (arguments[3] instanceof Carbonite.Statements.Define) || (arguments[3] instanceof Carbonite.Statements.For) || (arguments[3] instanceof Carbonite.Statements.ForIn) || (arguments[3] instanceof Carbonite.Statements.While) || (arguments[3] instanceof Carbonite.Statements.Continue) || (arguments[3] instanceof Carbonite.Statements.Break) || (arguments[3] instanceof Carbonite.Statements.Try) || (arguments[3] instanceof Carbonite.Statements.Throw) || (arguments[3] instanceof Carbonite.Statements.Native) || (arguments[3] instanceof Carbonite.Statements.Expression) || (arguments[3] instanceof Carbonite.Statements.Yield)) || (arguments[3] instanceof Carbonite.Statements.IfAlternative) || (arguments[3] instanceof Carbonite.Argument) || (arguments[3] instanceof Carbonite.Expression) || (arguments[3] instanceof Carbonite.Term || (arguments[3] instanceof Carbonite.Terms.Literal) || (arguments[3] instanceof Carbonite.Terms.Expression) || (arguments[3] instanceof Carbonite.Terms.Sequence) || (arguments[3] instanceof Carbonite.Terms.Prefix) || (arguments[3] instanceof Carbonite.Terms.Function)) || (arguments[3] instanceof Carbonite.Type || (arguments[3] instanceof Carbonite.ReferenceType)) || (arguments[3] instanceof Carbonite.Implements) || (arguments[3] instanceof Carbonite.Native || (arguments[3] instanceof Carbonite.Natives.Integer) || (arguments[3] instanceof Carbonite.Natives.Float) || (arguments[3] instanceof Carbonite.Natives.Boolean) || (arguments[3] instanceof Carbonite.Natives.String) || (arguments[3] instanceof Carbonite.Natives.Array)) || (arguments[3] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 		var context = arguments[2];
@@ -4550,6 +4550,8 @@ Carbonite.Statement.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -4680,6 +4682,8 @@ Carbonite.Statements.If.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -4854,6 +4858,8 @@ Carbonite.Statements.Return.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -4958,6 +4964,8 @@ Carbonite.Statements.Define.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5075,6 +5083,8 @@ Carbonite.Statements.For.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5188,6 +5198,8 @@ Carbonite.Statements.ForIn.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5297,6 +5309,8 @@ Carbonite.Statements.While.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5390,6 +5404,8 @@ Carbonite.Statements.Continue.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5491,6 +5507,8 @@ Carbonite.Statements.Break.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5611,6 +5629,8 @@ Carbonite.Statements.Try.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5735,6 +5755,8 @@ Carbonite.Statements.Throw.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5841,6 +5863,8 @@ Carbonite.Statements.Native.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5946,6 +5970,8 @@ Carbonite.Statements.Expression.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5969,6 +5995,121 @@ else 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Source) |
 }
 
 Carbonite.Statements.Expression.prototype.buildError = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var msg = arguments[0];
+		this.source.error(this, msg);
+		throw new Error("Build error");
+	}
+}
+
+Carbonite.Statements.Yield = function () {
+	this.expression = null;
+
+	this.container = null;
+
+	this.raw = null;
+
+	this.blockIndex = 0;
+
+	this.startOffset = 0;
+
+	this.endOffset = 0;
+
+	this.source = null;
+
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var container = arguments[0];
+		this.container = container;
+	}
+
+}
+Carbonite.Statements.Yield.prototype.type = "yield";
+
+Carbonite.Statements.Yield.prototype.build = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var raw = arguments[0];
+		var container = arguments[1];
+		this.expression = new Carbonite.Expression(container.parent.parent, container);
+		this.expression.loadFromRaw(raw["expression"]);
+		if (container.parent != null) {
+			var check = container.parent.output;
+			if (container.relativeOutput != null) {
+				check = container.relativeOutput;
+				}
+			if (check.check(this.expression.output) == false) {
+				this.buildError("Invalid yield type '" + this.expression.output.reference.name + "' in statement");
+				}
+			}
+	}
+}
+
+Carbonite.Statements.Yield.prototype.loadFromRaw = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+		this.raw = raw;
+		this.loadLocation(this.container.parent.parent, raw);
+		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Yield.make = function () {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var container = arguments[0];
+		var raw = arguments[1];
+		var type = raw["type"];
+		var rtn = null;
+		if (type == "if") {
+			rtn = new Carbonite.Statements.If(container);
+			}else if (type == "define") {
+			rtn = new Carbonite.Statements.Define(container);
+			}else if (type == "return") {
+			rtn = new Carbonite.Statements.Return(container);
+			}else if (type == "for") {
+			var forIn = raw["in"];
+			if (forIn) {
+				rtn = new Carbonite.Statements.ForIn(container);
+				}else{
+					rtn = new Carbonite.Statements.For(container);
+				}
+			}else if (type == "while") {
+			rtn = new Carbonite.Statements.While(container);
+			}else if (type == "expression") {
+			rtn = new Carbonite.Statements.Expression(container);
+			}else if (type == "continue") {
+			rtn = new Carbonite.Statements.Continue(container);
+			}else if (type == "break") {
+			rtn = new Carbonite.Statements.Break(container);
+			}else if (type == "native") {
+			rtn = new Carbonite.Statements.Native(container);
+			}else if (type == "throw") {
+			rtn = new Carbonite.Statements.Throw(container);
+			}else if (type == "try") {
+			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
+			}
+		return rtn;
+	}
+}
+
+Carbonite.Statements.Yield.prototype.loadLocation = function () {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var parent = arguments[0];
+		var raw = arguments[1];
+		this.startOffset = raw["start"];
+		this.endOffset = raw["end"];
+		this.source = parent.source;
+	}
+else 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Source) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var parent = arguments[0];
+		var raw = arguments[1];
+		this.startOffset = raw["start"];
+		this.endOffset = raw["end"];
+		this.source = parent;
+	}
+}
+
+Carbonite.Statements.Yield.prototype.buildError = function () {
 	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var msg = arguments[0];
 		this.source.error(this, msg);
@@ -7373,6 +7514,8 @@ Carbonite.Type = function () {
 
 	this.isPure = false;
 
+	this.nullable = true;
+
 	this.autoCast = false;
 
 	this.castTo = null;
@@ -7811,6 +7954,8 @@ Carbonite.ReferenceType = function () {
 	this.magicType = 0;
 
 	this.isPure = false;
+
+	this.nullable = true;
 
 	this.autoCast = false;
 
@@ -9546,7 +9691,7 @@ Carbonite.Assemblers.Javascript.prototype.define = function () {
 }
 
 Carbonite.Assemblers.Javascript.prototype.statement = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var statement = arguments[0];
 		var indent = arguments[1];
 		if (statement.type == "define") {
@@ -9561,6 +9706,9 @@ Carbonite.Assemblers.Javascript.prototype.statement = function () {
 			}else if (statement.type == "return") {
 			var exp = statement;
 			return "return " + this.expression(exp.expression, indent) + ";";
+			}else if (statement.type == "yield") {
+			var exp = statement;
+			return "$_c_yield_cb(" + this.expression(exp.expression, indent) + ");";
 			}else if (statement.type == "if") {
 			var ifState = statement;
 			var str = "";
@@ -10137,7 +10285,21 @@ else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (
 		if (what.isPure) {
 			return what.reference.getRoute("::");
 			}else{
-				return "std::optional<" + what.reference.getRoute("::") + ">";
+				return this.wrapIf(what.nullable, what.reference.getRoute("::"), "std::optional<", ">");
+			}
+	}
+}
+
+Carbonite.Assemblers.Cpp.prototype.wrapIf = function () {
+	if (arguments.length == 4 && (typeof arguments[0] == 'boolean' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'string' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var test = arguments[0];
+		var subject = arguments[1];
+		var w1 = arguments[2];
+		var w2 = arguments[3];
+		if (test) {
+			return w1 + subject + w2;
+			}else{
+				return subject;
 			}
 	}
 }
@@ -10282,7 +10444,7 @@ Carbonite.Assemblers.Cpp.prototype.localName = function () {
 }
 
 Carbonite.Assemblers.Cpp.prototype.statement = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var statement = arguments[0];
 		if (statement.type == "define") {
 			var def = statement;
@@ -10294,6 +10456,16 @@ Carbonite.Assemblers.Cpp.prototype.statement = function () {
 			var exp = statement;
 			if (statement.container.parent.output.containsReference && exp.expression.output.containsReference == false) {
 				exp.buildError("Illegal return by reference.");
+				}
+			var expStr = this.expression(exp.expression);
+			if (exp.expression.output.isPrimitiveValue() == false && exp.expression.output.reference.route != "null" && statement.container.parent.output.containsReference == false && exp.expression.output.containsReference == false) {
+				expStr = "std::move(" + expStr + ")";
+				}
+			return "return " + expStr + ";";
+			}else if (statement.type == "yield") {
+			var exp = statement;
+			if (statement.container.parent.output.containsReference && exp.expression.output.containsReference == false) {
+				exp.buildError("Illegal yield by reference.");
 				}
 			var expStr = this.expression(exp.expression);
 			if (exp.expression.output.isPrimitiveValue() == false && exp.expression.output.reference.route != "null" && statement.container.parent.output.containsReference == false && exp.expression.output.containsReference == false) {
@@ -11036,7 +11208,7 @@ Carbonite.Assemblers.Php.prototype.define = function () {
 }
 
 Carbonite.Assemblers.Php.prototype.statement = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var statement = arguments[0];
 		if (statement.type == "define") {
 			var def = statement;
@@ -11045,6 +11217,9 @@ Carbonite.Assemblers.Php.prototype.statement = function () {
 			var exp = statement;
 			return this.expression(exp.expression) + ";";
 			}else if (statement.type == "return") {
+			var exp = statement;
+			return "return " + this.expression(exp.expression) + ";";
+			}else if (statement.type == "yield") {
 			var exp = statement;
 			return "return " + this.expression(exp.expression) + ";";
 			}else if (statement.type == "if") {
@@ -12248,65 +12423,69 @@ else 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof ar
 																																																																																																																																		if (rule == "Return") {
 																																																																																																																																			output = parser.Return(input, 0);
 																																																																																																																																			}else{
-																																																																																																																																				if (rule == "Native") {
-																																																																																																																																					output = parser.Native(input, 0);
+																																																																																																																																				if (rule == "Yield") {
+																																																																																																																																					output = parser.Yield(input, 0);
 																																																																																																																																					}else{
-																																																																																																																																						if (rule == "Define_Auto") {
-																																																																																																																																							output = parser.Define_Auto(input, 0);
+																																																																																																																																						if (rule == "Native") {
+																																																																																																																																							output = parser.Native(input, 0);
 																																																																																																																																							}else{
-																																																																																																																																								if (rule == "Define") {
-																																																																																																																																									output = parser.Define(input, 0);
+																																																																																																																																								if (rule == "Define_Auto") {
+																																																																																																																																									output = parser.Define_Auto(input, 0);
 																																																																																																																																									}else{
-																																																																																																																																										if (rule == "Inline_Def") {
-																																																																																																																																											output = parser.Inline_Def(input, 0);
+																																																																																																																																										if (rule == "Define") {
+																																																																																																																																											output = parser.Define(input, 0);
 																																																																																																																																											}else{
-																																																																																																																																												if (rule == "Define_List") {
-																																																																																																																																													output = parser.Define_List(input, 0);
+																																																																																																																																												if (rule == "Inline_Def") {
+																																																																																																																																													output = parser.Inline_Def(input, 0);
 																																																																																																																																													}else{
-																																																																																																																																														if (rule == "Inline_Define") {
-																																																																																																																																															output = parser.Inline_Define(input, 0);
+																																																																																																																																														if (rule == "Define_List") {
+																																																																																																																																															output = parser.Define_List(input, 0);
 																																																																																																																																															}else{
-																																																																																																																																																if (rule == "Multi_Define") {
-																																																																																																																																																	output = parser.Multi_Define(input, 0);
+																																																																																																																																																if (rule == "Inline_Define") {
+																																																																																																																																																	output = parser.Inline_Define(input, 0);
 																																																																																																																																																	}else{
-																																																																																																																																																		if (rule == "Inline_Define_Auto") {
-																																																																																																																																																			output = parser.Inline_Define_Auto(input, 0);
+																																																																																																																																																		if (rule == "Multi_Define") {
+																																																																																																																																																			output = parser.Multi_Define(input, 0);
 																																																																																																																																																			}else{
-																																																																																																																																																				if (rule == "String_Tick") {
-																																																																																																																																																					output = parser.String_Tick(input, 0);
+																																																																																																																																																				if (rule == "Inline_Define_Auto") {
+																																																																																																																																																					output = parser.Inline_Define_Auto(input, 0);
 																																																																																																																																																					}else{
-																																																																																																																																																						if (rule == "_") {
-																																																																																																																																																							output = parser._(input, 0);
+																																																																																																																																																						if (rule == "String_Tick") {
+																																																																																																																																																							output = parser.String_Tick(input, 0);
 																																																																																																																																																							}else{
-																																																																																																																																																								if (rule == "__") {
-																																																																																																																																																									output = parser.__(input, 0);
+																																																																																																																																																								if (rule == "_") {
+																																																																																																																																																									output = parser._(input, 0);
 																																																																																																																																																									}else{
-																																																																																																																																																										if (rule == "String") {
-																																																																																																																																																											output = parser.String(input, 0);
+																																																																																																																																																										if (rule == "__") {
+																																																																																																																																																											output = parser.__(input, 0);
 																																																																																																																																																											}else{
-																																																																																																																																																												if (rule == "String_Double") {
-																																																																																																																																																													output = parser.String_Double(input, 0);
+																																																																																																																																																												if (rule == "String") {
+																																																																																																																																																													output = parser.String(input, 0);
 																																																																																																																																																													}else{
-																																																																																																																																																														if (rule == "String_Single") {
-																																																																																																																																																															output = parser.String_Single(input, 0);
+																																																																																																																																																														if (rule == "String_Double") {
+																																																																																																																																																															output = parser.String_Double(input, 0);
 																																																																																																																																																															}else{
-																																																																																																																																																																if (rule == "Json") {
-																																																																																																																																																																	output = parser.Json(input, 0);
+																																																																																																																																																																if (rule == "String_Single") {
+																																																																																																																																																																	output = parser.String_Single(input, 0);
 																																																																																																																																																																	}else{
-																																																																																																																																																																		if (rule == "Json_Array") {
-																																																																																																																																																																			output = parser.Json_Array(input, 0);
+																																																																																																																																																																		if (rule == "Json") {
+																																																																																																																																																																			output = parser.Json(input, 0);
 																																																																																																																																																																			}else{
-																																																																																																																																																																				if (rule == "Json_EmptyArray") {
-																																																																																																																																																																					output = parser.Json_EmptyArray(input, 0);
+																																																																																																																																																																				if (rule == "Json_Array") {
+																																																																																																																																																																					output = parser.Json_Array(input, 0);
 																																																																																																																																																																					}else{
-																																																																																																																																																																						if (rule == "Json_EmptyMap") {
-																																																																																																																																																																							output = parser.Json_EmptyMap(input, 0);
+																																																																																																																																																																						if (rule == "Json_EmptyArray") {
+																																																																																																																																																																							output = parser.Json_EmptyArray(input, 0);
 																																																																																																																																																																							}else{
-																																																																																																																																																																								if (rule == "Json_Value") {
-																																																																																																																																																																									output = parser.Json_Value(input, 0);
+																																																																																																																																																																								if (rule == "Json_EmptyMap") {
+																																																																																																																																																																									output = parser.Json_EmptyMap(input, 0);
 																																																																																																																																																																									}else{
-																																																																																																																																																																										if (rule == "Json_Number") {
-																																																																																																																																																																											output = parser.Json_Number(input, 0);
+																																																																																																																																																																										if (rule == "Json_Value") {
+																																																																																																																																																																											output = parser.Json_Value(input, 0);
+																																																																																																																																																																											}else{
+																																																																																																																																																																												if (rule == "Json_Number") {
+																																																																																																																																																																													output = parser.Json_Number(input, 0);
+																																																																																																																																																																													}
 																																																																																																																																																																											}
 																																																																																																																																																																									}
 																																																																																																																																																																							}
@@ -18283,7 +18462,7 @@ CarboniteCarbonParser.prototype.Statement = function () {
 						this.error.vested++;
 					}
 				}else if (c == 12) {
-				var ruleOut12 = this.Native(input, charPos);
+				var ruleOut12 = this.Yield(input, charPos);
 				if (ruleOut12.hadError) {
 					c = 13;
 					charPos--;
@@ -18303,13 +18482,33 @@ CarboniteCarbonParser.prototype.Statement = function () {
 						this.error.vested++;
 					}
 				}else if (c == 13) {
-				var ruleOut13 = this.Expression_Line(input, charPos);
+				var ruleOut13 = this.Native(input, charPos);
 				if (ruleOut13.hadError) {
-					this.giveError(1, "If, Define, Define_Auto, For, For_In, Break, Try, Throw, Continue, While, Return, Native, Expression_Line", currentChar);
+					c = 14;
+					charPos--;
+					this.offset--;
 					}else{
 						var ruleOutCast13 = ruleOut13.data["data"];
 						charPos = this.offset;
 						data["state"] = ruleOutCast13;
+						if (true) {
+							var castacstate0 = data["state"];
+							var actionCap0state = data["state"];
+							dataStore["data"] = actionCap0state;
+							dataStore["data"]["start"] = startPos;
+							dataStore["data"]["end"] = charPos;
+							}
+						c = 0 - 1;
+						this.error.vested++;
+					}
+				}else if (c == 14) {
+				var ruleOut14 = this.Expression_Line(input, charPos);
+				if (ruleOut14.hadError) {
+					this.giveError(1, "If, Define, Define_Auto, For, For_In, Break, Try, Throw, Continue, While, Return, Yield, Native, Expression_Line", currentChar);
+					}else{
+						var ruleOutCast14 = ruleOut14.data["data"];
+						charPos = this.offset;
+						data["state"] = ruleOutCast14;
 						if (true) {
 							var castacstate0 = data["state"];
 							var actionCap0state = data["state"];
@@ -19918,6 +20117,97 @@ CarboniteCarbonParser.prototype.Return = function () {
 	}
 }
 
+CarboniteCarbonParser.prototype.Yield = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var input = arguments[0];
+		var startPos = arguments[1];
+		var oldVest = this.error.vested;
+		var dataStore = {};
+		dataStore["data"] = {};
+		dataStore["temp"] = {};
+		var data = dataStore["temp"];
+		var c = 0;
+		var literalChar = 0;
+		for (var charPos = startPos;charPos < input.length;charPos++) {
+			var currentChar = input[charPos];
+			var currentCode = input.charCodeAt(charPos);
+			if (currentCode == 10) {
+				this.line++;
+				this.column = 0;
+				}
+			if (c == 0) {
+				var lit0 = [121, 105, 101, 108, 100, 32];
+				if (currentCode == lit0[literalChar]) {
+					literalChar++;
+					if (literalChar == 6) {
+						c = 1;
+						literalChar = 0;
+						}
+					this.error.vested++;
+					}else{
+						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
+					}
+				}else if (c == 1) {
+				var ruleOut1 = this._(input, charPos);
+				if (ruleOut1.hadError) {
+					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
+					}else{
+						var ruleOutCast1 = ruleOut1.data["data"];
+						charPos = this.offset;
+						c = 2;
+					}
+				}else if (c == 2) {
+				var ruleOut2 = this.Expression(input, charPos);
+				if (ruleOut2.hadError) {
+					this.giveError(ruleOut2.error.code, "Expression(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
+					}else{
+						var ruleOutCast2 = ruleOut2.data["data"];
+						charPos = this.offset;
+						data["exp"] = ruleOutCast2;
+						c = 3;
+						this.error.vested++;
+					}
+				}else if (c == 3) {
+				var ruleOut3 = this._(input, charPos);
+				if (ruleOut3.hadError) {
+					this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
+					}else{
+						var ruleOutCast3 = ruleOut3.data["data"];
+						charPos = this.offset;
+						c = 4;
+					}
+				}else if (c == 4) {
+				if (currentCode == 59) {
+					if (true) {
+						var castac0 = data;
+						var actionCap0exp = data["exp"];
+						dataStore["data"]["type"] = "yield";
+						dataStore["data"]["expression"] = actionCap0exp;
+						}
+					c = 0 - 1;
+					this.error.vested++;
+					}else{
+						this.giveError(1, ";", currentChar);
+					}
+				}
+			this.offset++;
+			this.column++;
+			if (c == 0 - 1) {
+				this.offset = charPos;
+				break;
+				}
+			if (this.hadError) {
+				break;
+				}
+			}
+		var parseOutput = new CarboniteCarbonParserOutput(this.hadError, this.error.clone(), dataStore);
+		parseOutput.error.vested = this.error.vested - oldVest;
+		this.error.vested = oldVest;
+		this.hadError = false;
+		return parseOutput;
+	}
+}
+
 CarboniteCarbonParser.prototype.Native = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var input = arguments[0];
@@ -19941,16 +20231,19 @@ CarboniteCarbonParser.prototype.Native = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
-				var lit0 = [110, 97, 116, 105, 118, 101, 32];
+				var lit0 = [101, 108, 115, 101];
 				if (currentCode == lit0[literalChar]) {
 					literalChar++;
-					if (literalChar == 7) {
+					if (literalChar == 4) {
+						data["els"] = this.assembleCodes(lit0);
 						c = 1;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
-						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
+						c = 1;
+						charPos--;
+						this.offset--;
 					}
 				}else if (c == 1) {
 				var ruleOut1 = this._(input, charPos);
@@ -19962,15 +20255,16 @@ CarboniteCarbonParser.prototype.Native = function () {
 						c = 2;
 					}
 				}else if (c == 2) {
-				var ruleOut2 = this.Safe_Name(input, charPos);
-				if (ruleOut2.hadError) {
-					this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
-					}else{
-						var ruleOutCast2 = ruleOut2.data["data"];
-						charPos = this.offset;
-						data["platform"] = ruleOutCast2;
+				var lit2 = [110, 97, 116, 105, 118, 101, 32];
+				if (currentCode == lit2[literalChar]) {
+					literalChar++;
+					if (literalChar == 7) {
 						c = 3;
-						this.error.vested++;
+						literalChar = 0;
+						}
+					this.error.vested++;
+					}else{
+						this.giveError(1, "" + this.assembleCodes(lit2) + "", currentChar);
 					}
 				}else if (c == 3) {
 				var ruleOut3 = this._(input, charPos);
@@ -19982,14 +20276,34 @@ CarboniteCarbonParser.prototype.Native = function () {
 						c = 4;
 					}
 				}else if (c == 4) {
+				var ruleOut4 = this.Safe_Name(input, charPos);
+				if (ruleOut4.hadError) {
+					this.giveError(ruleOut4.error.code, "Safe_Name(" + ruleOut4.error.expected + ")", ruleOut4.error.found);
+					}else{
+						var ruleOutCast4 = ruleOut4.data["data"];
+						charPos = this.offset;
+						data["platform"] = ruleOutCast4;
+						c = 5;
+						this.error.vested++;
+					}
+				}else if (c == 5) {
+				var ruleOut5 = this._(input, charPos);
+				if (ruleOut5.hadError) {
+					this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
+					}else{
+						var ruleOutCast5 = ruleOut5.data["data"];
+						charPos = this.offset;
+						c = 6;
+					}
+				}else if (c == 6) {
 				if (currentCode == 123) {
-					c = 5;
+					c = 7;
 					this.error.vested++;
 					}else{
 						this.giveError(1, "{", currentChar);
 					}
-				}else if (c == 5) {
-				var castnaccontent5 = data["content"];
+				}else if (c == 7) {
+				var castnaccontent7 = data["content"];
 				var doCap = true;
 				var setEscape = false;
 				var isString = false;
@@ -20009,7 +20323,7 @@ CarboniteCarbonParser.prototype.Native = function () {
 					}else if (currentChar == "}") {
 					if (inString == false) {
 						if (open == 0) {
-							c = 6;
+							c = 8;
 							charPos--;
 							this.offset--;
 							doCap = false;
@@ -20036,14 +20350,16 @@ CarboniteCarbonParser.prototype.Native = function () {
 				if (setEscape) {
 					escape = true;
 					}
-				}else if (c == 6) {
+				}else if (c == 8) {
 				if (currentCode == 125) {
 					if (true) {
 						var castac0 = data;
 						var actionCap0platform = data["platform"];
+						var actionCap0els = data["els"];
 						var actionCap0content = data["content"];
 						dataStore["data"]["type"] = "native";
 						dataStore["data"]["platform"] = actionCap0platform;
+						dataStore["data"]["else"] = actionCap0els;
 						dataStore["data"]["content"] = actionCap0content;
 						}
 					c = 0 - 1;
@@ -43289,14 +43605,14 @@ carbide_proxy_Carbonite_Statement.create = function () {
 		var value = arguments[0];
 
 	}
-else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var reference = arguments[0];
 		var m = {};
 		var value = new carbide_proxy_Carbonite_Statement(m);
 		value.value = reference;
 		return value;
 	}
-else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var reference = arguments[0];
 		var m = {};
 		var value = new carbide_proxy_Carbonite_Statement(m);

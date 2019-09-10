@@ -166,6 +166,8 @@ fixed public <<map>CarboniteCarbonParserOutput>function parse(string rule, strin
 	output = parser.Throw(input, 0);
 	}elseif (rule == "Return") {
 	output = parser.Return(input, 0);
+	}elseif (rule == "Yield") {
+	output = parser.Yield(input, 0);
 	}elseif (rule == "Native") {
 	output = parser.Native(input, 0);
 	}elseif (rule == "Define_Auto") {
@@ -5283,7 +5285,7 @@ var map actionCap0state = data["state"];dataStore["data"] = actionCap0state;data
 		this.error.vested++;
 	}
 }else if (c == 12) {
-	var <map>CarboniteCarbonParserOutput ruleOut12 = this.Native(input, charPos);
+	var <map>CarboniteCarbonParserOutput ruleOut12 = this.Yield(input, charPos);
 	
 if (ruleOut12.hadError) {
 		c = 13; charPos--; this.offset--;
@@ -5299,15 +5301,31 @@ var map actionCap0state = data["state"];dataStore["data"] = actionCap0state;data
 		this.error.vested++;
 	}
 }else if (c == 13) {
-	var <map>CarboniteCarbonParserOutput ruleOut13 = this.Expression_Line(input, charPos);
+	var <map>CarboniteCarbonParserOutput ruleOut13 = this.Native(input, charPos);
 	
 if (ruleOut13.hadError) {
-		this.giveError(1, "If, Define, Define_Auto, For, For_In, Break, Try, Throw, Continue, While, Return, Native, Expression_Line", currentChar);
+		c = 14; charPos--; this.offset--;
 		
 	}else{
 		var map ruleOutCast13 = ruleOut13.data["data"];
 charPos = this.offset;
 		data["state"] = ruleOutCast13;if (true) {
+
+var map castacstate0 = data["state"];
+var map actionCap0state = data["state"];dataStore["data"] = actionCap0state;dataStore["data"]["start"] = startPos;dataStore["data"]["end"] = charPos;}
+		c = 0 - 1;
+		this.error.vested++;
+	}
+}else if (c == 14) {
+	var <map>CarboniteCarbonParserOutput ruleOut14 = this.Expression_Line(input, charPos);
+	
+if (ruleOut14.hadError) {
+		this.giveError(1, "If, Define, Define_Auto, For, For_In, Break, Try, Throw, Continue, While, Return, Yield, Native, Expression_Line", currentChar);
+		
+	}else{
+		var map ruleOutCast14 = ruleOut14.data["data"];
+charPos = this.offset;
+		data["state"] = ruleOutCast14;if (true) {
 
 var map castacstate0 = data["state"];
 var map actionCap0state = data["state"];dataStore["data"] = actionCap0state;dataStore["data"]["start"] = startPos;dataStore["data"]["end"] = charPos;}
@@ -6878,7 +6896,7 @@ dataStore["data"]["expression"] = actionCap0exp;
 	parseOutput.error.vested = this.error.vested - oldVest; this.error.vested = oldVest;	this.hadError = false;
 	return parseOutput;
 }
-bound public <<map>CarboniteCarbonParserOutput>function Native(string input, int startPos) {var int oldVest = this.error.vested;
+bound public <<map>CarboniteCarbonParserOutput>function Yield(string input, int startPos) {var int oldVest = this.error.vested;
 	var map dataStore = new map();
 dataStore["data"] = new map();
 dataStore["temp"] = new map();
@@ -6889,23 +6907,16 @@ dataStore["temp"] = new map();
 
 
 
-data["content"] = new string();
-
-
-		
-		var bool inString = false;
-		var int open = 0;
-		var bool escape = false;
-		var int literalChar = 0;
+			var int literalChar = 0;
 	for (var int charPos = startPos; charPos < input.length(); charPos++) {
 		var string currentChar = input[charPos];
 		var int currentCode = input.charCodeAt(charPos);
 		if (currentCode == 10) {this.line++; this.column = 0;}
 		if (c == 0) {
-	var <int>array lit0 = [110, 97, 116, 105, 118, 101, 32];
+	var <int>array lit0 = [121, 105, 101, 108, 100, 32];
 	if (currentCode == lit0[literalChar]) {
 		literalChar++;
-		if (literalChar == 7) {
+		if (literalChar == 6) {
 			
 			c = 1;
 			literalChar = 0;
@@ -6928,15 +6939,15 @@ charPos = this.offset;
 		
 	}
 }else if (c == 2) {
-	var <string>CarboniteCarbonParserOutput ruleOut2 = this.Safe_Name(input, charPos);
+	var <map>CarboniteCarbonParserOutput ruleOut2 = this.Expression(input, charPos);
 	
 if (ruleOut2.hadError) {
-		this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
+		this.giveError(ruleOut2.error.code, "Expression(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
 		
 	}else{
-		var string ruleOutCast2 = ruleOut2.data["data"];
+		var map ruleOutCast2 = ruleOut2.data["data"];
 charPos = this.offset;
-		data["platform"] = ruleOutCast2;
+		data["exp"] = ruleOutCast2;
 		c = 3;
 		this.error.vested++;
 	}
@@ -6954,15 +6965,139 @@ charPos = this.offset;
 		
 	}
 }else if (c == 4) {
+	if (currentCode == 59) {
+			if (true) {
+
+var map castac0 = data;
+var map actionCap0exp = data["exp"];dataStore["data"]["type"] = "yield";
+dataStore["data"]["expression"] = actionCap0exp;
+}
+			c = 0 - 1;
+			this.error.vested++;
+	}else{
+		this.giveError(1, ";", currentChar);
+	}
+}		this.offset++; this.column++;
+		if (c == 0 - 1) {this.offset = charPos; break;}
+		if (this.hadError) {break;}
+	}
+	var <map>CarboniteCarbonParserOutput parseOutput = new <map>CarboniteCarbonParserOutput(this.hadError, this.error.clone(), dataStore);
+	parseOutput.error.vested = this.error.vested - oldVest; this.error.vested = oldVest;	this.hadError = false;
+	return parseOutput;
+}
+bound public <<map>CarboniteCarbonParserOutput>function Native(string input, int startPos) {var int oldVest = this.error.vested;
+	var map dataStore = new map();
+dataStore["data"] = new map();
+dataStore["temp"] = new map();
+	var map data = dataStore["temp"];
+	var int c = 0;
+	
+
+
+
+
+
+
+data["content"] = new string();
+
+
+		
+		var bool inString = false;
+		var int open = 0;
+		var bool escape = false;
+		var int literalChar = 0;
+	for (var int charPos = startPos; charPos < input.length(); charPos++) {
+		var string currentChar = input[charPos];
+		var int currentCode = input.charCodeAt(charPos);
+		if (currentCode == 10) {this.line++; this.column = 0;}
+		if (c == 0) {
+	var <int>array lit0 = [101, 108, 115, 101];
+	if (currentCode == lit0[literalChar]) {
+		literalChar++;
+		if (literalChar == 4) {
+			data["els"] = this.assembleCodes(lit0);
+			c = 1;
+			literalChar = 0;
+}
+			this.error.vested++;
+	}else{
+		c = 1; charPos--; this.offset--;
+	}
+}else if (c == 1) {
+	var <string>CarboniteCarbonParserOutput ruleOut1 = this._(input, charPos);
+	
+if (ruleOut1.hadError) {
+		this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
+		
+	}else{
+		var string ruleOutCast1 = ruleOut1.data["data"];
+charPos = this.offset;
+		
+		c = 2;
+		
+	}
+}else if (c == 2) {
+	var <int>array lit2 = [110, 97, 116, 105, 118, 101, 32];
+	if (currentCode == lit2[literalChar]) {
+		literalChar++;
+		if (literalChar == 7) {
+			
+			c = 3;
+			literalChar = 0;
+}
+			this.error.vested++;
+	}else{
+		this.giveError(1, "" + this.assembleCodes(lit2) + "", currentChar);
+	}
+}else if (c == 3) {
+	var <string>CarboniteCarbonParserOutput ruleOut3 = this._(input, charPos);
+	
+if (ruleOut3.hadError) {
+		this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
+		
+	}else{
+		var string ruleOutCast3 = ruleOut3.data["data"];
+charPos = this.offset;
+		
+		c = 4;
+		
+	}
+}else if (c == 4) {
+	var <string>CarboniteCarbonParserOutput ruleOut4 = this.Safe_Name(input, charPos);
+	
+if (ruleOut4.hadError) {
+		this.giveError(ruleOut4.error.code, "Safe_Name(" + ruleOut4.error.expected + ")", ruleOut4.error.found);
+		
+	}else{
+		var string ruleOutCast4 = ruleOut4.data["data"];
+charPos = this.offset;
+		data["platform"] = ruleOutCast4;
+		c = 5;
+		this.error.vested++;
+	}
+}else if (c == 5) {
+	var <string>CarboniteCarbonParserOutput ruleOut5 = this._(input, charPos);
+	
+if (ruleOut5.hadError) {
+		this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
+		
+	}else{
+		var string ruleOutCast5 = ruleOut5.data["data"];
+charPos = this.offset;
+		
+		c = 6;
+		
+	}
+}else if (c == 6) {
 	if (currentCode == 123) {
 			
-			c = 5;
+			c = 7;
 			this.error.vested++;
 	}else{
 		this.giveError(1, "{", currentChar);
 	}
-}else if (c == 5) {
-	var string castnaccontent5 = data["content"];
+}else if (c == 7) {
+	var string castnaccontent7 = data["content"];
 	
 	
 	var bool doCap = true;
@@ -6976,7 +7111,7 @@ charPos = this.offset;
 	}else if (currentChar == "}") {
 		if (inString == false) {
 			if (open == 0) {
-				c = 6; charPos--; this.offset--;
+				c = 8; charPos--; this.offset--;
 				doCap = false;
 			}
 			open--;
@@ -7003,13 +7138,14 @@ charPos = this.offset;
 		escape = true;
 	}
 	
-}else if (c == 6) {
+}else if (c == 8) {
 	if (currentCode == 125) {
 			if (true) {
 
 var map castac0 = data;
-var string actionCap0platform = data["platform"];var string actionCap0content = data["content"];dataStore["data"]["type"] = "native";
+var string actionCap0platform = data["platform"];var string actionCap0els = data["els"];var string actionCap0content = data["content"];dataStore["data"]["type"] = "native";
 dataStore["data"]["platform"] = actionCap0platform;
+dataStore["data"]["else"] = actionCap0els;
 dataStore["data"]["content"] = actionCap0content;
 }
 			c = 0 - 1;

@@ -37,6 +37,7 @@
 	#include "src/constructs/statements/throw.carb"
 	#include "src/constructs/statements/native.carb"
 	#include "src/constructs/statements/expression.carb"
+	#include "src/constructs/statements/yield.carb"
 #include "src/constructs/argument.carb"
 #include "src/constructs/expression.carb"
 #include "src/constructs/term.carb"

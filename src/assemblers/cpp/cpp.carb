@@ -345,6 +345,20 @@ class Carbonite.Assemblers.Cpp inherits Carbonite.Assembler {
 			}
 
 			return "return " + expStr + ";";
+		}else if (statement.type == "yield") {
+			var Carbonite.Statements.Yield exp = statement;
+			
+			if (statement.container.parent.output.containsReference and exp.expression.output.containsReference == false) {
+				exp.buildError("Illegal yield by reference.");
+			}
+
+			var expStr = this.expression(exp.expression);
+
+			if (exp.expression.output.isPrimitiveValue() == false and exp.expression.output.reference.route != "null" and statement.container.parent.output.containsReference == false and exp.expression.output.containsReference == false) {
+				expStr = "std::move(" + expStr + ")";
+			}
+
+			return "return " + expStr + ";";
 		}else if (statement.type == "if") {
 			var Carbonite.Statements.If ifState = statement;
 			var string str = "";

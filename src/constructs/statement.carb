@@ -47,6 +47,8 @@ class Carbonite.Statement inherits Carbonite.Range, object {
 			rtn = new Carbonite.Statements.Throw(container);
 		}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+		}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 		}
 		return rtn;
 	}
