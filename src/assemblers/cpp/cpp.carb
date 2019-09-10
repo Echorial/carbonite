@@ -1,4 +1,4 @@
- class Carbonite.Assemblers.Cpp inherits Carbonite.Assembler {
+class Carbonite.Assemblers.Cpp inherits Carbonite.Assembler {
 	bound public override <string>function build() {
 		var string rtn = "// ------- Header ------- //\n\n";
 
@@ -181,7 +181,7 @@
 		}
 	}
 
-	bound public wrapIf(bool test, string subject, string w1, string w2) {
+	bound public string wrapIf(bool test, string subject, string w1, string w2) {
 		if (test)
 			return w1 + subject + w2;
 		else
