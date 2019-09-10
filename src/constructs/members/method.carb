@@ -160,6 +160,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 				var Carbonite.Type ownType = new Carbonite.Type(this.parent.compiler, this.parent);
 				ownType.loadFromName(this.parent.route, this.raw);
 				ownType.reference = this.parent; //warn: hack: todo: Fix
+				ownType.containsReference = true;
 				var string thisName = "this";
 				var Carbonite.Define defThis = new Carbonite.Define(thisName, ownType);
 				defThis.isLocal = false;
@@ -299,13 +300,23 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 		}
 	}
 
+	bound public <string>function getCastName(string prefix) {
+		var nme = "to" + this.output.reference.route.replace(".", "");
+		if (this.parent.hasMember(nme))
+			return this.getCastName("_" + prefix);
+		return nme;
+	}
+
 	bound public <string>function getRealName() {
 		if (this.name == "@index") {
 			var <map>array attrs = this.getAttributes("name");
 			var map key = attrs[0];
 			var string attr = key["value"];
 			return attr;
+		}else if (this.name == "@cast") {
+			return this.getCastName("");
 		}
+
 		return this.name;
 	}
 

@@ -2,10 +2,19 @@
 	bound public override <string>function build() {
 		var string rtn = "// ------- Header ------- //\n\n";
 
-		/*for (var int i in this.compiler.roots) {
-			var Carbonite.Class root = this.compiler.roots[i];
-			rtn += "class " + root.
-		}*/
+		for (var int i in this.compiler.router.levelMap) {
+			if (i != 0)
+				continue;
+
+			var Carbonite.Level level = this.compiler.router.levelMap[i];
+
+			for (var int j in level.names) {
+				var Carbonite.Class root = level.names[j];
+				if (root.base != "relative") {
+					rtn += "class " + root.getRoute("::") + ";\n";
+				}
+			}
+		}
 		
 		for (var int i in this.compiler.roots) {
 			var Carbonite.Class root = this.compiler.roots[i];
@@ -64,7 +73,20 @@
 			pref = castParent.getRoute("::") + "::";
 		}
 
-		return "class " + pref + root.name + body;
+		var inherits = new <string>array();
+		var iPrefix = "";
+
+		for (var int i in root.inherits) {
+
+			var inheritRoot = root.inherits[i];
+
+			if (inheritRoot.route != "everything") {
+				inherits.push("public " + inheritRoot.getRoute("::"));
+				iPrefix = " : ";
+			}
+		}
+
+		return "class " + pref + root.name + iPrefix + inherits.join(", ") + body;
 	}
 
 	bound public <string>function properties(Carbonite.Class root, bool source) {
@@ -126,14 +148,44 @@
 		}else if (what.reference.route == "map") {
 			return "std::unique_ptr<std::map<std::string, " + this.route(what.templates[0]) + ">>" + refFlag;
 		}else if (what.reference.route == "string") {
-			return "std::string";
+			return "std::optional<std::string>";
 		}else if (what.reference.route == "primitive") {
 			return "_c_primitive";
+		}else if (what.reference.route == "void") {
+			return "void";
+		}else if (what.reference.route == "null") {
+			return "std::nullopt";
+		}else if (what.reference.route == "Error") {
+			return "_c_error";
+		}else if (what.reference.route == "function") {
+			var args = new <string>array();
+			
+			for (var int i in what.templates) {
+				if (i > 0) {
+					args.push(this.route(what.templates[i]));
+				}
+			}
+
+			return "std::function<" + this.route(what.templates[0]) + "(" + args.join(", ") + ")>";
 		}else if (what.reference.primitiveValue == false) {
-			return "std::unique_ptr<" + what.reference.getRoute("::") + ">" + refFlag;
+			if (what.containsReference)
+				return what.reference.getRoute("::") + "*";
+			else
+				return "std::unique_ptr<" + what.reference.getRoute("::") + ">";
 		}
 
-		return what.reference.getRoute("::");
+		if (what.isPure) {
+			return what.reference.getRoute("::");
+		}else{
+			return this.wrapIf(what.nullable, what.reference.getRoute("::"), "std::optional<", ">");
+		}
+	}
+
+	bound public wrapIf(bool test, string subject, string w1, string w2) {
+		if (test)
+			return w1 + subject + w2;
+		else
+			return subject;
 	}
 
 	bound public override <string>function methods(Carbonite.Class root, bool source) {
@@ -142,7 +194,10 @@
 			var Carbonite.Member member = root.members[i];
 			if (member.type != "property") {
 				if (member.hasFlag("inline") == false) {
-					if (member.hasFlag("relative") == false and member.abstract == false) {
+					if (member.hasFlag("relative") == false) {
+						if (member.abstract and member.name[0] == "@")
+							continue;
+
 						var Carbonite.Members.Method method = member;
 						var <string>array args = new <string>array();
 						for (var int a in method.arguments) {
@@ -165,10 +220,24 @@
 						}
 						var rte = this.route(method.output);
 						var nme = method.getRealName();
+						var top = "";
+
 						if (member.name == "@construct") {
 							rte = "";
 							prefix = "";
 							nme = root.name;
+
+							top = "\n";
+
+							for (var int m in root.members) {
+								var Carbonite.Member propMember = root.members[m];
+								if (propMember.type == "property") {
+									var Carbonite.Members.Property property = propMember;
+									if ((property.binding != "fixed") and (property.abstract == false)) {
+										top += "this->" + property.name + " = " + this.expression(property.default) + ";\n";
+									}
+								}
+							}
 						}
 
 						if (member.name == "@cast") {
@@ -177,10 +246,17 @@
 						
 						var body = ";\n";
 
-						if (source) {
-							body = "{\n" + this.body(method.body) + "\n}";
+						if (source and member.abstract == false) {
+							body = "{\n" + top + this.body(method.body) + "\n}";
 
 							nme = root.getRoute("::") + "::" + nme;
+						}
+
+						if (member.abstract and source) {
+							continue;
+						}else if (member.abstract) {
+							//prefix = "virtual ";
+							body = " {}";
 						}
 
 						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ")" + body);
@@ -210,11 +286,32 @@
 		return statements.join("\n");
 	}
 
+	bound public string poly(Carbonite.Type target, Carbonite.Type real, string expr) {
+		if (target.polymorph(real)) {
+			return "static_cast<" + this.route(target) + ">(" + expr + ")";
+		}else{
+			return expr;
+		}
+	}
+
 	bound public override <string>function define(Carbonite.Define define) {
 		var string set = "";
+		
 		if (define.initializer != null) {
-			set = " = " + this.expression(define.initializer);
+			set = this.expression(define.initializer);
+			
+			if (define.initializer.output.isPrimitiveValue() == false and define.initializer.output.reference.route != "null") {
+				if (define.output.containsReference == false)
+					set = "std::move(" + set + ")";
+				else if (define.output.containsReference == true and define.initializer.output.containsReference == false)
+					set = set + ".get()";
+			}
+			
+			set = this.poly(define.output, define.initializer.output, set);
+			
+			set = " = " + set;
 		}
+
 		var typeStr = this.route(define.output);
 		if (define.output.isPrimitiveValue() == false or define.output.reference.name == "array" or define.output.reference.name == "map") {
 			typeStr = "" + typeStr + "";
@@ -236,7 +333,18 @@
 			return this.expression(exp.expression) + ";";
 		}else if (statement.type == "return") {
 			var Carbonite.Statements.Return exp = statement;
-			return "return " + this.expression(exp.expression) + ";";
+			
+			if (statement.container.parent.output.containsReference and exp.expression.output.containsReference == false) {
+				exp.buildError("Illegal return by reference.");
+			}
+
+			var expStr = this.expression(exp.expression);
+
+			if (exp.expression.output.isPrimitiveValue() == false and exp.expression.output.reference.route != "null" and statement.container.parent.output.containsReference == false and exp.expression.output.containsReference == false) {
+				expStr = "std::move(" + expStr + ")";
+			}
+
+			return "return " + expStr + ";";
 		}else if (statement.type == "if") {
 			var Carbonite.Statements.If ifState = statement;
 			var string str = "";
@@ -259,7 +367,7 @@
 			var Carbonite.Statements.ForIn forState = statement;
 			var string str = "";
 			if (forState.iterate.output.reference.route == "array") {
-				str = "for (" + this.define(forState.define) + " = 0; " + this.localName(forState.define.name) + " < " + this.expression(forState.iterate) + ".size(); " + this.localName(forState.define.name) + "++) {\n" + this.body(forState.body) + "}";
+				str = "for (" + this.define(forState.define) + " = 0; " + this.localName(forState.define.name) + " < " + this.expression(forState.iterate) + "->size(); " + this.localName(forState.define.name) + "++) {\n" + this.body(forState.body) + "}";
 			}else{
 				str = "for (" + this.define(forState.define) + " in " + this.expression(forState.iterate) + ") {\n" + this.body(forState.body) + "}";
 			}
@@ -271,6 +379,11 @@
 			return "continue;";
 		}else if (statement.type == "break") {
 			return "break;";
+		}else if (statement.type == "native") {
+			var Carbonite.Statements.Native nativeState = statement;
+			if (nativeState.platform == "cpp")
+				return nativeState.content;
+			return "";
 		}
 	}
 	bound public override <string>function native(Carbonite.Native native) {
@@ -515,8 +628,24 @@
 		for (var int i in arguments) {
 			var Carbonite.Expression arg = arguments[i];
 			var exp = this.expression(arg);
-			if (arg.getOutput().isPrimitiveValue() == false and method.arguments[i].reference == false)
-				exp = "std::move(" + exp + ")";
+
+			/*if (method.arguments[i].type.reference.route != arg.output.reference.route) {
+				exp = "(" + this.route(method.arguments[i].type) + ") " + exp;
+			}*/
+
+			if (arg.getOutput().isPrimitiveValue() == false and arg.getOutput().reference.route != "null") {
+				if (method.arguments[i].reference == false) {
+					exp = "std::move(" + exp + ")";
+				}else{
+					if (arg.getOutput().containsReference == false) {
+						exp = exp + ".get()";
+					}
+				}
+			}else if (arg.getOutput().isPrimitiveValue() and arg.getOutput().isPure == false) {
+				exp = exp + ".value()";
+			}
+			
+			exp = this.poly(arg.getOutput(), arg.output, exp);
 
 			args.push(exp);
 		}
@@ -538,14 +667,37 @@
 		if (expression.reference != empty) {
 			var <string>array args = new <string>array();
 			if (expression.last != empty) {
+				var arg = expression.reference.arguments[0];
+
 				if (expression.last.getOutput().isPrimitiveValue() == false) {
-					if (expression.first.getOutput().containsReference) {
-						args.push(this.term(expression.last));
-					}else{
-						args.push("std::move(" + this.term(expression.last) + ")");
+					var eType = arg.type;
+					
+					if (expression.reference.name == "=") {
+						eType = expression.first.output;
 					}
+
+					var expr = "";
+
+					if (eType.containsReference) {
+						if (expression.last.output.containsReference) {
+							expr = this.term(expression.last);
+						}else{
+							expr = this.term(expression.last) + ".get()";
+						}
+					}else{
+						expr = "std::move(" + this.term(expression.last) + ")";
+					}
+
+					expr = this.poly(eType, expression.last.getOutput(), expr);
+
+					args.push(expr);
 				}else{
-					args.push(this.term(expression.last));
+					var getValue = "";
+
+					if (expression.last.output.isPure)
+						getValue = ".value()";
+
+					args.push(this.term(expression.last) + getValue);
 				}
 			}
 			var <Carbonite.Type>array temps = new <Carbonite.Type>array();

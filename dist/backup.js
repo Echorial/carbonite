@@ -2,19 +2,20 @@
 //Relative Context
 //Relative Error
 //Relative FileSystem
-//Relative File
-//Relative Stat
 Memory = function () {
 
 
 }
 
 //Relative Buffer
+//Relative File
+//Relative Stat
 //Relative primitive
 //Relative object
 //Relative array
 //Relative bool
 //Relative byte
+//Relative char
 //Relative Console
 //Relative everything
 //Relative Exception
@@ -472,6 +473,7 @@ Carbonite.Source.prototype.bake = function () {
 					var cls = new Carbonite.Class();
 					cls.loadFromRaw(rawClass);
 					cls.source = this;
+					cls.setupPropertyContext();
 					this.parent.roots.push(cls);
 					temp.push(cls);
 				}
@@ -500,11 +502,17 @@ Carbonite.Context = function () {
 
 	this.instance = "";
 
+	this.reference = null;
+
 	this.arguments = [];
 
 	this.templates = [];
 
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2]instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	this.parent = null;
+
+	this.router = null;
+
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2] instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var instance = arguments[0];
 		var args = arguments[1];
 		var templates = arguments[2];
@@ -513,6 +521,20 @@ Carbonite.Context = function () {
 		this.templates = templates;
 	}
 
+}
+
+Carbonite.Context.prototype.route = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var cls = arguments[0];
+		return this.router(cls);
+	}
+}
+
+Carbonite.Context.prototype.toCarbideValue = function () {
+	if (arguments.length == 0) {
+		return carbide_proxy_Carbonite_Context.create(this);
+		return carbide_proxy_Carbonite_Context.create(this);
+	}
 }
 
 Carbonite.Compiler = function () {
@@ -594,6 +616,8 @@ Carbonite.Compiler = function () {
 				var rtn = that.getClass(cast.value);
 				if (rtn != null) {
 					return VirtualClass.create(rtn);
+					}else{
+						return Carbide.Virtual.Values.Null.create();
 					}
 				}
 			});
@@ -719,6 +743,7 @@ Carbonite.Compiler.prototype.copyClass = function () {
 		var cls = new Carbonite.Class();
 		cls.loadFromRaw(baseClass.raw);
 		cls.source = baseClass.source;
+		cls.setupPropertyContext();
 		return cls;
 	}
 }
@@ -878,10 +903,10 @@ Carbonite.Compiler.prototype.build = function () {
 				}
 			}
 		this.currentLevel = 4;
-		} catch(err) {};
 		if (this.status.hadError == false) {
 			platform.build();
 			}
+		} catch(err) {};
 		for (var i = 0; i < this.sources.length; i++) {
 			var source = this.sources[i];
 			if (source.doCache) {
@@ -889,6 +914,19 @@ Carbonite.Compiler.prototype.build = function () {
 				}
 			}
 		return this.status;
+	}
+}
+
+Carbonite.Compiler.prototype.hasConfigFlag = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var name = arguments[0];
+		if (name in this.pipeConfig) {
+			var flag = this.pipeConfig[name];
+			if (flag == true) {
+				return true;
+				}
+			}
+		return false;
 	}
 }
 
@@ -940,7 +978,7 @@ Carbonite.Compiler.prototype.buildClassToCurrentLevel = function () {
 }
 
 Carbonite.Compiler.prototype.loadCache = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var raw = arguments[0];
 		for (var i = 0; i < raw.length; i++) {
 			var parsed = raw[i]["parsed"];
@@ -971,7 +1009,7 @@ Carbonite.Compiler.prototype.getCache = function () {
 }
 
 Carbonite.Compiler.prototype.setCache = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2]instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2] instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var path = arguments[0];
 		var timeStamp = arguments[1];
 		var raw = arguments[2];
@@ -1101,7 +1139,7 @@ Carbonite.Router.prototype.getParentString = function () {
 }
 
 Carbonite.Router.prototype.bake = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Source) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Source) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var container = arguments[0];
 		var names = arguments[1];
 		var high = 1;
@@ -1234,13 +1272,19 @@ Carbonite.Class = function () {
 	this.source = null;
 
 	if (arguments.length == 0) {
-		var hackMap = {};
-		var emp = null;
-		var hack = new Carbonite.Member(this, emp);
-		hack.name = "propertyContext";
-		this.propertyContext = new Carbonite.Body(hack, hackMap);
+
 	}
 
+}
+
+Carbonite.Class.prototype.setupPropertyContext = function () {
+	if (arguments.length == 0) {
+		var hackMap = {};
+		var emp = null;
+		var hack = new Carbonite.Member(this, this, emp);
+		hack.name = "propertyContext";
+		this.propertyContext = new Carbonite.Body(hack, this, hackMap);
+	}
 }
 
 Carbonite.Class.evaluate = function () {
@@ -1270,6 +1314,13 @@ Carbonite.Class.prototype.getRoute = function () {
 			return this.reroute;
 			}
 		return this.route;
+	}
+else 	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var join = arguments[0];
+		if (this.reroute != "") {
+			return this.reroute;
+			}
+		return this.route.split(".").join(join);
 	}
 }
 
@@ -1421,7 +1472,7 @@ Carbonite.Class.prototype.findCastFor = function () {
 }
 
 Carbonite.Class.prototype.makeArgumentsPretty = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 		var types = [];
@@ -1434,7 +1485,7 @@ Carbonite.Class.prototype.makeArgumentsPretty = function () {
 }
 
 Carbonite.Class.prototype.overloadWithCast = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 		var req = arguments[2];
@@ -1453,13 +1504,17 @@ Carbonite.Class.prototype.overloadWithCast = function () {
 				return new Carbonite.OverloadInfo(method, casts);
 				}
 			}
-		req.source.error(req, this.makeArgumentsPretty(name, ___arguments));
+		if (req.source != null) {
+			req.source.error(req, this.makeArgumentsPretty(name, ___arguments));
+			}else{
+				this.source.error(req, this.makeArgumentsPretty(name, ___arguments));
+			}
 		throw new Error("Build error");
 	}
 }
 
 Carbonite.Class.prototype.overload = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 		var req = arguments[2];
@@ -1477,7 +1532,7 @@ Carbonite.Class.prototype.overload = function () {
 }
 
 Carbonite.Class.prototype.overloadWithContext = function () {
-	if (arguments.length == 4 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbonite.Range || (arguments[3] instanceof Carbonite.Named || (arguments[3] instanceof Carbonite.Class)) || (arguments[3] instanceof Carbonite.Doc) || (arguments[3] instanceof Carbonite.NamedHack) || (arguments[3] instanceof Carbonite.Member || (arguments[3] instanceof Carbonite.Members.Method || (arguments[3] instanceof Carbonite.Members.Operator)) || (arguments[3] instanceof Carbonite.Members.Property)) || (arguments[3] instanceof Carbonite.Template) || (arguments[3] instanceof Carbonite.Define) || (arguments[3] instanceof Carbonite.Body) || (arguments[3] instanceof Carbonite.Statement || (arguments[3] instanceof Carbonite.Statements.If) || (arguments[3] instanceof Carbonite.Statements.Return) || (arguments[3] instanceof Carbonite.Statements.Define) || (arguments[3] instanceof Carbonite.Statements.For) || (arguments[3] instanceof Carbonite.Statements.ForIn) || (arguments[3] instanceof Carbonite.Statements.While) || (arguments[3] instanceof Carbonite.Statements.Continue) || (arguments[3] instanceof Carbonite.Statements.Break) || (arguments[3] instanceof Carbonite.Statements.Try) || (arguments[3] instanceof Carbonite.Statements.Throw) || (arguments[3] instanceof Carbonite.Statements.Native) || (arguments[3] instanceof Carbonite.Statements.Expression)) || (arguments[3] instanceof Carbonite.Statements.IfAlternative) || (arguments[3] instanceof Carbonite.Argument) || (arguments[3] instanceof Carbonite.Expression) || (arguments[3] instanceof Carbonite.Term || (arguments[3] instanceof Carbonite.Terms.Literal) || (arguments[3] instanceof Carbonite.Terms.Expression) || (arguments[3] instanceof Carbonite.Terms.Sequence) || (arguments[3] instanceof Carbonite.Terms.Prefix) || (arguments[3] instanceof Carbonite.Terms.Function)) || (arguments[3] instanceof Carbonite.Type || (arguments[3] instanceof Carbonite.ReferenceType)) || (arguments[3] instanceof Carbonite.Implements) || (arguments[3] instanceof Carbonite.Native || (arguments[3] instanceof Carbonite.Natives.Integer) || (arguments[3] instanceof Carbonite.Natives.Float) || (arguments[3] instanceof Carbonite.Natives.Boolean) || (arguments[3] instanceof Carbonite.Natives.String) || (arguments[3] instanceof Carbonite.Natives.Array)) || (arguments[3] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+	if (arguments.length == 4 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbonite.Range || (arguments[3] instanceof Carbonite.Named || (arguments[3] instanceof Carbonite.Class)) || (arguments[3] instanceof Carbonite.Doc) || (arguments[3] instanceof Carbonite.NamedHack) || (arguments[3] instanceof Carbonite.Member || (arguments[3] instanceof Carbonite.Members.Method || (arguments[3] instanceof Carbonite.Members.Operator)) || (arguments[3] instanceof Carbonite.Members.Property)) || (arguments[3] instanceof Carbonite.Template) || (arguments[3] instanceof Carbonite.Define) || (arguments[3] instanceof Carbonite.Body) || (arguments[3] instanceof Carbonite.Statement || (arguments[3] instanceof Carbonite.Statements.If) || (arguments[3] instanceof Carbonite.Statements.Return) || (arguments[3] instanceof Carbonite.Statements.Define) || (arguments[3] instanceof Carbonite.Statements.For) || (arguments[3] instanceof Carbonite.Statements.ForIn) || (arguments[3] instanceof Carbonite.Statements.While) || (arguments[3] instanceof Carbonite.Statements.Continue) || (arguments[3] instanceof Carbonite.Statements.Break) || (arguments[3] instanceof Carbonite.Statements.Try) || (arguments[3] instanceof Carbonite.Statements.Throw) || (arguments[3] instanceof Carbonite.Statements.Native) || (arguments[3] instanceof Carbonite.Statements.Expression)) || (arguments[3] instanceof Carbonite.Statements.IfAlternative) || (arguments[3] instanceof Carbonite.Argument) || (arguments[3] instanceof Carbonite.Expression) || (arguments[3] instanceof Carbonite.Term || (arguments[3] instanceof Carbonite.Terms.Literal) || (arguments[3] instanceof Carbonite.Terms.Expression) || (arguments[3] instanceof Carbonite.Terms.Sequence) || (arguments[3] instanceof Carbonite.Terms.Prefix) || (arguments[3] instanceof Carbonite.Terms.Function)) || (arguments[3] instanceof Carbonite.Type || (arguments[3] instanceof Carbonite.ReferenceType)) || (arguments[3] instanceof Carbonite.Implements) || (arguments[3] instanceof Carbonite.Native || (arguments[3] instanceof Carbonite.Natives.Integer) || (arguments[3] instanceof Carbonite.Natives.Float) || (arguments[3] instanceof Carbonite.Natives.Boolean) || (arguments[3] instanceof Carbonite.Natives.String) || (arguments[3] instanceof Carbonite.Natives.Array)) || (arguments[3] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 		var context = arguments[2];
@@ -1507,12 +1562,15 @@ Carbonite.Class.prototype.loadFromRaw = function () {
 		if (this.attributes == null) {
 			this.attributes = [];
 			}
+		if (this.getAttribute(this.attributes, "Primitive") != null) {
+			this.primitiveValue = true;
+			}
 		this.doc = new Carbonite.Doc(this.raw["doc"]);
 	}
 }
 
 Carbonite.Class.prototype.getAttribute = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var attrs = arguments[0];
 		var name = arguments[1];
 		if (attrs == null) {
@@ -1559,6 +1617,7 @@ Carbonite.Class.prototype.executeInherits = function () {
 		if (this.inherited) {
 
 			}else{
+				this.inherited = true;
 				if (this.route == "primitive") {
 					this.primitiveValue = true;
 					}
@@ -1576,8 +1635,16 @@ Carbonite.Class.prototype.executeInherits = function () {
 					this.inherit(cls);
 					cls.descendants.push(this);
 					}
-				this.inherited = true;
+				var arr = [];
+				arr.push(VirtualClass.create(this));
+				this.compiler.virtualEvents.emit("members.end", arr);
 			}
+	}
+}
+
+Carbonite.Class.prototype.emitMemberEnd = function () {
+	if (arguments.length == 0) {
+
 	}
 }
 
@@ -1609,11 +1676,17 @@ Carbonite.Class.prototype.buildCode = function () {
 Carbonite.Class.prototype.makeMember = function () {
 	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var mem = arguments[0];
+		return this.makeMember(this, mem);
+	}
+else 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var cls = arguments[0];
+		var mem = arguments[1];
 		if (mem["attribute"] != null) {
 			var cst = mem["attribute"];
 			var attr = this.getAttribute(cst, "operator");
 			if (attr != null) {
-				var member = new Carbonite.Members.Operator(this, mem);
+				var member = new Carbonite.Members.Operator(this, this, mem);
+				member.loadLocation(cls, mem);
 				var op = member.getAttributes("operator");
 				var cAttr = op[0];
 				member.operator = cAttr["value"];
@@ -1626,10 +1699,10 @@ Carbonite.Class.prototype.makeMember = function () {
 					}
 				return member;
 				}else{
-					return Carbonite.Member.make(this, mem);
+					return Carbonite.Member.make(this, cls, mem);
 				}
 			}else{
-				return Carbonite.Member.make(this, mem);
+				return Carbonite.Member.make(this, cls, mem);
 			}
 	}
 }
@@ -1648,7 +1721,7 @@ Carbonite.Class.prototype.buildMembers = function () {
 					var cst = mem["attribute"];
 					var attr = this.getAttribute(cst, "operator");
 					if (attr != null) {
-						var member = new Carbonite.Members.Operator(this, mem);
+						var member = new Carbonite.Members.Operator(this, this, mem);
 						var op = member.getAttributes("operator");
 						var cAttr = op[0];
 						member.operator = cAttr["value"];
@@ -1681,9 +1754,6 @@ Carbonite.Class.prototype.buildMembers = function () {
 			var inst = this.instances[i];
 			inst.instance.buildMembers();
 			}
-		var arr = [];
-		arr.push(VirtualClass.create(this));
-		this.compiler.virtualEvents.emit("members.end", arr);
 	}
 }
 
@@ -1712,6 +1782,18 @@ Carbonite.Class.prototype.buildInheritance = function () {
 				var name = inherit["name"];
 				var cls = this.compiler.findClass(name, this);
 				this.inherits.push(cls);
+				}
+			}
+	}
+}
+
+Carbonite.Class.prototype.destroyMembers = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var name = arguments[0];
+		for (var i = this.members.length - 1;i >= 0;i--) {
+			var member = this.members[i];
+			if (member.name == name) {
+				this.members.splice(i, 1);
 				}
 			}
 	}
@@ -1785,7 +1867,7 @@ Carbonite.Class.prototype.inherit = function () {
 				if (mem.abstract) {
 					this.buildError("Class '" + this.route + "' must implement the abstract member '" + mem.name + "'");
 					}else{
-						var member = this.makeMember(mem.raw);
+						var member = this.makeMember(from, mem.raw);
 						member.inheritedFrom = from;
 						if (from.route == "everything") {
 							var castMethod = member;
@@ -2041,6 +2123,13 @@ Carbonite.Class.prototype.buildError = function () {
 	}
 }
 
+Carbonite.Class.prototype.toCarbideValue = function () {
+	if (arguments.length == 0) {
+		return carbide_proxy_Carbonite_Class.create(this);
+		return carbide_proxy_Carbonite_Class.create(this);
+	}
+}
+
 Carbonite.OverloadInfo = function () {
 	this.method = null;
 
@@ -2050,7 +2139,7 @@ Carbonite.OverloadInfo = function () {
 		var method = arguments[0];
 		this.method = method;
 	}
-else 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+else 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var method = arguments[0];
 		var casts = arguments[1];
 		this.method = method;
@@ -2082,7 +2171,7 @@ Carbonite.Doc = function () {
 
 	this.source = null;
 
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var raw = arguments[0];
 		if (raw != null) {
 			for (var i = 0; i < raw.length; i++) {
@@ -2270,9 +2359,10 @@ Carbonite.Member = function () {
 
 	this.source = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var parent = arguments[0];
-		var raw = arguments[1];
+		var location = arguments[1];
+		var raw = arguments[2];
 		this.parent = parent;
 		if (raw == null) {
 
@@ -2283,7 +2373,7 @@ Carbonite.Member = function () {
 				if (this.attributes == null) {
 					this.attributes = [];
 					}
-				this.loadLocation(this.parent, this.raw);
+				this.loadLocation(location, this.raw);
 				this.name = this.raw["name"];
 				this.output = new Carbonite.Type(parent.compiler, parent);
 				var rawOutput = this.raw["output"];
@@ -2308,7 +2398,7 @@ Carbonite.Member = function () {
 						this.flags.push(flag);
 						}
 					}
-				this.build();
+				this.build(location);
 			}
 	}
 
@@ -2347,16 +2437,22 @@ Carbonite.Member.make = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
+		return Carbonite.Member.make(parent, parent, raw);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
 		var type = raw["type"];
 		var rtn = null;
 		if (type == "method") {
-			rtn = new Carbonite.Members.Method(parent, raw);
+			rtn = new Carbonite.Members.Method(parent, location, raw);
 			rtn.type = "method";
 			}else if (type == "property") {
-			rtn = new Carbonite.Members.Property(parent, raw);
+			rtn = new Carbonite.Members.Property(parent, location, raw);
 			rtn.type = "property";
 			}else if (type == "operator") {
-			rtn = new Carbonite.Members.Operator(parent, raw);
+			rtn = new Carbonite.Members.Operator(parent, location, raw);
 			rtn.type = "operator";
 			var cast = rtn;
 			parent.compiler.operatorOrders[cast.operator] = cast.order;
@@ -2366,7 +2462,8 @@ Carbonite.Member.make = function () {
 }
 
 Carbonite.Member.prototype.build = function () {
-	if (arguments.length == 0) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var location = arguments[0];
 
 	}
 }
@@ -2474,9 +2571,11 @@ Carbonite.Members.Method = function () {
 
 	this.arguments = [];
 
-	this.variatic = false;
+	this.variadic = false;
 
 	this.simpleNative = false;
+
+	this.nativeBlock = null;
 
 	this.binding = "bound";
 
@@ -2508,9 +2607,10 @@ Carbonite.Members.Method = function () {
 
 	this.source = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var parent = arguments[0];
-		var raw = arguments[1];
+		var location = arguments[1];
+		var raw = arguments[2];
 		this.parent = parent;
 		if (raw == null) {
 
@@ -2521,7 +2621,7 @@ Carbonite.Members.Method = function () {
 				if (this.attributes == null) {
 					this.attributes = [];
 					}
-				this.loadLocation(this.parent, this.raw);
+				this.loadLocation(location, this.raw);
 				this.name = this.raw["name"];
 				this.output = new Carbonite.Type(parent.compiler, parent);
 				var rawOutput = this.raw["output"];
@@ -2546,7 +2646,7 @@ Carbonite.Members.Method = function () {
 						this.flags.push(flag);
 						}
 					}
-				this.build();
+				this.build(location);
 			}
 	}
 
@@ -2573,16 +2673,23 @@ Carbonite.Members.Method.evaluate = function () {
 			parent.compiler.status.give(Carbonite.Notice.fromParser(parent.source, output));
 			}else{
 				var method = Carbonite.Member.make(parent, output.data["data"]);
+				if (method.hasFlag("destroy")) {
+					parent.destroyMembers(method.name);
+					}
 				parent.members.push(method);
+				if (parent.compiler.currentLevel >= 3) {
+					var cast = method;
+					cast.buildBody();
+					}
 				return method;
 			}
 	}
 }
 
 Carbonite.Members.Method.prototype.checkExpressions = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var parameters = arguments[0];
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length > this.arguments.length) {
 				return false;
 				}
@@ -2599,9 +2706,9 @@ Carbonite.Members.Method.prototype.checkExpressions = function () {
 }
 
 Carbonite.Members.Method.prototype.check = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var parameters = arguments[0];
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length > this.arguments.length) {
 				return false;
 				}
@@ -2621,10 +2728,10 @@ Carbonite.Members.Method.prototype.check = function () {
 }
 
 Carbonite.Members.Method.prototype.checkWithCast = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var parameters = arguments[0];
 		var output = [];
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length > this.arguments.length) {
 				return output;
 				}
@@ -2647,10 +2754,10 @@ Carbonite.Members.Method.prototype.checkWithCast = function () {
 }
 
 Carbonite.Members.Method.prototype.checkWithContext = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parameters = arguments[0];
 		var context = arguments[1];
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length > this.arguments.length) {
 				return false;
 				}
@@ -2674,12 +2781,14 @@ Carbonite.Members.Method.prototype.buildBody = function () {
 		if (this.abstract) {
 			return null;
 			}
-		this.body.build();
-		if (this.hasFlag("native")) {
-			if (this.body.statements.length == 1) {
-				var state = this.body.statements[0];
-				if (state.type == "return") {
-					this.simpleNative = true;
+		if (this.body != null) {
+			this.body.build();
+			if (this.hasFlag("native")) {
+				if (this.body.statements.length == 1) {
+					var state = this.body.statements[0];
+					if (state.type == "return") {
+						this.simpleNative = true;
+						}
 					}
 				}
 			}
@@ -2687,27 +2796,35 @@ Carbonite.Members.Method.prototype.buildBody = function () {
 }
 
 Carbonite.Members.Method.prototype.build = function () {
-	if (arguments.length == 0) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var location = arguments[0];
 		var type = this.raw["value"]["body"]["type"];
 		if (type == "interface") {
 			this.abstract = true;
 			}else{
-				this.body = new Carbonite.Body(this, this.raw["value"]["body"]);
-				var ownType = new Carbonite.Type(this.parent.compiler, this.parent);
-				ownType.loadFromName(this.parent.route, this.raw);
-				ownType.reference = this.parent;
-				var thisName = "this";
-				var defThis = new Carbonite.Define(thisName, ownType);
-				if ((this.binding == "fixed") && (this.name != "@construct")) {
-					defThis.isConstantReference = true;
-					}
-				this.body.scope.add(defThis);
-				if (this.hasFlag("native")) {
-					var cc = new Carbonite.Type(this.parent.compiler, this.parent);
-					cc.loadFromName("Carbon.Context", this.raw);
-					var cStr = "context";
-					var context = new Carbonite.Define(cStr, cc);
-					this.body.scope.add(context);
+				var states = this.raw["value"]["body"]["code"];
+				if (this.hasFlag("native") && states.length > 0 && states[0]["type"] != "return") {
+
+					}else{
+						this.body = new Carbonite.Body(this, location, this.raw["value"]["body"]);
+						var ownType = new Carbonite.Type(this.parent.compiler, this.parent);
+						ownType.loadFromName(this.parent.route, this.raw);
+						ownType.reference = this.parent;
+						ownType.containsReference = true;
+						var thisName = "this";
+						var defThis = new Carbonite.Define(thisName, ownType);
+						defThis.isLocal = false;
+						if ((this.binding == "fixed") && (this.name != "@construct")) {
+							defThis.isConstantReference = true;
+							}
+						this.body.scope.add(defThis);
+						if (this.hasFlag("native")) {
+							var cc = new Carbonite.Type(this.parent.compiler, this.parent);
+							cc.loadFromName("Carbon.Context", this.raw);
+							var cStr = "context";
+							var context = new Carbonite.Define(cStr, cc);
+							this.body.scope.add(context);
+							}
 					}
 				if (this.name == "@index") {
 					var attrs = this.getAttributes("name");
@@ -2800,6 +2917,43 @@ Carbonite.Members.Method.prototype.generate = function () {
 		if (this.simpleNative) {
 			var ret = this.body.statements[0];
 			return this.concat(ctx, ret.expression.first, ret.expression.last);
+			}else{
+				if (this.nativeBlock == null) {
+					var blockMap = this.raw["value"]["body"]["code"];
+					this.nativeBlock = Carbide.Languages.Carbon.virtualizeIntoProcessor(this.parent.source.file + " native carbon script", JSON.parse(JSON.stringify(blockMap)), this.parent.source.parent.buildScript);
+					}
+				ctx.reference = this.output.reference;
+				var proc = this.parent.source.parent.buildScript;
+				var scope = new Carbide.Virtual.Scope(proc);
+				scope.setParentScope(proc.scope);
+				scope.addVariable(new Carbide.Virtual.Variable("context", ctx.toCarbideValue()));
+				try {
+					this.nativeBlock.run(scope);
+				} catch (_carb_catch_var) {
+					if (_carb_catch_var instanceof Error || typeof _carb_catch_var == 'undefined' || _carb_catch_var === null) {
+						var e = _carb_catch_var;
+
+					}
+				}
+				if (proc.hadError) {
+					var baseNotice = proc.notices[0];
+					var notice = new Carbonite.Notice(baseNotice.message);
+					notice.start = new Carbonite.Location(0, 0, baseNotice.start);
+					notice.end = new Carbonite.Location(0, 0, baseNotice.end);
+					notice.module = "Script";
+					notice.type = "Runtime";
+					notice.source = this.parent.source;
+					this.parent.source.parent.status.give(notice);
+					throw new Error("Execution error");
+					}else{
+						var str = scope.search("functionReturn");
+						if (str == null) {
+							this.buildError("Expected string output from native method");
+							}else{
+								var cast = str.value;
+								return cast.value;
+							}
+					}
 			}
 	}
 }
@@ -2831,7 +2985,7 @@ Carbonite.Members.Method.fromHeader = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
-		var method = new Carbonite.Members.Method(parent, null);
+		var method = new Carbonite.Members.Method(parent, parent, null);
 		method.type = "method";
 		method.name = data["name"];
 		method.binding = data["binding"];
@@ -2895,16 +3049,22 @@ Carbonite.Members.Method.make = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
+		return Carbonite.Member.make(parent, parent, raw);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
 		var type = raw["type"];
 		var rtn = null;
 		if (type == "method") {
-			rtn = new Carbonite.Members.Method(parent, raw);
+			rtn = new Carbonite.Members.Method(parent, location, raw);
 			rtn.type = "method";
 			}else if (type == "property") {
-			rtn = new Carbonite.Members.Property(parent, raw);
+			rtn = new Carbonite.Members.Property(parent, location, raw);
 			rtn.type = "property";
 			}else if (type == "operator") {
-			rtn = new Carbonite.Members.Operator(parent, raw);
+			rtn = new Carbonite.Members.Operator(parent, location, raw);
 			rtn.type = "operator";
 			var cast = rtn;
 			parent.compiler.operatorOrders[cast.operator] = cast.order;
@@ -3005,9 +3165,9 @@ Carbonite.Members.ReferenceMethod.prototype.getReference = function () {
 }
 
 Carbonite.Members.ReferenceMethod.prototype.check = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var parameters = arguments[0];
-		if (this.reference.variatic == false) {
+		if (this.reference.variadic == false) {
 			if (parameters.length > this.reference.arguments.length) {
 				return false;
 				}
@@ -3058,9 +3218,10 @@ Carbonite.Members.Property = function () {
 
 	this.source = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var parent = arguments[0];
-		var raw = arguments[1];
+		var location = arguments[1];
+		var raw = arguments[2];
 		this.parent = parent;
 		if (raw == null) {
 
@@ -3071,7 +3232,7 @@ Carbonite.Members.Property = function () {
 				if (this.attributes == null) {
 					this.attributes = [];
 					}
-				this.loadLocation(this.parent, this.raw);
+				this.loadLocation(location, this.raw);
 				this.name = this.raw["name"];
 				this.output = new Carbonite.Type(parent.compiler, parent);
 				var rawOutput = this.raw["output"];
@@ -3096,7 +3257,7 @@ Carbonite.Members.Property = function () {
 						this.flags.push(flag);
 						}
 					}
-				this.build();
+				this.build(location);
 			}
 	}
 
@@ -3111,7 +3272,14 @@ Carbonite.Members.Property.evaluate = function () {
 			parent.compiler.status.give(Carbonite.Notice.fromParser(parent.source, output));
 			}else{
 				var property = Carbonite.Member.make(parent, output.data["data"]);
+				if (property.hasFlag("destroy")) {
+					parent.destroyMembers(property.name);
+					}
 				parent.members.push(property);
+				if (parent.compiler.currentLevel >= 3) {
+					var cast = property;
+					cast.buildDefault();
+					}
 				return property;
 			}
 	}
@@ -3123,6 +3291,9 @@ Carbonite.Members.Property.prototype.buildDefault = function () {
 		if (type == "interface") {
 			this.abstract = true;
 			}else{
+				if (this.parent.propertyContext == null) {
+					this.parent.setupPropertyContext();
+					}
 				this.default = new Carbonite.Expression(this.parent, this.parent.propertyContext);
 				this.default.loadFromRaw(this.raw["value"]["value"]);
 			}
@@ -3130,7 +3301,8 @@ Carbonite.Members.Property.prototype.buildDefault = function () {
 }
 
 Carbonite.Members.Property.prototype.build = function () {
-	if (arguments.length == 0) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var location = arguments[0];
 
 	}
 }
@@ -3151,7 +3323,7 @@ Carbonite.Members.Property.fromHeader = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
-		var property = new Carbonite.Members.Property(parent, null);
+		var property = new Carbonite.Members.Property(parent, parent, null);
 		property.type = "property";
 		property.name = data["name"];
 		property.binding = data["binding"];
@@ -3200,16 +3372,22 @@ Carbonite.Members.Property.make = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
+		return Carbonite.Member.make(parent, parent, raw);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
 		var type = raw["type"];
 		var rtn = null;
 		if (type == "method") {
-			rtn = new Carbonite.Members.Method(parent, raw);
+			rtn = new Carbonite.Members.Method(parent, location, raw);
 			rtn.type = "method";
 			}else if (type == "property") {
-			rtn = new Carbonite.Members.Property(parent, raw);
+			rtn = new Carbonite.Members.Property(parent, location, raw);
 			rtn.type = "property";
 			}else if (type == "operator") {
-			rtn = new Carbonite.Members.Operator(parent, raw);
+			rtn = new Carbonite.Members.Operator(parent, location, raw);
 			rtn.type = "operator";
 			var cast = rtn;
 			parent.compiler.operatorOrders[cast.operator] = cast.order;
@@ -3316,9 +3494,11 @@ Carbonite.Members.Operator = function () {
 
 	this.arguments = [];
 
-	this.variatic = false;
+	this.variadic = false;
 
 	this.simpleNative = false;
+
+	this.nativeBlock = null;
 
 	this.binding = "bound";
 
@@ -3350,9 +3530,10 @@ Carbonite.Members.Operator = function () {
 
 	this.source = null;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var parent = arguments[0];
-		var raw = arguments[1];
+		var location = arguments[1];
+		var raw = arguments[2];
 		this.parent = parent;
 		if (raw == null) {
 
@@ -3363,7 +3544,7 @@ Carbonite.Members.Operator = function () {
 				if (this.attributes == null) {
 					this.attributes = [];
 					}
-				this.loadLocation(this.parent, this.raw);
+				this.loadLocation(location, this.raw);
 				this.name = this.raw["name"];
 				this.output = new Carbonite.Type(parent.compiler, parent);
 				var rawOutput = this.raw["output"];
@@ -3388,7 +3569,7 @@ Carbonite.Members.Operator = function () {
 						this.flags.push(flag);
 						}
 					}
-				this.build();
+				this.build(location);
 			}
 	}
 
@@ -3428,16 +3609,23 @@ Carbonite.Members.Operator.evaluate = function () {
 			parent.compiler.status.give(Carbonite.Notice.fromParser(parent.source, output));
 			}else{
 				var method = Carbonite.Member.make(parent, output.data["data"]);
+				if (method.hasFlag("destroy")) {
+					parent.destroyMembers(method.name);
+					}
 				parent.members.push(method);
+				if (parent.compiler.currentLevel >= 3) {
+					var cast = method;
+					cast.buildBody();
+					}
 				return method;
 			}
 	}
 }
 
 Carbonite.Members.Operator.prototype.checkExpressions = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var parameters = arguments[0];
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length > this.arguments.length) {
 				return false;
 				}
@@ -3454,9 +3642,9 @@ Carbonite.Members.Operator.prototype.checkExpressions = function () {
 }
 
 Carbonite.Members.Operator.prototype.check = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var parameters = arguments[0];
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length > this.arguments.length) {
 				return false;
 				}
@@ -3476,10 +3664,10 @@ Carbonite.Members.Operator.prototype.check = function () {
 }
 
 Carbonite.Members.Operator.prototype.checkWithCast = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var parameters = arguments[0];
 		var output = [];
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length > this.arguments.length) {
 				return output;
 				}
@@ -3502,10 +3690,10 @@ Carbonite.Members.Operator.prototype.checkWithCast = function () {
 }
 
 Carbonite.Members.Operator.prototype.checkWithContext = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parameters = arguments[0];
 		var context = arguments[1];
-		if (this.variatic == false) {
+		if (this.variadic == false) {
 			if (parameters.length > this.arguments.length) {
 				return false;
 				}
@@ -3529,12 +3717,14 @@ Carbonite.Members.Operator.prototype.buildBody = function () {
 		if (this.abstract) {
 			return null;
 			}
-		this.body.build();
-		if (this.hasFlag("native")) {
-			if (this.body.statements.length == 1) {
-				var state = this.body.statements[0];
-				if (state.type == "return") {
-					this.simpleNative = true;
+		if (this.body != null) {
+			this.body.build();
+			if (this.hasFlag("native")) {
+				if (this.body.statements.length == 1) {
+					var state = this.body.statements[0];
+					if (state.type == "return") {
+						this.simpleNative = true;
+						}
 					}
 				}
 			}
@@ -3542,27 +3732,35 @@ Carbonite.Members.Operator.prototype.buildBody = function () {
 }
 
 Carbonite.Members.Operator.prototype.build = function () {
-	if (arguments.length == 0) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var location = arguments[0];
 		var type = this.raw["value"]["body"]["type"];
 		if (type == "interface") {
 			this.abstract = true;
 			}else{
-				this.body = new Carbonite.Body(this, this.raw["value"]["body"]);
-				var ownType = new Carbonite.Type(this.parent.compiler, this.parent);
-				ownType.loadFromName(this.parent.route, this.raw);
-				ownType.reference = this.parent;
-				var thisName = "this";
-				var defThis = new Carbonite.Define(thisName, ownType);
-				if ((this.binding == "fixed") && (this.name != "@construct")) {
-					defThis.isConstantReference = true;
-					}
-				this.body.scope.add(defThis);
-				if (this.hasFlag("native")) {
-					var cc = new Carbonite.Type(this.parent.compiler, this.parent);
-					cc.loadFromName("Carbon.Context", this.raw);
-					var cStr = "context";
-					var context = new Carbonite.Define(cStr, cc);
-					this.body.scope.add(context);
+				var states = this.raw["value"]["body"]["code"];
+				if (this.hasFlag("native") && states.length > 0 && states[0]["type"] != "return") {
+
+					}else{
+						this.body = new Carbonite.Body(this, location, this.raw["value"]["body"]);
+						var ownType = new Carbonite.Type(this.parent.compiler, this.parent);
+						ownType.loadFromName(this.parent.route, this.raw);
+						ownType.reference = this.parent;
+						ownType.containsReference = true;
+						var thisName = "this";
+						var defThis = new Carbonite.Define(thisName, ownType);
+						defThis.isLocal = false;
+						if ((this.binding == "fixed") && (this.name != "@construct")) {
+							defThis.isConstantReference = true;
+							}
+						this.body.scope.add(defThis);
+						if (this.hasFlag("native")) {
+							var cc = new Carbonite.Type(this.parent.compiler, this.parent);
+							cc.loadFromName("Carbon.Context", this.raw);
+							var cStr = "context";
+							var context = new Carbonite.Define(cStr, cc);
+							this.body.scope.add(context);
+							}
 					}
 				if (this.name == "@index") {
 					var attrs = this.getAttributes("name");
@@ -3655,6 +3853,43 @@ Carbonite.Members.Operator.prototype.generate = function () {
 		if (this.simpleNative) {
 			var ret = this.body.statements[0];
 			return this.concat(ctx, ret.expression.first, ret.expression.last);
+			}else{
+				if (this.nativeBlock == null) {
+					var blockMap = this.raw["value"]["body"]["code"];
+					this.nativeBlock = Carbide.Languages.Carbon.virtualizeIntoProcessor(this.parent.source.file + " native carbon script", JSON.parse(JSON.stringify(blockMap)), this.parent.source.parent.buildScript);
+					}
+				ctx.reference = this.output.reference;
+				var proc = this.parent.source.parent.buildScript;
+				var scope = new Carbide.Virtual.Scope(proc);
+				scope.setParentScope(proc.scope);
+				scope.addVariable(new Carbide.Virtual.Variable("context", ctx.toCarbideValue()));
+				try {
+					this.nativeBlock.run(scope);
+				} catch (_carb_catch_var) {
+					if (_carb_catch_var instanceof Error || typeof _carb_catch_var == 'undefined' || _carb_catch_var === null) {
+						var e = _carb_catch_var;
+
+					}
+				}
+				if (proc.hadError) {
+					var baseNotice = proc.notices[0];
+					var notice = new Carbonite.Notice(baseNotice.message);
+					notice.start = new Carbonite.Location(0, 0, baseNotice.start);
+					notice.end = new Carbonite.Location(0, 0, baseNotice.end);
+					notice.module = "Script";
+					notice.type = "Runtime";
+					notice.source = this.parent.source;
+					this.parent.source.parent.status.give(notice);
+					throw new Error("Execution error");
+					}else{
+						var str = scope.search("functionReturn");
+						if (str == null) {
+							this.buildError("Expected string output from native method");
+							}else{
+								var cast = str.value;
+								return cast.value;
+							}
+					}
 			}
 	}
 }
@@ -3674,7 +3909,7 @@ Carbonite.Members.Operator.fromHeader = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
-		var method = new Carbonite.Members.Method(parent, null);
+		var method = new Carbonite.Members.Method(parent, parent, null);
 		method.type = "method";
 		method.name = data["name"];
 		method.binding = data["binding"];
@@ -3738,16 +3973,22 @@ Carbonite.Members.Operator.make = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var raw = arguments[1];
+		return Carbonite.Member.make(parent, parent, raw);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
 		var type = raw["type"];
 		var rtn = null;
 		if (type == "method") {
-			rtn = new Carbonite.Members.Method(parent, raw);
+			rtn = new Carbonite.Members.Method(parent, location, raw);
 			rtn.type = "method";
 			}else if (type == "property") {
-			rtn = new Carbonite.Members.Property(parent, raw);
+			rtn = new Carbonite.Members.Property(parent, location, raw);
 			rtn.type = "property";
 			}else if (type == "operator") {
-			rtn = new Carbonite.Members.Operator(parent, raw);
+			rtn = new Carbonite.Members.Operator(parent, location, raw);
 			rtn.type = "operator";
 			var cast = rtn;
 			parent.compiler.operatorOrders[cast.operator] = cast.order;
@@ -3888,6 +4129,13 @@ Carbonite.Template.prototype.buildError = function () {
 	}
 }
 
+Carbonite.Template.prototype.toCarbideValue = function () {
+	if (arguments.length == 0) {
+		return carbide_proxy_Carbonite_Template.create(this);
+		return carbide_proxy_Carbonite_Template.create(this);
+	}
+}
+
 Carbonite.TemplateInstance = function () {
 	this.instance = null;
 
@@ -3983,6 +4231,8 @@ Carbonite.Define = function () {
 	this.isConstantReference = false;
 
 	this.blockIndex = 0;
+
+	this.isLocal = true;
 
 	this.outOfScope = true;
 
@@ -4136,6 +4386,26 @@ Carbonite.Body = function () {
 		var emp = null;
 		this.scope = new Carbonite.Scope(this, emp);
 	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Member || (arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || (arguments[0] instanceof Carbonite.Members.Property)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Class) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
+		this.parent = parent;
+		this.raw = raw;
+		this.loadLocation(location, raw);
+		var emp = null;
+		this.scope = new Carbonite.Scope(this, emp);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Member || (arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || (arguments[0] instanceof Carbonite.Members.Property)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Source) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var parent = arguments[0];
+		var location = arguments[1];
+		var raw = arguments[2];
+		this.parent = parent;
+		this.raw = raw;
+		this.loadLocation(location, raw);
+		var emp = null;
+		this.scope = new Carbonite.Scope(this, emp);
+	}
 
 }
 
@@ -4161,12 +4431,6 @@ Carbonite.Body.prototype.inherit = function () {
 	}
 }
 
-Carbonite.Body.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Body.create(this);
-	}
-}
-
 Carbonite.Body.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -4189,6 +4453,13 @@ Carbonite.Body.prototype.buildError = function () {
 		var msg = arguments[0];
 		this.source.error(this, msg);
 		throw new Error("Build error");
+	}
+}
+
+Carbonite.Body.prototype.toCarbideValue = function () {
+	if (arguments.length == 0) {
+		return carbide_proxy_Carbonite_Body.create(this);
+		return carbide_proxy_Carbonite_Body.create(this);
 	}
 }
 
@@ -4268,12 +4539,6 @@ Carbonite.Statement.prototype.build = function () {
 	}
 }
 
-Carbonite.Statement.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
-	}
-}
-
 Carbonite.Statement.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -4296,6 +4561,13 @@ Carbonite.Statement.prototype.buildError = function () {
 		var msg = arguments[0];
 		this.source.error(this, msg);
 		throw new Error("Build error");
+	}
+}
+
+Carbonite.Statement.prototype.toCarbideValue = function () {
+	if (arguments.length == 0) {
+		return carbide_proxy_Carbonite_Statement.create(this);
+		return carbide_proxy_Carbonite_Statement.create(this);
 	}
 }
 
@@ -4332,7 +4604,7 @@ Carbonite.Statements.If.prototype.build = function () {
 		var container = arguments[1];
 		this.check = new Carbonite.Expression(container.parent.parent, container);
 		this.check.loadFromRaw(raw["check"]["expression"]);
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.body.build();
 		var alternatives = raw["alternatives"];
@@ -4386,12 +4658,6 @@ Carbonite.Statements.If.make = function () {
 			rtn = new Carbonite.Statements.Try(container);
 			}
 		return rtn;
-	}
-}
-
-Carbonite.Statements.If.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
 	}
 }
 
@@ -4569,12 +4835,6 @@ Carbonite.Statements.Return.make = function () {
 	}
 }
 
-Carbonite.Statements.Return.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
-	}
-}
-
 Carbonite.Statements.Return.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -4679,12 +4939,6 @@ Carbonite.Statements.Define.make = function () {
 	}
 }
 
-Carbonite.Statements.Define.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
-	}
-}
-
 Carbonite.Statements.Define.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -4743,7 +4997,7 @@ Carbonite.Statements.For.prototype.build = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var raw = arguments[0];
 		var container = arguments[1];
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.define = Carbonite.Define.make(raw["define"], this.body);
 		this.check = new Carbonite.Expression(container.parent.parent, this.body);
@@ -4798,12 +5052,6 @@ Carbonite.Statements.For.make = function () {
 			rtn = new Carbonite.Statements.Try(container);
 			}
 		return rtn;
-	}
-}
-
-Carbonite.Statements.For.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
 	}
 }
 
@@ -4919,12 +5167,6 @@ Carbonite.Statements.ForIn.make = function () {
 	}
 }
 
-Carbonite.Statements.ForIn.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
-	}
-}
-
 Carbonite.Statements.ForIn.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -4979,7 +5221,7 @@ Carbonite.Statements.While.prototype.build = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var raw = arguments[0];
 		var container = arguments[1];
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.check = new Carbonite.Expression(container.parent.parent, this.body);
 		this.check.loadFromRaw(raw["check"]["expression"]);
@@ -5031,12 +5273,6 @@ Carbonite.Statements.While.make = function () {
 			rtn = new Carbonite.Statements.Try(container);
 			}
 		return rtn;
-	}
-}
-
-Carbonite.Statements.While.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
 	}
 }
 
@@ -5141,12 +5377,6 @@ Carbonite.Statements.Continue.prototype.build = function () {
 	}
 }
 
-Carbonite.Statements.Continue.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
-	}
-}
-
 Carbonite.Statements.Continue.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -5248,12 +5478,6 @@ Carbonite.Statements.Break.prototype.build = function () {
 	}
 }
 
-Carbonite.Statements.Break.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
-	}
-}
-
 Carbonite.Statements.Break.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -5308,7 +5532,7 @@ Carbonite.Statements.Try.prototype.build = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var raw = arguments[0];
 		var container = arguments[1];
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		var catches = raw["catch"];
 		for (var i = 0; i < catches.length; i++) {
@@ -5366,12 +5590,6 @@ Carbonite.Statements.Try.make = function () {
 	}
 }
 
-Carbonite.Statements.Try.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
-	}
-}
-
 Carbonite.Statements.Try.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -5410,7 +5628,7 @@ Carbonite.Catch = function () {
 		this.name = raw["input"]["name"];
 		this.overload = new Carbonite.Type(container.parent.parent.compiler, container.parent.parent);
 		this.overload.loadFromRaw(raw["input"]["type"]);
-		this.body = new Carbonite.Body(container.parent, raw["body"]);
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.body.build();
 	}
@@ -5493,12 +5711,6 @@ Carbonite.Statements.Throw.make = function () {
 			rtn = new Carbonite.Statements.Try(container);
 			}
 		return rtn;
-	}
-}
-
-Carbonite.Statements.Throw.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
 	}
 }
 
@@ -5608,12 +5820,6 @@ Carbonite.Statements.Native.make = function () {
 	}
 }
 
-Carbonite.Statements.Native.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
-	}
-}
-
 Carbonite.Statements.Native.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -5719,12 +5925,6 @@ Carbonite.Statements.Expression.make = function () {
 	}
 }
 
-Carbonite.Statements.Expression.prototype.toCarbideValue = function () {
-	if (arguments.length == 0) {
-		return carbide_proxy_Carbonite_Statement.create(this);
-	}
-}
-
 Carbonite.Statements.Expression.prototype.loadLocation = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
@@ -5810,6 +6010,7 @@ else 	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Compiler)
 			}
 		this.type = new Carbonite.Type(compiler, parent);
 		this.type.loadFromRaw(raw["type"]);
+		this.reference = this.type.containsReference;
 		this.define.output = this.type;
 		this.loadLocation(parent, raw);
 		if (this.container != null) {
@@ -5930,11 +6131,11 @@ Carbonite.Expression = function () {
 }
 
 Carbonite.Expression.prototype.spawnChild = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var terms = arguments[0];
 		var exp = new Carbonite.Terms.Expression(this, this.container);
 		exp.loadFromRaw(this.raw, this.terms, this.terms.length);
-		exp.expression.loadLocation(this.parent, this.raw);
+		exp.expression.loadLocation(this.container.source, this.raw);
 		exp.expression.relativeParent = this.relativeParent;
 		exp.expression.raw = this.raw;
 		exp.expression.loadTerms(terms);
@@ -5944,7 +6145,7 @@ Carbonite.Expression.prototype.spawnChild = function () {
 }
 
 Carbonite.Expression.prototype.reOrder = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var terms = arguments[0];
 		var diff = 0;
 		var needsReOrder = false;
@@ -6009,7 +6210,7 @@ Carbonite.Expression.prototype.getOutput = function () {
 }
 
 Carbonite.Expression.prototype.loadTerms = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var realTerms = arguments[0];
 		var thisIsRelativeParent = false;
 		if (this.relativeParent == null) {
@@ -6025,7 +6226,7 @@ Carbonite.Expression.prototype.loadTerms = function () {
 			this.operator = term["operator"];
 			var exp = new Carbonite.Terms.Expression(this, this.container);
 			exp.loadFromRaw(this.raw, this.terms, this.terms.length);
-			exp.expression.loadLocation(this.parent, this.raw);
+			exp.expression.loadLocation(this.container.source, this.raw);
 			exp.expression.relativeParent = this.relativeParent;
 			exp.expression.raw = this.raw;
 			exp.expression.loadTerms(terms.slice().splice(1));
@@ -6144,7 +6345,7 @@ Carbonite.Expression.prototype.loadFromRaw = function () {
 		var raw = arguments[0];
 		this.raw = raw;
 		var terms = raw["terms"];
-		this.loadLocation(this.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.relativeParent = this;
 		Carbonite.Expression.buildTermsIntoExpression(this, terms, 0, terms.length - 1);
 	}
@@ -6168,7 +6369,7 @@ Carbonite.Expression.prototype.operate = function () {
 }
 
 Carbonite.Expression.buildTermsIntoExpression = function () {
-	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'number' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'number' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
 		var exp = arguments[0];
 		var terms = arguments[1];
 		var start = arguments[2];
@@ -6358,14 +6559,14 @@ Carbonite.Term = function () {
 }
 
 Carbonite.Term.prototype.loadFromRaw = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var raw = arguments[0];
 		var context = arguments[1];
 		var index = arguments[2];
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -6387,7 +6588,7 @@ Carbonite.Term.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -6489,14 +6690,14 @@ Carbonite.Terms.Literal.prototype.build = function () {
 }
 
 Carbonite.Terms.Literal.prototype.loadFromRaw = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var raw = arguments[0];
 		var context = arguments[1];
 		var index = arguments[2];
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -6518,7 +6719,7 @@ Carbonite.Terms.Literal.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -6616,14 +6817,14 @@ Carbonite.Terms.Expression.prototype.build = function () {
 }
 
 Carbonite.Terms.Expression.prototype.loadFromRaw = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var raw = arguments[0];
 		var context = arguments[1];
 		var index = arguments[2];
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -6645,7 +6846,7 @@ Carbonite.Terms.Expression.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -6795,14 +6996,14 @@ Carbonite.Terms.Sequence.prototype.build = function () {
 }
 
 Carbonite.Terms.Sequence.prototype.loadFromRaw = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var raw = arguments[0];
 		var context = arguments[1];
 		var index = arguments[2];
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -6824,7 +7025,7 @@ Carbonite.Terms.Sequence.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -6928,14 +7129,14 @@ Carbonite.Terms.Prefix.prototype.build = function () {
 }
 
 Carbonite.Terms.Prefix.prototype.loadFromRaw = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var raw = arguments[0];
 		var context = arguments[1];
 		var index = arguments[2];
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -6957,7 +7158,7 @@ Carbonite.Terms.Prefix.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -7054,14 +7255,14 @@ Carbonite.Terms.Function.prototype.build = function () {
 }
 
 Carbonite.Terms.Function.prototype.loadFromRaw = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var raw = arguments[0];
 		var context = arguments[1];
 		var index = arguments[2];
 		this.raw = raw;
 		this.context = context;
 		this.index = index;
-		this.loadLocation(this.parent.parent, raw);
+		this.loadLocation(this.container.source, raw);
 		this.build(this.parent, this.container);
 	}
 }
@@ -7083,7 +7284,7 @@ Carbonite.Terms.Function.make = function () {
 			var exp = new Carbonite.Terms.Expression(parent, container);
 			exp.expression = new Carbonite.Expression(parent.parent, container);
 			exp.expression.grouped = true;
-			exp.expression.loadLocation(parent.parent, raw);
+			exp.expression.loadLocation(container.source, raw);
 			exp.expression.relativeParent = parent.relativeParent;
 			exp.expression.raw = raw["expression"];
 			var cast = raw["expression"]["terms"];
@@ -7168,6 +7369,8 @@ Carbonite.Type = function () {
 
 	this.ownedUntil = -1;
 
+	this.containsReference = false;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -7237,6 +7440,9 @@ Carbonite.Type.prototype.loadFromRaw = function () {
 		this.targetRoute = name;
 		if (name == "this") {
 			name = this.parent.route;
+			}
+		if ("reference" in this.raw && this.raw["reference"] == 1) {
+			this.containsReference = true;
 			}
 		if (name[0] == "@") {
 			this.magic = true;
@@ -7360,6 +7566,22 @@ Carbonite.Type.prototype.checkCast = function () {
 				}
 			}
 		return true;
+	}
+}
+
+Carbonite.Type.prototype.polymorph = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var what = arguments[0];
+		if (what.reference.route == "null" || this.reference.route == "null" || what.reference.route == "empty") {
+			return false;
+			}
+		if (what.reference.descendantOf(this.reference)) {
+			return true;
+			}
+		if (this.reference.descendantOf(what.reference)) {
+			return true;
+			}
+		return false;
 	}
 }
 
@@ -7536,6 +7758,13 @@ Carbonite.Type.prototype.buildError = function () {
 	}
 }
 
+Carbonite.Type.prototype.toCarbideValue = function () {
+	if (arguments.length == 0) {
+		return carbide_proxy_Carbonite_Type.create(this);
+		return carbide_proxy_Carbonite_Type.create(this);
+	}
+}
+
 Carbonite.ReferenceType = function () {
 	this.context = null;
 
@@ -7577,6 +7806,8 @@ Carbonite.ReferenceType = function () {
 
 	this.ownedUntil = -1;
 
+	this.containsReference = false;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -7588,6 +7819,7 @@ Carbonite.ReferenceType = function () {
 		var context = arguments[1];
 		this.context = context;
 		this.typeReference = type;
+		this.containsReference = type.containsReference;
 		if (type.late == true) {
 			var cast = context.templates[type.lateReference.index];
 			this.setReference(cast.reference);
@@ -7660,6 +7892,9 @@ Carbonite.ReferenceType.prototype.loadFromRaw = function () {
 		this.targetRoute = name;
 		if (name == "this") {
 			name = this.parent.route;
+			}
+		if ("reference" in this.raw && this.raw["reference"] == 1) {
+			this.containsReference = true;
 			}
 		if (name[0] == "@") {
 			this.magic = true;
@@ -7783,6 +8018,22 @@ Carbonite.ReferenceType.prototype.checkCast = function () {
 				}
 			}
 		return true;
+	}
+}
+
+Carbonite.ReferenceType.prototype.polymorph = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var what = arguments[0];
+		if (what.reference.route == "null" || this.reference.route == "null" || what.reference.route == "empty") {
+			return false;
+			}
+		if (what.reference.descendantOf(this.reference)) {
+			return true;
+			}
+		if (this.reference.descendantOf(what.reference)) {
+			return true;
+			}
+		return false;
 	}
 }
 
@@ -8135,7 +8386,7 @@ Carbonite.Parts.Call = function () {
 		this.parent = parent;
 		this.root = prev.root;
 	}
-else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (arguments[0] instanceof Carbonite.Parts.Reference) || (arguments[0] instanceof Carbonite.Parts.Dot) || (arguments[0] instanceof Carbonite.Parts.Call) || (arguments[0] instanceof Carbonite.Parts.Index)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (arguments[0] instanceof Carbonite.Parts.Reference) || (arguments[0] instanceof Carbonite.Parts.Dot) || (arguments[0] instanceof Carbonite.Parts.Call) || (arguments[0] instanceof Carbonite.Parts.Index)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prev = arguments[0];
 		var args = arguments[1];
 		var parent = arguments[2];
@@ -9079,7 +9330,7 @@ Carbonite.Assemblers.Javascript.prototype.root = function () {
 }
 
 Carbonite.Assemblers.Javascript.prototype.overload = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var methods = arguments[0];
 		if (methods.length == 1) {
 			var method = methods[0];
@@ -9200,7 +9451,7 @@ Carbonite.Assemblers.Javascript.prototype.compareClass = function () {
 		var native = "";
 		if ((to.route == "int") || (to.route == "uint64") || (to.route == "int64") || (to.route == "uint32") || (to.route == "int32") || (to.route == "uint16") || (to.route == "int16") || (to.route == "uint8") || (to.route == "int8")) {
 			native = "number";
-			}else if (to.route == "string") {
+			}else if (to.route == "string" || to.route == "char") {
 			native = "string";
 			}else if (to.route == "function") {
 			native = "function";
@@ -9208,8 +9459,10 @@ Carbonite.Assemblers.Javascript.prototype.compareClass = function () {
 			native = "boolean";
 			}else if (to.route == "float") {
 			native = "number";
+			}else if (to.route == "Exception") {
+			return varName + " instanceof Error";
 			}else if (to.route == "array") {
-			return varName + "instanceof Array";
+			return varName + " instanceof Array";
 			}else if (to.route == "map") {
 			native = "object";
 			}
@@ -9374,7 +9627,7 @@ Carbonite.Assemblers.Javascript.prototype.native = function () {
 			var cast = native;
 			var rtn = cast.value;
 			return "" + rtn;
-			}else if (native.type == "string") {
+			}else if (native.type == "string" || native.type == "char") {
 			var cast = native;
 			return "\"" + this.escape(cast.value) + "\"";
 			return "\"" + cast.value.replace(new RegExp("\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n").replace(new RegExp("\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\r") + "\"";
@@ -9549,7 +9802,7 @@ Carbonite.Assemblers.Javascript.prototype.sequence = function () {
 }
 
 Carbonite.Assemblers.Javascript.prototype.callMethodWithStrings = function () {
-	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'number' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'number' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
 		var method = arguments[0];
 		var ___arguments = arguments[1];
 		var context = arguments[2];
@@ -9571,7 +9824,7 @@ Carbonite.Assemblers.Javascript.prototype.callMethodWithStrings = function () {
 }
 
 Carbonite.Assemblers.Javascript.prototype.callMethod = function () {
-	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'number' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'number' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
 		var method = arguments[0];
 		var ___arguments = arguments[1];
 		var context = arguments[2];
@@ -9686,10 +9939,27 @@ Carbonite.Assemblers.Cpp = function () {
 
 Carbonite.Assemblers.Cpp.prototype.build = function () {
 	if (arguments.length == 0) {
-		var rtn = "";
+		var rtn = "// ------- Header ------- //\n\n";
+		for (var i = 0; i < this.compiler.router.levelMap.length; i++) {
+			if (i != 0) {
+				continue;
+				}
+			var level = this.compiler.router.levelMap[i];
+			for (var j = 0; j < level.names.length; j++) {
+				var root = level.names[j];
+				if (root.base != "relative") {
+					rtn += "class " + root.getRoute("::") + ";\n";
+					}
+				}
+			}
 		for (var i = 0; i < this.compiler.roots.length; i++) {
 			var root = this.compiler.roots[i];
-			rtn += this.root(root);
+			rtn += this.root(root, false);
+			}
+		rtn += "\n\n// ------- Source ------- //\n\n";
+		for (var i = 0; i < this.compiler.roots.length; i++) {
+			var root = this.compiler.roots[i];
+			rtn += this.root(root, true);
 			}
 		if (this.compiler.noCore == false) {
 			return this.compiler.getLibraryFile("cpp/native.cpp") + "\n\n\n\n" + rtn;
@@ -9699,13 +9969,17 @@ Carbonite.Assemblers.Cpp.prototype.build = function () {
 }
 
 Carbonite.Assemblers.Cpp.prototype.root = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'boolean' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var root = arguments[0];
+		var source = arguments[1];
 		if (root.base == "relative") {
 			return "/" + "/Relative " + root.name + "\n";
 			}
 		var body = "";
 		if (root.base == "namespace") {
+			if (source) {
+				return "";
+				}
 			var children = [];
 			for (var i = 0; i < root.children.length; i++) {
 				var cls = root.children[i];
@@ -9715,27 +9989,41 @@ Carbonite.Assemblers.Cpp.prototype.root = function () {
 				}
 			body = "{\npublic:\n" + children.join("\n") + "\n};";
 			}else{
-				var children = [];
-				for (var i = 0; i < root.children.length; i++) {
-					var cls = root.children[i];
-					if (cls.base != "relative") {
-						children.push("class " + cls.name + ";\n");
-						}
+				if (source) {
+					return this.methods(root, source);
+					}else{
+						var children = [];
+						for (var i = 0; i < root.children.length; i++) {
+							var cls = root.children[i];
+							if (cls.base != "relative") {
+								children.push("class " + cls.name + ";\n");
+								}
+							}
+						body = "{\npublic:\n" + children.join("\n") + this.properties(root, source) + this.methods(root, source) + "\n};\n\n";
 					}
-				body = "{\npublic:\n" + children.join("\n") + this.properties(root) + this.methods(root) + "\n};\n\n";
 			}
 		var pref = "";
 		if (root.parent != null) {
 			var castParent = root.parent;
-			pref = castParent.getRoute() + "::";
+			pref = castParent.getRoute("::") + "::";
 			}
-		return "class " + pref + root.name + body;
+		var inherits = [];
+		var iPrefix = "";
+		for (var i = 0; i < root.inherits.length; i++) {
+			var inheritRoot = root.inherits[i];
+			if (inheritRoot.route != "everything") {
+				inherits.push("public " + inheritRoot.getRoute("::"));
+				iPrefix = " : ";
+				}
+			}
+		return "class " + pref + root.name + iPrefix + inherits.join(", ") + body;
 	}
 }
 
 Carbonite.Assemblers.Cpp.prototype.properties = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'boolean' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var root = arguments[0];
+		var source = arguments[1];
 		var rtn = "";
 		for (var i = 0; i < root.members.length; i++) {
 			var member = root.members[i];
@@ -9745,16 +10033,20 @@ Carbonite.Assemblers.Cpp.prototype.properties = function () {
 				var typeStr = route;
 				if (prop.output.isPrimitiveValue() == false) {
 					if (prop.reference == false) {
-						typeStr = "std::unique_ptr<" + route + ">";
+						typeStr = "" + route + "";
 						}else{
-							typeStr = route + "*";
+							typeStr = route;
 						}
 					}
 				var prefix = "";
 				if (prop.binding == "fixed") {
 					prefix = "static ";
 					}
-				rtn += prefix + typeStr + " " + prop.name + " = " + this.expression(prop.default) + ";\n";
+				var body = ";\n";
+				if (source) {
+					body = this.expression(prop.default) + ";\n";
+					}
+				rtn += prefix + typeStr + " " + prop.name + body;
 				}
 			}
 		return rtn;
@@ -9762,30 +10054,73 @@ Carbonite.Assemblers.Cpp.prototype.properties = function () {
 }
 
 Carbonite.Assemblers.Cpp.prototype.route = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var what = arguments[0];
+		if (what.route == "array") {
+			return "std::unique_ptr<std::vector<" + this.route(what.resolvedTemplates[0]) + ">>";
+			}else if (what.route == "map") {
+			return "std::unique_ptr<std::map<std::string, " + this.route(what.resolvedTemplates[0]) + ">>";
+			}else if (what.route == "string") {
+			return "std::string";
+			}else if (what.route == "primitive") {
+			return "_c_primitive";
+			}else if (what.primitiveValue == false) {
+			return "std::unique_ptr<" + what.getRoute("::") + ">";
+			}
+		return what.getRoute("::");
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var what = arguments[0];
+		var refFlag = "";
+		if (what.containsReference) {
+			refFlag = "&";
+			}
 		if (what.reference.route == "array") {
-			return "std::vector<" + this.route(what.templates[0]) + ">";
+			return "std::unique_ptr<std::vector<" + this.route(what.templates[0]) + ">>" + refFlag;
 			}else if (what.reference.route == "map") {
-			return "std::map<std::string, " + this.route(what.templates[0]) + ">";
+			return "std::unique_ptr<std::map<std::string, " + this.route(what.templates[0]) + ">>" + refFlag;
 			}else if (what.reference.route == "string") {
 			return "std::string";
 			}else if (what.reference.route == "primitive") {
 			return "_c_primitive";
+			}else if (what.reference.route == "void") {
+			return "void";
+			}else if (what.reference.route == "null") {
+			return "null";
+			}else if (what.reference.route == "Error") {
+			return "_c_error";
+			}else if (what.reference.route == "function") {
+			var args = [];
+			for (var i = 0; i < what.templates.length; i++) {
+				if (i > 0) {
+					args.push(this.route(what.templates[i]));
+					}
+				}
+			return "std::function<" + this.route(what.templates[0]) + "(" + args.join(", ") + ")>";
+			}else if (what.reference.primitiveValue == false) {
+			if (what.containsReference) {
+				return what.reference.getRoute("::") + "*";
+				}else{
+					return "std::unique_ptr<" + what.reference.getRoute("::") + ">";
+				}
 			}
-		return what.reference.getRoute();
+		return what.reference.getRoute("::");
 	}
 }
 
 Carbonite.Assemblers.Cpp.prototype.methods = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'boolean' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var root = arguments[0];
+		var source = arguments[1];
 		var methods = [];
 		for (var i = 0; i < root.members.length; i++) {
 			var member = root.members[i];
 			if (member.type != "property") {
 				if (member.hasFlag("inline") == false) {
-					if (member.hasFlag("relative") == false && member.abstract == false) {
+					if (member.hasFlag("relative") == false) {
+						if (member.abstract && member.name[0] == "@") {
+							continue;
+							}
 						var method = member;
 						var args = [];
 						for (var a = 0; a < method.arguments.length; a++) {
@@ -9793,12 +10128,12 @@ Carbonite.Assemblers.Cpp.prototype.methods = function () {
 							var typeStr = this.route(arg.type);
 							if (arg.isByValue() == false) {
 								if (arg.reference) {
-									typeStr = typeStr + "*";
+									typeStr = typeStr;
 									}else{
-										typeStr = "std::unique_ptr<" + typeStr + ">";
+										typeStr = "" + typeStr + "";
 									}
 								}
-							args.push(typeStr + " " + arg.name);
+							args.push(typeStr + " " + this.localName(arg.name));
 							}
 						var prefix = "";
 						if (method.binding == "fixed") {
@@ -9814,7 +10149,17 @@ Carbonite.Assemblers.Cpp.prototype.methods = function () {
 						if (member.name == "@cast") {
 							nme = this.getCastName(member, "");
 							}
-						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ") {\n" + this.body(method.body) + "\n}");
+						var body = ";\n";
+						if (source && member.abstract == false) {
+							body = "{\n" + this.body(method.body) + "\n}";
+							nme = root.getRoute("::") + "::" + nme;
+							}
+						if (member.abstract && source) {
+							continue;
+							}else if (member.abstract) {
+							body = " {}";
+							}
+						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ")" + body);
 						}
 					}
 				}
@@ -9847,18 +10192,47 @@ Carbonite.Assemblers.Cpp.prototype.body = function () {
 	}
 }
 
+Carbonite.Assemblers.Cpp.prototype.poly = function () {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var target = arguments[0];
+		var real = arguments[1];
+		var expr = arguments[2];
+		if (target.polymorph(real)) {
+			return "static_cast<" + this.route(target) + ">(" + expr + ")";
+			}else{
+				return expr;
+			}
+	}
+}
+
 Carbonite.Assemblers.Cpp.prototype.define = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Define) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var define = arguments[0];
 		var set = "";
 		if (define.initializer != null) {
-			set = " = " + this.expression(define.initializer);
+			set = this.expression(define.initializer);
+			if (define.initializer.output.isPrimitiveValue() == false && define.initializer.output.reference.route != "null") {
+				if (define.output.containsReference == false) {
+					set = "std::move(" + set + ")";
+					}else if (define.output.containsReference == true && define.initializer.output.containsReference == false) {
+					set = set + ".get()";
+					}
+				}
+			set = this.poly(define.output, define.initializer.output, set);
+			set = " = " + set;
 			}
 		var typeStr = this.route(define.output);
 		if (define.output.isPrimitiveValue() == false || define.output.reference.name == "array" || define.output.reference.name == "map") {
-			typeStr = "std::unique_ptr<" + typeStr + ">";
+			typeStr = "" + typeStr + "";
 			}
-		return typeStr + " " + define.name + set;
+		return typeStr + " " + this.localName(define.name) + set;
+	}
+}
+
+Carbonite.Assemblers.Cpp.prototype.localName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var name = arguments[0];
+		return "_L" + name;
 	}
 }
 
@@ -9873,7 +10247,14 @@ Carbonite.Assemblers.Cpp.prototype.statement = function () {
 			return this.expression(exp.expression) + ";";
 			}else if (statement.type == "return") {
 			var exp = statement;
-			return "return " + this.expression(exp.expression) + ";";
+			if (statement.container.parent.output.containsReference && exp.expression.output.containsReference == false) {
+				exp.buildError("Illegal return by reference.");
+				}
+			var expStr = this.expression(exp.expression);
+			if (exp.expression.output.isPrimitiveValue() == false && exp.expression.output.reference.route != "null" && statement.container.parent.output.containsReference == false && exp.expression.output.containsReference == false) {
+				expStr = "std::move(" + expStr + ")";
+				}
+			return "return " + expStr + ";";
 			}else if (statement.type == "if") {
 			var ifState = statement;
 			var str = "";
@@ -9896,7 +10277,7 @@ Carbonite.Assemblers.Cpp.prototype.statement = function () {
 			var forState = statement;
 			var str = "";
 			if (forState.iterate.output.reference.route == "array") {
-				str = "for (" + this.define(forState.define) + " = 0; " + forState.define.name + " < " + this.expression(forState.iterate) + ".size(); " + forState.define.name + "++) {\n" + this.body(forState.body) + "}";
+				str = "for (" + this.define(forState.define) + " = 0; " + this.localName(forState.define.name) + " < " + this.expression(forState.iterate) + "->size(); " + this.localName(forState.define.name) + "++) {\n" + this.body(forState.body) + "}";
 				}else{
 					str = "for (" + this.define(forState.define) + " in " + this.expression(forState.iterate) + ") {\n" + this.body(forState.body) + "}";
 				}
@@ -9908,6 +10289,12 @@ Carbonite.Assemblers.Cpp.prototype.statement = function () {
 			return "continue;";
 			}else if (statement.type == "break") {
 			return "break;";
+			}else if (statement.type == "native") {
+			var nativeState = statement;
+			if (nativeState.platform == "cpp") {
+				return nativeState.content;
+				}
+			return "";
 			}
 	}
 }
@@ -9996,7 +10383,7 @@ Carbonite.Assemblers.Cpp.prototype.term = function () {
 					}
 				}
 			if (cast.prefix == "new") {
-				return this.termCast(term, "std::unique_ptr<" + this.route(cast.expression.output) + ">(" + doNew + this.expression(cast.expression) + ")");
+				return this.termCast(term, this.route(cast.expression.output) + "(" + doNew + this.expression(cast.expression) + ")");
 				}
 			}else if (term.type == "sequence") {
 			var cast = term;
@@ -10018,13 +10405,17 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 						if (cast.constantReference.reference.name == "empty") {
 							rtn += "null";
 							}else{
-								rtn += cast.constantReference.reference.getRoute();
+								rtn += cast.constantReference.reference.getRoute("::");
 							}
 						}else{
 							rtn += cast.constantReference.reference.name;
 						}
 					}else{
-						rtn += cast.reference.name;
+						if (cast.reference.isLocal) {
+							rtn += this.localName(cast.reference.name);
+							}else{
+								rtn += cast.reference.name;
+							}
 					}
 				}else if (part.type == "dot") {
 				var cast = part;
@@ -10102,7 +10493,7 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 						for (var a = 0; a < cast.arguments.length; a++) {
 							var arg = cast.arguments[a];
 							var exp = this.expression(cast.arguments[a]);
-							if (arg.getOutput().isPrimitiveValue() == false) {
+							if (arg.getOutput().isPrimitiveValue() == false && cast.reference.reference.arguments[a].reference == false) {
 								exp = "std::move(" + exp + ")";
 								}
 							args.push(exp);
@@ -10133,11 +10524,12 @@ Carbonite.Assemblers.Cpp.prototype.sequence = function () {
 }
 
 Carbonite.Assemblers.Cpp.prototype.callMethodWithStrings = function () {
-	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2]instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'string' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2] instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'string' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
 		var method = arguments[0];
 		var ___arguments = arguments[1];
 		var templates = arguments[2];
 		var context = arguments[3];
+		var that = this;
 		var normal = true;
 		if (method.hasFlag("native")) {
 			if (method.hasFlag("inline")) {
@@ -10153,6 +10545,10 @@ Carbonite.Assemblers.Cpp.prototype.callMethodWithStrings = function () {
 					temps.push(this.route(temp));
 					}
 				var ctx = new Carbonite.Context(context, ___arguments, temps);
+				ctx.router = function (cls) {
+					return that.route(cls);
+					};
+				ctx.parent = method.parent;
 				ctx.type = this.route(method.output);
 				return method.generate(ctx);
 			}
@@ -10160,7 +10556,7 @@ Carbonite.Assemblers.Cpp.prototype.callMethodWithStrings = function () {
 }
 
 Carbonite.Assemblers.Cpp.prototype.callMethod = function () {
-	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2]instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'string' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2] instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'string' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
 		var method = arguments[0];
 		var ___arguments = arguments[1];
 		var templates = arguments[2];
@@ -10169,9 +10565,16 @@ Carbonite.Assemblers.Cpp.prototype.callMethod = function () {
 		for (var i = 0; i < ___arguments.length; i++) {
 			var arg = ___arguments[i];
 			var exp = this.expression(arg);
-			if (arg.getOutput().isPrimitiveValue() == false) {
-				exp = "std::move(" + exp + ")";
+			if (arg.getOutput().isPrimitiveValue() == false && arg.getOutput().reference.route != "null") {
+				if (method.arguments[i].reference == false) {
+					exp = "std::move(" + exp + ")";
+					}else{
+						if (arg.getOutput().containsReference == false) {
+							exp = exp + ".get()";
+							}
+					}
 				}
+			exp = this.poly(arg.getOutput(), arg.output, exp);
 			args.push(exp);
 			}
 		return this.callMethodWithStrings(method, args, templates, context);
@@ -10198,8 +10601,24 @@ Carbonite.Assemblers.Cpp.prototype.expression = function () {
 		if (expression.reference != null) {
 			var args = [];
 			if (expression.last != null) {
+				var arg = expression.reference.arguments[0];
 				if (expression.last.getOutput().isPrimitiveValue() == false) {
-					args.push("std::move(" + this.term(expression.last) + ")");
+					var eType = arg.type;
+					if (expression.reference.name == "=") {
+						eType = expression.first.output;
+						}
+					var expr = "";
+					if (eType.containsReference) {
+						if (expression.last.output.containsReference) {
+							expr = this.term(expression.last);
+							}else{
+								expr = this.term(expression.last) + ".get()";
+							}
+						}else{
+							expr = "std::move(" + this.term(expression.last) + ")";
+						}
+					expr = this.poly(eType, expression.last.getOutput(), expr);
+					args.push(expr);
 					}else{
 						args.push(this.term(expression.last));
 					}
@@ -10322,7 +10741,7 @@ Carbonite.Assemblers.Php.prototype.unReserve = function () {
 }
 
 Carbonite.Assemblers.Php.prototype.overload = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var methods = arguments[0];
 		if (methods.length == 1) {
 			var meth = methods[0];
@@ -10481,7 +10900,7 @@ Carbonite.Assemblers.Php.prototype.compareClass = function () {
 		var native = "";
 		if (to.route == "int") {
 			native = "integer";
-			}else if (to.route == "string") {
+			}else if (to.route == "string" || to.route == "char") {
 			native = "string";
 			}else if (to.route == "function") {
 			return "is_callable(" + varName + ")";
@@ -10643,7 +11062,7 @@ Carbonite.Assemblers.Php.prototype.native = function () {
 			var cast = native;
 			var rtn = cast.value;
 			return "" + rtn;
-			}else if (native.type == "string") {
+			}else if (native.type == "string" || native.type == "char") {
 			var cast = native;
 			return "\"" + cast.value.replace(new RegExp("\\".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\\").replace(new RegExp("\"".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\\"").replace(new RegExp("$".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\$").replace(new RegExp("	".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\t").replace(new RegExp("\n".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\n").replace(new RegExp("\r".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "\\ r") + "\"";
 			}else if (native.type == "array") {
@@ -10829,7 +11248,7 @@ Carbonite.Assemblers.Php.prototype.sequence = function () {
 }
 
 Carbonite.Assemblers.Php.prototype.callMethodWithStrings = function () {
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var method = arguments[0];
 		var ___arguments = arguments[1];
 		var context = arguments[2];
@@ -10850,7 +11269,7 @@ Carbonite.Assemblers.Php.prototype.callMethodWithStrings = function () {
 }
 
 Carbonite.Assemblers.Php.prototype.callMethod = function () {
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var method = arguments[0];
 		var ___arguments = arguments[1];
 		var context = arguments[2];
@@ -10958,7 +11377,7 @@ Carbonite.Platform = function () {
 
 	this.platform = "";
 
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var compiler = arguments[0];
 		var root = arguments[1];
 		var options = arguments[2];
@@ -11024,7 +11443,7 @@ Carbonite.Platforms.Javascript = function () {
 
 	this.platform = "";
 
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var compiler = arguments[0];
 		var root = arguments[1];
 		var options = arguments[2];
@@ -11101,7 +11520,7 @@ Carbonite.Platforms.Cpp = function () {
 
 	this.platform = "";
 
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var compiler = arguments[0];
 		var root = arguments[1];
 		var options = arguments[2];
@@ -11178,7 +11597,7 @@ Carbonite.Platforms.Php = function () {
 
 	this.platform = "";
 
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var compiler = arguments[0];
 		var root = arguments[1];
 		var options = arguments[2];
@@ -11259,7 +11678,7 @@ Carbonite.Platforms.Doc = function () {
 
 	this.platform = "";
 
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var compiler = arguments[0];
 		var root = arguments[1];
 		var options = arguments[2];
@@ -11362,7 +11781,7 @@ Carbonite.Platforms.Header = function () {
 
 	this.platform = "";
 
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Compiler) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'object' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var compiler = arguments[0];
 		var root = arguments[1];
 		var options = arguments[2];
@@ -11940,7 +12359,7 @@ else 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof ar
 }
 
 CarboniteCarbonParser.prototype.assembleCodes = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var codes = arguments[0];
 		var rtn = "";
 		for (var i = 0; i < codes.length; i++) {
@@ -12776,27 +13195,41 @@ CarboniteCarbonParser.prototype.Inherit = function () {
 				if (currentCode == lit0[literalChar]) {
 					literalChar++;
 					if (literalChar == 8) {
-						c = 1;
+						c = 2;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
-						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
+						c = 1;
+						charPos--;
+						this.offset--;
 					}
 				}else if (c == 1) {
-				var ruleOut1 = this.__(input, charPos);
-				if (ruleOut1.hadError) {
-					this.giveError(ruleOut1.error.code, "White space(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
-					}else{
-						var ruleOutCast1 = ruleOut1.data["data"];
-						charPos = this.offset;
+				var lit1 = [101, 120, 116, 101, 110, 100, 115];
+				if (currentCode == lit1[literalChar]) {
+					literalChar++;
+					if (literalChar == 7) {
 						c = 2;
+						literalChar = 0;
+						}
+					this.error.vested++;
+					}else{
+						this.giveError(1, "inherits, extends", currentChar);
 					}
 				}else if (c == 2) {
-				var ruleOut2 = this.Type(input, charPos);
+				var ruleOut2 = this.__(input, charPos);
 				if (ruleOut2.hadError) {
-					var casttypes2 = data["types"];
-					if (casttypes2.length >= 1) {
+					this.giveError(ruleOut2.error.code, "White space(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
+					}else{
+						var ruleOutCast2 = ruleOut2.data["data"];
+						charPos = this.offset;
+						c = 3;
+					}
+				}else if (c == 3) {
+				var ruleOut3 = this.Type(input, charPos);
+				if (ruleOut3.hadError) {
+					var casttypes3 = data["types"];
+					if (casttypes3.length >= 1) {
 						if (true) {
 							var castactypes0 = data["types"];
 							var actionCap0types = data["types"];
@@ -12809,10 +13242,10 @@ CarboniteCarbonParser.prototype.Inherit = function () {
 							this.giveError(1, "Type", currentChar);
 						}
 					}else{
-						var ruleOutCast2 = ruleOut2.data["data"];
+						var ruleOutCast3 = ruleOut3.data["data"];
 						charPos = this.offset;
-						var casttypes2 = data["types"];
-						casttypes2.push(ruleOutCast2);
+						var casttypes3 = data["types"];
+						casttypes3.push(ruleOutCast3);
 						if (input.charCodeAt(charPos + 1) != 44) {
 							if (true) {
 								var castactypes0 = data["types"];
@@ -12829,7 +13262,7 @@ CarboniteCarbonParser.prototype.Inherit = function () {
 							var actionCap0types = data["types"];
 							dataStore["data"]["types"] = actionCap0types;
 							}
-						c = 2;
+						c = 3;
 						this.error.vested++;
 					}
 				}
@@ -13361,6 +13794,7 @@ CarboniteCarbonParser.prototype.Type = function () {
 		dataStore["temp"] = {};
 		var data = dataStore["temp"];
 		var c = 0;
+		data["reference"] = [];
 		var literalChar = 0;
 		for (var charPos = startPos;charPos < input.length;charPos++) {
 			var currentChar = input[charPos];
@@ -13399,11 +13833,39 @@ CarboniteCarbonParser.prototype.Type = function () {
 						var ruleOutCast2 = ruleOut2.data["data"];
 						charPos = this.offset;
 						data["name"] = ruleOutCast2;
+						c = 3;
+						this.error.vested++;
+					}
+				}else if (c == 3) {
+				if (currentCode == 38) {
+					var castreference3 = data["reference"];
+					castreference3.push("&");
+					if (true) {
+						var castacreference0 = data["reference"];
+						var actionCap0name = data["name"];
+						var actionCap0reference = data["reference"];
+						var actionCap0template = data["template"];
+						dataStore["data"]["name"] = actionCap0name;
+						dataStore["data"]["reference"] = actionCap0reference.length;
+						dataStore["data"]["start"] = startPos;
+						dataStore["data"]["end"] = charPos;
+						if (actionCap0template != null) {
+							var tt = actionCap0template["types"];
+							dataStore["data"]["template"] = tt;
+							}else{
+								dataStore["data"]["template"] = false;
+							}
+						}
+					c = 3;
+					this.error.vested++;
+					}else{
 						if (true) {
-							var castacname0 = data["name"];
+							var castacreference0 = data["reference"];
 							var actionCap0name = data["name"];
+							var actionCap0reference = data["reference"];
 							var actionCap0template = data["template"];
 							dataStore["data"]["name"] = actionCap0name;
+							dataStore["data"]["reference"] = actionCap0reference.length;
 							dataStore["data"]["start"] = startPos;
 							dataStore["data"]["end"] = charPos;
 							if (actionCap0template != null) {
@@ -13414,7 +13876,8 @@ CarboniteCarbonParser.prototype.Type = function () {
 								}
 							}
 						c = 0 - 1;
-						this.error.vested++;
+						charPos--;
+						this.offset--;
 					}
 				}
 			this.offset++;
@@ -21493,7 +21956,7 @@ Carbonite.SourceCache = function () {
 
 	this.parsed = [];
 
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2]instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2] instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var path = arguments[0];
 		var timeStamp = arguments[1];
 		var parsed = arguments[2];
@@ -21515,7 +21978,7 @@ Carbonite.SourceCache.prototype.serialize = function () {
 }
 
 Carbonite.SourceCache.prototype.update = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var timeStamp = arguments[0];
 		var raw = arguments[1];
 		this.timeStamp = timeStamp;
@@ -21871,7 +22334,7 @@ else 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof ar
 }
 
 CarbonitePreprocessor.prototype.assembleCodes = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var codes = arguments[0];
 		var rtn = "";
 		for (var i = 0; i < codes.length; i++) {
@@ -27749,7 +28212,7 @@ else 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof ar
 }
 
 PipelineParser.prototype.assembleCodes = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var codes = arguments[0];
 		var rtn = "";
 		for (var i = 0; i < codes.length; i++) {
@@ -29066,7 +29529,7 @@ VirtualEventSystem.prototype.get = function () {
 }
 
 VirtualEventSystem.prototype.emit = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var args = arguments[1];
 		var event = this.get(name);
@@ -29105,7 +29568,7 @@ VirtualEvent = function () {
 }
 
 VirtualEvent.prototype.emit = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Processor) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Processor) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var proc = arguments[0];
 		var args = arguments[1];
 		for (var i = 0; i < this.listeners.length; i++) {
@@ -29130,7 +29593,7 @@ VirtualArguments = function () {
 }
 
 VirtualArguments.create = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var val = arguments[0];
 		var m = {};
 		var value = new VirtualArguments(m);
@@ -29167,7 +29630,7 @@ VirtualArguments.prototype.property = function () {
 }
 
 VirtualArguments.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -29252,7 +29715,7 @@ VirtualArguments.prototype.compare = function () {
 }
 
 VirtualArguments.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -29273,7 +29736,7 @@ VirtualArguments.primitiveToValue = function () {
 }
 
 VirtualArguments.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -29282,12 +29745,12 @@ VirtualArguments.prototype.dotSet = function () {
 }
 
 VirtualArguments.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -29296,7 +29759,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 VirtualArguments.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -29342,7 +29805,7 @@ VirtualArgument.prototype.property = function () {
 }
 
 VirtualArgument.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -29351,7 +29814,7 @@ VirtualArgument.prototype.method = function () {
 }
 
 VirtualArgument.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -29431,7 +29894,7 @@ VirtualArgument.prototype.compare = function () {
 }
 
 VirtualArgument.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -29452,12 +29915,12 @@ VirtualArgument.primitiveToValue = function () {
 }
 
 VirtualArgument.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -29466,7 +29929,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 VirtualArgument.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -29518,6 +29981,8 @@ VirtualClass.prototype.property = function () {
 			return Carbide.Virtual.Values.String.create(this.value.route);
 			}else if (name == "reroute") {
 			return Carbide.Virtual.Values.String.create(this.value.reroute);
+			}else if (name == "primitiveValue") {
+			return Carbide.Virtual.Values.Bool.create(this.value.primitiveValue);
 			}else if (name == "base") {
 			return Carbide.Virtual.Values.String.create(this.value.base);
 			}else if (name == "attributes") {
@@ -29532,7 +29997,7 @@ VirtualClass.prototype.property = function () {
 }
 
 VirtualClass.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -29564,7 +30029,7 @@ VirtualClass.prototype.method = function () {
 }
 
 VirtualClass.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -29644,7 +30109,7 @@ VirtualClass.prototype.compare = function () {
 }
 
 VirtualClass.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -29665,12 +30130,12 @@ VirtualClass.primitiveToValue = function () {
 }
 
 VirtualClass.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -29679,7 +30144,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 VirtualClass.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -29712,7 +30177,7 @@ VirtualClasses = function () {
 }
 
 VirtualClasses.create = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var val = arguments[0];
 		var m = {};
 		var value = new VirtualClasses(m);
@@ -29749,7 +30214,7 @@ VirtualClasses.prototype.property = function () {
 }
 
 VirtualClasses.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -29834,7 +30299,7 @@ VirtualClasses.prototype.compare = function () {
 }
 
 VirtualClasses.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -29855,7 +30320,7 @@ VirtualClasses.primitiveToValue = function () {
 }
 
 VirtualClasses.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -29864,12 +30329,12 @@ VirtualClasses.prototype.dotSet = function () {
 }
 
 VirtualClasses.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -29878,7 +30343,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 VirtualClasses.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -29901,7 +30366,7 @@ VirtualMembers = function () {
 }
 
 VirtualMembers.create = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var val = arguments[0];
 		var m = {};
 		var value = new VirtualMembers(m);
@@ -29938,7 +30403,7 @@ VirtualMembers.prototype.property = function () {
 }
 
 VirtualMembers.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -30023,7 +30488,7 @@ VirtualMembers.prototype.compare = function () {
 }
 
 VirtualMembers.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -30044,7 +30509,7 @@ VirtualMembers.primitiveToValue = function () {
 }
 
 VirtualMembers.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -30053,12 +30518,12 @@ VirtualMembers.prototype.dotSet = function () {
 }
 
 VirtualMembers.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -30067,7 +30532,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 VirtualMembers.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -30129,7 +30594,7 @@ VirtualMember.prototype.property = function () {
 }
 
 VirtualMember.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -30149,7 +30614,7 @@ VirtualMember.prototype.method = function () {
 }
 
 VirtualMember.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -30226,7 +30691,7 @@ VirtualMember.prototype.compare = function () {
 }
 
 VirtualMember.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -30247,12 +30712,12 @@ VirtualMember.primitiveToValue = function () {
 }
 
 VirtualMember.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -30261,7 +30726,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 VirtualMember.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -30294,7 +30759,7 @@ VirtualTypes = function () {
 }
 
 VirtualTypes.create = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var val = arguments[0];
 		var m = {};
 		var value = new VirtualTypes(m);
@@ -30331,7 +30796,7 @@ VirtualTypes.prototype.property = function () {
 }
 
 VirtualTypes.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -30416,7 +30881,7 @@ VirtualTypes.prototype.compare = function () {
 }
 
 VirtualTypes.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -30437,7 +30902,7 @@ VirtualTypes.primitiveToValue = function () {
 }
 
 VirtualTypes.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -30446,12 +30911,12 @@ VirtualTypes.prototype.dotSet = function () {
 }
 
 VirtualTypes.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -30460,7 +30925,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 VirtualTypes.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -30506,7 +30971,7 @@ VirtualType.prototype.property = function () {
 }
 
 VirtualType.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -30515,7 +30980,7 @@ VirtualType.prototype.method = function () {
 }
 
 VirtualType.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -30592,7 +31057,7 @@ VirtualType.prototype.compare = function () {
 }
 
 VirtualType.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -30613,12 +31078,12 @@ VirtualType.primitiveToValue = function () {
 }
 
 VirtualType.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -30627,7 +31092,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 VirtualType.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -30725,7 +31190,7 @@ Carbonite.Pre.Block = function () {
 
 	this.canOutput = false;
 
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Processor) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Pre.Processor) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var data = arguments[1];
 		this.parent = parent;
@@ -30990,7 +31455,7 @@ Carbonite.Pre.Statements.Function.prototype.build = function () {
 }
 
 Carbonite.Pre.Statements.Function.prototype.call = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var args = arguments[0];
 		if (args.length != this.arguments.length) {
 			this.topParent.parent.runtimeError(this.data["startOffset"], this.data["offset"], "Call to function '" + this.name + "' invalid argument count " + args.length);
@@ -31113,7 +31578,7 @@ Carbonite.Pre.Statements.If.prototype.run = function () {
 		for (var i = 0; i < this.checks.length; i++) {
 			var check = this.checks[i];
 			var v = check.run();
-			if (v.value == false) {
+			if (v == null || v.value == false) {
 				ok = false;
 				}
 			}
@@ -32333,7 +32798,7 @@ Carbonite.Pre.Value.create = function () {
 		var value = arguments[0];
 		return Carbonite.Pre.Values.Map.create(value);
 	}
-else 	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+else 	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var value = arguments[0];
 		return Carbonite.Pre.Values.Array.create(value);
 	}
@@ -32403,7 +32868,7 @@ Carbonite.Pre.Value.prototype.property = function () {
 }
 
 Carbonite.Pre.Value.prototype.method = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		return Carbonite.Pre.Values.Null.create();
@@ -32493,7 +32958,7 @@ Carbonite.Pre.Values.String.prototype.property = function () {
 }
 
 Carbonite.Pre.Values.String.prototype.method = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		return Carbonite.Pre.Values.Null.create();
@@ -32658,7 +33123,7 @@ Carbonite.Pre.Values.Number.prototype.property = function () {
 }
 
 Carbonite.Pre.Values.Number.prototype.method = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		return Carbonite.Pre.Values.Null.create();
@@ -32724,7 +33189,7 @@ Carbonite.Pre.Values.Array.prototype.property = function () {
 }
 
 Carbonite.Pre.Values.Array.prototype.method = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		if (name == "length") {
@@ -32745,7 +33210,7 @@ Carbonite.Pre.Values.Array.prototype.method = function () {
 }
 
 Carbonite.Pre.Values.Array.create = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var val = arguments[0];
 		var m = {};
 		var value = new Carbonite.Pre.Values.Array(m);
@@ -32865,7 +33330,7 @@ Carbonite.Pre.Values.Map.prototype.property = function () {
 }
 
 Carbonite.Pre.Values.Map.prototype.method = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		if (name == "set") {
@@ -32981,7 +33446,7 @@ Carbonite.Pre.Values.Bool.prototype.property = function () {
 }
 
 Carbonite.Pre.Values.Bool.prototype.method = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		return Carbonite.Pre.Values.Null.create();
@@ -33075,7 +33540,7 @@ Carbonite.Pre.Values.Null.prototype.property = function () {
 }
 
 Carbonite.Pre.Values.Null.prototype.method = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		return Carbonite.Pre.Values.Null.create();
@@ -33893,7 +34358,7 @@ Carbide.Languages.Calcium.virtualizeIntoProcessor = function () {
 }
 
 Carbide.Languages.Calcium.buildBlock = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Processor) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Processor) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var parent = arguments[0];
 		var code = arguments[1];
 		var rtn = new Carbide.Virtual.Block(parent);
@@ -34132,7 +34597,7 @@ CarbideCalciumParser.parse = function () {
 }
 
 CarbideCalciumParser.prototype.assembleCodes = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var codes = arguments[0];
 		var rtn = "";
 		for (var i = 0; i < codes.length; i++) {
@@ -37790,7 +38255,18 @@ Carbide.Languages.Carbon.virtualize = function () {
 }
 
 Carbide.Languages.Carbon.virtualizeIntoProcessor = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Processor) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Processor) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var label = arguments[0];
+		var ast = arguments[1];
+		var processor = arguments[2];
+		var root = null;
+		var exps = ast;
+		root = Carbide.Languages.Carbon.buildBlock(processor, exps, root);
+		root.label = label;
+		processor.addBlock(root);
+		return root;
+	}
+else 	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Processor) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var label = arguments[0];
 		var input = arguments[1];
 		var processor = arguments[2];
@@ -37810,7 +38286,7 @@ Carbide.Languages.Carbon.virtualizeIntoProcessor = function () {
 }
 
 Carbide.Languages.Carbon.buildBlock = function () {
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Processor) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Processor) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var parent = arguments[0];
 		var code = arguments[1];
 		var parentBlock = arguments[2];
@@ -37967,6 +38443,11 @@ Carbide.Languages.Carbon.buildExpression = function () {
 							if (doPush) {
 								rtn.subs.push(sub);
 								}
+							}else if (append["type"] == "index") {
+							var sub = new Carbide.Virtual.Sub(null);
+							sub.type = 3;
+							sub.arguments.push(Carbide.Languages.Carbon.buildExpression(append["expression"], proc, parentBlock));
+							rtn.subs.push(sub);
 							}else{
 								var sub = new Carbide.Virtual.Sub(null);
 								sub.type = 2;
@@ -38055,7 +38536,7 @@ Carbide.Virtual.Block = function () {
 }
 
 Carbide.Virtual.Block.prototype.buildFromAst = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var data = arguments[0];
 		this.data = data;
 		this.build();
@@ -38198,7 +38679,7 @@ Carbide.Virtual.Statements.Function = function () {
 
 	this.scope = null;
 
-	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Block) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2]instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Block) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Block) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (arguments[2] instanceof Array || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Block) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
 		var parent = arguments[0];
 		var name = arguments[1];
 		var ___arguments = arguments[2];
@@ -38216,7 +38697,7 @@ Carbide.Virtual.Statements.Function = function () {
 }
 
 Carbide.Virtual.Statements.Function.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		if (args.length != this.arguments.length) {
@@ -38277,7 +38758,7 @@ Carbide.Virtual.Statements.If = function () {
 
 	this.scope = null;
 
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Block) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Block) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var parent = arguments[0];
 		var checks = arguments[1];
 		var code = arguments[2];
@@ -38676,7 +39157,7 @@ Carbide.Virtual.Processor.prototype.findOnHeap = function () {
 }
 
 Carbide.Virtual.Processor.prototype.setValue = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var value = arguments[1];
 		this.scope.setVariable(new Carbide.Virtual.Variable(name, value));
@@ -38783,7 +39264,7 @@ Carbide.Virtual.Interface = function () {
 }
 
 Carbide.Virtual.Interface.prototype.call = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 
@@ -38874,7 +39355,7 @@ Carbide.Virtual.Value.prototype.compare = function () {
 }
 
 Carbide.Virtual.Value.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -38895,7 +39376,7 @@ Carbide.Virtual.Value.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Value.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -38912,7 +39393,7 @@ Carbide.Virtual.Value.prototype.property = function () {
 }
 
 Carbide.Virtual.Value.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -38921,12 +39402,12 @@ Carbide.Virtual.Value.prototype.method = function () {
 }
 
 Carbide.Virtual.Value.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -38935,7 +39416,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 Carbide.Virtual.Value.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -39021,7 +39502,7 @@ Carbide.Virtual.Values.String.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.String.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -39108,7 +39589,7 @@ Carbide.Virtual.Values.String.prototype.getValue = function () {
 }
 
 Carbide.Virtual.Values.String.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -39129,7 +39610,7 @@ Carbide.Virtual.Values.String.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.String.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -39138,12 +39619,12 @@ Carbide.Virtual.Values.String.prototype.dotSet = function () {
 }
 
 Carbide.Virtual.Values.String.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -39188,7 +39669,7 @@ Carbide.Virtual.Values.Number.prototype.compare = function () {
 }
 
 Carbide.Virtual.Values.Number.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var args = arguments[1];
 		var scope = arguments[2];
@@ -39300,7 +39781,7 @@ Carbide.Virtual.Values.Number.prototype.getValue = function () {
 }
 
 Carbide.Virtual.Values.Number.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -39321,7 +39802,7 @@ Carbide.Virtual.Values.Number.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.Number.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -39338,12 +39819,12 @@ Carbide.Virtual.Values.Number.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.Number.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -39399,7 +39880,7 @@ Carbide.Virtual.Values.Array.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.Array.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -39433,7 +39914,7 @@ Carbide.Virtual.Values.Array.prototype.method = function () {
 }
 
 Carbide.Virtual.Values.Array.create = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var val = arguments[0];
 		var m = {};
 		var value = new Carbide.Virtual.Values.Array(m);
@@ -39512,7 +39993,7 @@ Carbide.Virtual.Values.Array.prototype.setValue = function () {
 }
 
 Carbide.Virtual.Values.Array.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -39533,7 +40014,7 @@ Carbide.Virtual.Values.Array.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.Array.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -39542,12 +40023,12 @@ Carbide.Virtual.Values.Array.prototype.dotSet = function () {
 }
 
 Carbide.Virtual.Values.Array.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -39556,7 +40037,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 Carbide.Virtual.Values.Array.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -39635,7 +40116,7 @@ Carbide.Virtual.Values.Map.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.Map.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -39659,7 +40140,7 @@ Carbide.Virtual.Values.Map.prototype.method = function () {
 }
 
 Carbide.Virtual.Values.Map.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -39719,7 +40200,7 @@ Carbide.Virtual.Values.Map.prototype.getValue = function () {
 }
 
 Carbide.Virtual.Values.Map.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -39740,12 +40221,12 @@ Carbide.Virtual.Values.Map.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.Map.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -39754,7 +40235,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 Carbide.Virtual.Values.Map.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -39813,7 +40294,7 @@ else 	if (arguments.length == 1 && (typeof arguments[0] == 'function' || typeof 
 		value.value = castValue;
 		return value;
 	}
-else 	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Block) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+else 	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Block) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var code = arguments[1];
 		var m = {};
@@ -39825,12 +40306,12 @@ else 	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof argum
 }
 
 Carbide.Virtual.Values.Function.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		return this.call(args, scope, null);
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -39915,7 +40396,7 @@ Carbide.Virtual.Values.Function.prototype.duplicate = function () {
 }
 
 Carbide.Virtual.Values.Function.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -39936,7 +40417,7 @@ Carbide.Virtual.Values.Function.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.Function.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -39953,7 +40434,7 @@ Carbide.Virtual.Values.Function.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.Function.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -39962,7 +40443,7 @@ Carbide.Virtual.Values.Function.prototype.method = function () {
 }
 
 Carbide.Virtual.Values.Function.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -40086,7 +40567,7 @@ Carbide.Virtual.Values.Bool.prototype.getValue = function () {
 }
 
 Carbide.Virtual.Values.Bool.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -40107,7 +40588,7 @@ Carbide.Virtual.Values.Bool.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.Bool.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -40124,7 +40605,7 @@ Carbide.Virtual.Values.Bool.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.Bool.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -40133,12 +40614,12 @@ Carbide.Virtual.Values.Bool.prototype.method = function () {
 }
 
 Carbide.Virtual.Values.Bool.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -40226,7 +40707,7 @@ Carbide.Virtual.Values.ProxyMap.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.ProxyMap.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -40244,7 +40725,7 @@ Carbide.Virtual.Values.ProxyMap.prototype.method = function () {
 }
 
 Carbide.Virtual.Values.ProxyMap.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -40304,7 +40785,7 @@ Carbide.Virtual.Values.ProxyMap.prototype.duplicate = function () {
 }
 
 Carbide.Virtual.Values.ProxyMap.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -40325,12 +40806,12 @@ Carbide.Virtual.Values.ProxyMap.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.ProxyMap.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -40339,7 +40820,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 Carbide.Virtual.Values.ProxyMap.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -40380,7 +40861,7 @@ Carbide.Virtual.Values.ProxyArray.prototype.compare = function () {
 }
 
 Carbide.Virtual.Values.ProxyArray.create = function () {
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var val = arguments[0];
 		var m = {};
 		var value = new Carbide.Virtual.Values.ProxyArray(m);
@@ -40417,7 +40898,7 @@ Carbide.Virtual.Values.ProxyArray.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.ProxyArray.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -40439,7 +40920,7 @@ Carbide.Virtual.Values.ProxyArray.prototype.method = function () {
 }
 
 Carbide.Virtual.Values.ProxyArray.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -40499,7 +40980,7 @@ Carbide.Virtual.Values.ProxyArray.prototype.duplicate = function () {
 }
 
 Carbide.Virtual.Values.ProxyArray.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -40520,12 +41001,12 @@ Carbide.Virtual.Values.ProxyArray.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.ProxyArray.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -40534,7 +41015,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 Carbide.Virtual.Values.ProxyArray.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -40549,7 +41030,7 @@ Carbide.Virtual.Values.AutoArray = function () {
 
 	this.raw = null;
 
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var value = arguments[0];
 		this.value = value;
 	}
@@ -40595,7 +41076,7 @@ Carbide.Virtual.Values.AutoArray.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.AutoArray.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -40618,7 +41099,7 @@ Carbide.Virtual.Values.AutoArray.prototype.method = function () {
 }
 
 Carbide.Virtual.Values.AutoArray.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -40699,7 +41180,7 @@ Carbide.Virtual.Values.AutoArray.prototype.compare = function () {
 }
 
 Carbide.Virtual.Values.AutoArray.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -40720,12 +41201,12 @@ Carbide.Virtual.Values.AutoArray.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.AutoArray.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -40734,7 +41215,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 Carbide.Virtual.Values.AutoArray.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -40832,7 +41313,7 @@ Carbide.Virtual.Values.Null.prototype.duplicate = function () {
 }
 
 Carbide.Virtual.Values.Null.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -40853,7 +41334,7 @@ Carbide.Virtual.Values.Null.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.Null.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -40870,7 +41351,7 @@ Carbide.Virtual.Values.Null.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.Null.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -40879,12 +41360,12 @@ Carbide.Virtual.Values.Null.prototype.method = function () {
 }
 
 Carbide.Virtual.Values.Null.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -40893,7 +41374,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 Carbide.Virtual.Values.Null.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -40998,7 +41479,7 @@ Carbide.Virtual.Values.Reference.prototype.duplicate = function () {
 }
 
 Carbide.Virtual.Values.Reference.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -41019,7 +41500,7 @@ Carbide.Virtual.Values.Reference.primitiveToValue = function () {
 }
 
 Carbide.Virtual.Values.Reference.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -41036,7 +41517,7 @@ Carbide.Virtual.Values.Reference.prototype.property = function () {
 }
 
 Carbide.Virtual.Values.Reference.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -41045,12 +41526,12 @@ Carbide.Virtual.Values.Reference.prototype.method = function () {
 }
 
 Carbide.Virtual.Values.Reference.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -41059,7 +41540,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 Carbide.Virtual.Values.Reference.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -41082,7 +41563,7 @@ Carbide.Virtual.Variable = function () {
 
 	this.value = null;
 
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var value = arguments[1];
 		this.name = name;
@@ -41177,7 +41658,7 @@ Carbide.Virtual.Sub = function () {
 }
 
 Carbide.Virtual.Sub.prototype.run = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		if (this.type == 1) {
@@ -41188,10 +41669,14 @@ Carbide.Virtual.Sub.prototype.run = function () {
 					var arg = this.arguments[i];
 					args.push(arg.run(scope));
 					}
-				if (on.type == "function") {
-					return on.call(args, scope);
+				if (this.type == 3) {
+					return on.method("index", args, scope);
 					}else{
-						return on.method(this.property, args, scope);
+						if (on.type == "function") {
+							return on.call(args, scope);
+							}else{
+								return on.method(this.property, args, scope);
+							}
 					}
 			}
 	}
@@ -41230,7 +41715,7 @@ Carbide.Virtual.Data = function () {
 
 	this.value = null;
 
-	if (arguments.length == 2 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var id = arguments[0];
 		var val = arguments[1];
 		this.id = id;
@@ -41268,7 +41753,7 @@ Carbide.Virtual.Expression.prototype.buildSubs = function () {
 }
 
 Carbide.Virtual.Expression.prototype.runSubs = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		var last = on;
@@ -41281,7 +41766,7 @@ Carbide.Virtual.Expression.prototype.runSubs = function () {
 }
 
 Carbide.Virtual.Expression.prototype.runSubsTo = function () {
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		var to = arguments[2];
@@ -41386,7 +41871,7 @@ Carbide.Virtual.Expressions.Operation.prototype.buildSubs = function () {
 }
 
 Carbide.Virtual.Expressions.Operation.prototype.runSubs = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		var last = on;
@@ -41399,7 +41884,7 @@ Carbide.Virtual.Expressions.Operation.prototype.runSubs = function () {
 }
 
 Carbide.Virtual.Expressions.Operation.prototype.runSubsTo = function () {
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		var to = arguments[2];
@@ -41426,7 +41911,7 @@ Carbide.Virtual.Expressions.Call = function () {
 
 	this.parent = null;
 
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var ___arguments = arguments[0];
 		var name = arguments[1];
 		this.name = name;
@@ -41509,7 +41994,7 @@ Carbide.Virtual.Expressions.Call.prototype.buildSubs = function () {
 }
 
 Carbide.Virtual.Expressions.Call.prototype.runSubs = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		var last = on;
@@ -41522,7 +42007,7 @@ Carbide.Virtual.Expressions.Call.prototype.runSubs = function () {
 }
 
 Carbide.Virtual.Expressions.Call.prototype.runSubsTo = function () {
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		var to = arguments[2];
@@ -41547,7 +42032,7 @@ Carbide.Virtual.Expressions.Raw = function () {
 
 	this.parent = null;
 
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var val = arguments[0];
 		this.value = val;
 	}
@@ -41601,7 +42086,7 @@ Carbide.Virtual.Expressions.Raw.prototype.buildSubs = function () {
 }
 
 Carbide.Virtual.Expressions.Raw.prototype.runSubs = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		var last = on;
@@ -41614,7 +42099,7 @@ Carbide.Virtual.Expressions.Raw.prototype.runSubs = function () {
 }
 
 Carbide.Virtual.Expressions.Raw.prototype.runSubsTo = function () {
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		var to = arguments[2];
@@ -41707,7 +42192,7 @@ Carbide.Virtual.Expressions.Reference.prototype.buildSubs = function () {
 }
 
 Carbide.Virtual.Expressions.Reference.prototype.runSubs = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		var last = on;
@@ -41720,7 +42205,7 @@ Carbide.Virtual.Expressions.Reference.prototype.runSubs = function () {
 }
 
 Carbide.Virtual.Expressions.Reference.prototype.runSubsTo = function () {
-	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbide.Virtual.Value || (arguments[0] instanceof carbide_proxy_Carbonite_Context) || (arguments[0] instanceof Carbide.Virtual.Values.String) || (arguments[0] instanceof Carbide.Virtual.Values.Map) || (arguments[0] instanceof Carbide.Virtual.Values.Reference) || (arguments[0] instanceof Carbide.Virtual.Values.Number) || (arguments[0] instanceof Carbide.Virtual.Values.Bool) || (arguments[0] instanceof Carbide.Virtual.Values.Array) || (arguments[0] instanceof Carbide.Virtual.Values.Null) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[0] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[0] instanceof carbide_proxy_Carbonite_Class) || (arguments[0] instanceof carbide_proxy_Carbonite_Template) || (arguments[0] instanceof carbide_proxy_Carbonite_Body) || (arguments[0] instanceof carbide_proxy_Carbonite_Statement) || (arguments[0] instanceof carbide_proxy_Carbonite_Type) || (arguments[0] instanceof VirtualArguments) || (arguments[0] instanceof VirtualArgument) || (arguments[0] instanceof VirtualClass) || (arguments[0] instanceof VirtualClasses) || (arguments[0] instanceof VirtualMembers) || (arguments[0] instanceof VirtualMember) || (arguments[0] instanceof VirtualTypes) || (arguments[0] instanceof VirtualType) || (arguments[0] instanceof Carbide.Virtual.Values.Function) || (arguments[0] instanceof Carbide.Virtual.Values.AutoArray || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Template) || (arguments[0] instanceof carbide_valueArray_Carbonite_Class) || (arguments[0] instanceof carbide_valueArray_Carbonite_Type) || (arguments[0] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var on = arguments[0];
 		var scope = arguments[1];
 		var to = arguments[2];
@@ -41736,7 +42221,7 @@ Carbide.Virtual.Expressions.Reference.prototype.runSubsTo = function () {
 	}
 }
 
-carbide_proxy_Carbonite_Statement = function () {
+carbide_proxy_Carbonite_Context = function () {
 	this.value = null;
 
 	this.type = "null";
@@ -41750,47 +42235,7 @@ carbide_proxy_Carbonite_Statement = function () {
 
 }
 
-carbide_proxy_Carbonite_Statement.create = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
-		var reference = arguments[0];
-		var m = {};
-		var value = new carbide_proxy_Carbonite_Statement(m);
-		value.value = reference;
-		return value;
-	}
-}
-
-carbide_proxy_Carbonite_Statement.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
-		var name = arguments[0];
-		var args = arguments[1];
-		var c_scope = arguments[2];
-
-	}
-}
-
-carbide_proxy_Carbonite_Statement.prototype.property = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
-		var name = arguments[0];
-		var c_scope = arguments[1];
-		if (name == "type") {
-			var insta = this.value;
-			var carbide_rtn = insta.type;
-			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
-			}
-	}
-}
-
-carbide_proxy_Carbonite_Statement.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
-		var name = arguments[0];
-		var setTo = arguments[1];
-		var c_scope = arguments[2];
-
-	}
-}
-
-carbide_proxy_Carbonite_Statement.make = function () {
+carbide_proxy_Carbonite_Context.make = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Processor) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var data = arguments[0];
 		var proc = arguments[1];
@@ -41826,34 +42271,55 @@ carbide_proxy_Carbonite_Statement.make = function () {
 	}
 }
 
-carbide_proxy_Carbonite_Statement.prototype.getValue = function () {
+carbide_proxy_Carbonite_Context.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Context) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Context(m);
+		value.value = reference;
+		return value;
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Context) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Context(m);
+		value.value = reference;
+		return value;
+	}
+}
+
+carbide_proxy_Carbonite_Context.prototype.getValue = function () {
 	if (arguments.length == 0) {
 		return this;
 	}
 }
 
-carbide_proxy_Carbonite_Statement.prototype.duplicate = function () {
+carbide_proxy_Carbonite_Context.prototype.duplicate = function () {
 	if (arguments.length == 0) {
 		return this;
 	}
 }
 
-carbide_proxy_Carbonite_Statement.prototype.setValue = function () {
+carbide_proxy_Carbonite_Context.prototype.setValue = function () {
 	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var raw = arguments[0];
 
 	}
 }
 
-carbide_proxy_Carbonite_Statement.prototype.compare = function () {
+carbide_proxy_Carbonite_Context.prototype.compare = function () {
 	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var raw = arguments[0];
 
 	}
 }
 
-carbide_proxy_Carbonite_Statement.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+carbide_proxy_Carbonite_Context.primitiveToValue = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -41873,13 +42339,13 @@ carbide_proxy_Carbonite_Statement.primitiveToValue = function () {
 	}
 }
 
-carbide_proxy_Carbonite_Statement.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+carbide_proxy_Carbonite_Context.prototype.call = function () {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -41887,8 +42353,8 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 	}
 }
 
-carbide_proxy_Carbonite_Statement.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+carbide_proxy_Carbonite_Context.prototype.operate = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -41896,13 +42362,622 @@ carbide_proxy_Carbonite_Statement.prototype.operate = function () {
 	}
 }
 
-carbide_proxy_Carbonite_Statement.prototype.iterate = function () {
+carbide_proxy_Carbonite_Context.prototype.iterate = function () {
 	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Variable) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Variable) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Scope) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
 		var variableKey = arguments[0];
 		var variable = arguments[1];
 		var code = arguments[2];
 		var scope = arguments[3];
 
+	}
+}
+
+carbide_proxy_Carbonite_Context.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var args = arguments[1];
+		var c_scope = arguments[2];
+		if (name == "route") {
+			var cast_cls = args[0].value;
+			var insta = this.value;
+			var carbide_rtn = insta.route(cast_cls);
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Context.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var c_scope = arguments[1];
+		if (name == "type") {
+			var insta = this.value;
+			var carbide_rtn = insta.type;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "instance") {
+			var insta = this.value;
+			var carbide_rtn = insta.instance;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "reference") {
+			var insta = this.value;
+			var carbide_rtn = insta.reference;
+			return carbide_proxy_Carbonite_Class.create(carbide_rtn);
+			}else if (name == "arguments") {
+			var insta = this.value;
+			var carbide_rtn = insta.arguments;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "templates") {
+			var insta = this.value;
+			var carbide_rtn = insta.templates;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "parent") {
+			var insta = this.value;
+			var carbide_rtn = insta.parent;
+			return carbide_proxy_Carbonite_Class.create(carbide_rtn);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Context.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var setTo = arguments[1];
+		var c_scope = arguments[2];
+		if (name == "type") {
+			var c_setCast = setTo.value;
+			this.value.type = c_setCast;
+			}else if (name == "instance") {
+			var c_setCast = setTo.value;
+			this.value.instance = c_setCast;
+			}else if (name == "reference") {
+			var c_setCast = setTo.value;
+			this.value.reference = c_setCast;
+			}else if (name == "arguments") {
+			var c_setCast = setTo.value;
+			this.value.arguments = c_setCast;
+			}else if (name == "templates") {
+			var c_setCast = setTo.value;
+			this.value.templates = c_setCast;
+			}else if (name == "parent") {
+			var c_setCast = setTo.value;
+			this.value.parent = c_setCast;
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Class = function () {
+	this.value = null;
+
+	this.type = "null";
+
+	this.raw = null;
+
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+		this.raw = raw;
+	}
+
+}
+
+carbide_proxy_Carbonite_Class.make = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Processor) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var data = arguments[0];
+		var proc = arguments[1];
+		var rtn = null;
+		var type = data["type"];
+		if (type == "string") {
+			rtn = new Carbide.Virtual.Values.String(data);
+			}else if (type == "map") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Map(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}else if (type == "number") {
+			rtn = new Carbide.Virtual.Values.Number(data);
+			}else if (type == "bool") {
+			rtn = new Carbide.Virtual.Values.Bool(data);
+			}else if (type == "array") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Array(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}
+		rtn.setValue(data);
+		return rtn;
+	}
+}
+
+carbide_proxy_Carbonite_Class.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Class(m);
+		value.value = reference;
+		return value;
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Class(m);
+		value.value = reference;
+		return value;
+	}
+}
+
+carbide_proxy_Carbonite_Class.prototype.getValue = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_proxy_Carbonite_Class.prototype.duplicate = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_proxy_Carbonite_Class.prototype.setValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_proxy_Carbonite_Class.prototype.compare = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_proxy_Carbonite_Class.primitiveToValue = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prim = arguments[0];
+		if (prim == null) {
+			return Carbide.Virtual.Values.Null.create();
+			}
+		var type = (typeof prim == 'object' ? (Array.isArray(prim) ? 'array' : 'map') : (typeof prim == 'number' ? 'float' : typeof prim));
+		if (type == "array") {
+			return Carbide.Virtual.Values.ProxyArray.create(prim);
+			}else if (type == "map") {
+			return Carbide.Virtual.Values.ProxyMap.create(prim);
+			}else if (type == "string") {
+			return Carbide.Virtual.Values.String.create(prim);
+			}else if (type == "boolean") {
+			return Carbide.Virtual.Values.Bool.create(prim);
+			}else if ((type == "integer") || (type == "float")) {
+			return Carbide.Virtual.Values.Number.create(prim);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Class.prototype.call = function () {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+
+	}
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+		var context = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Class.prototype.operate = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var operator = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Class.prototype.iterate = function () {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Variable) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Variable) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Scope) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var variableKey = arguments[0];
+		var variable = arguments[1];
+		var code = arguments[2];
+		var scope = arguments[3];
+
+	}
+}
+
+carbide_proxy_Carbonite_Class.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var args = arguments[1];
+		var c_scope = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Class.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var c_scope = arguments[1];
+		if (name == "uid") {
+			var insta = this.value;
+			var carbide_rtn = insta.uid;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "isFromHeader") {
+			var insta = this.value;
+			var carbide_rtn = insta.isFromHeader;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "primitiveValue") {
+			var insta = this.value;
+			var carbide_rtn = insta.primitiveValue;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "inherits") {
+			var insta = this.value;
+			var carbide_rtn = insta.inherits;
+			return new carbide_valueArray_Carbonite_Class(carbide_rtn);
+			}else if (name == "headerInherits") {
+			var insta = this.value;
+			var carbide_rtn = insta.headerInherits;
+			return new carbide_valueArray_Carbonite_Class(carbide_rtn);
+			}else if (name == "templates") {
+			var insta = this.value;
+			var carbide_rtn = insta.templates;
+			return new carbide_valueArray_Carbonite_Template(carbide_rtn);
+			}else if (name == "descendants") {
+			var insta = this.value;
+			var carbide_rtn = insta.descendants;
+			return new carbide_valueArray_Carbonite_Class(carbide_rtn);
+			}else if (name == "attributes") {
+			var insta = this.value;
+			var carbide_rtn = insta.attributes;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "reroute") {
+			var insta = this.value;
+			var carbide_rtn = insta.reroute;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "autoReroute") {
+			var insta = this.value;
+			var carbide_rtn = insta.autoReroute;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "link") {
+			var insta = this.value;
+			var carbide_rtn = insta.link;
+			return carbide_proxy_Carbonite_Class.create(carbide_rtn);
+			}else if (name == "alreadyBuilt") {
+			var insta = this.value;
+			var carbide_rtn = insta.alreadyBuilt;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "membersBuilt") {
+			var insta = this.value;
+			var carbide_rtn = insta.membersBuilt;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "codeBuilt") {
+			var insta = this.value;
+			var carbide_rtn = insta.codeBuilt;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "inherited") {
+			var insta = this.value;
+			var carbide_rtn = insta.inherited;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "templateClass") {
+			var insta = this.value;
+			var carbide_rtn = insta.templateClass;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "templateInstance") {
+			var insta = this.value;
+			var carbide_rtn = insta.templateInstance;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "templateBase") {
+			var insta = this.value;
+			var carbide_rtn = insta.templateBase;
+			return carbide_proxy_Carbonite_Class.create(carbide_rtn);
+			}else if (name == "resolvedTemplates") {
+			var insta = this.value;
+			var carbide_rtn = insta.resolvedTemplates;
+			return new carbide_valueArray_Carbonite_Type(carbide_rtn);
+			}else if (name == "base") {
+			var insta = this.value;
+			var carbide_rtn = insta.base;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "flags") {
+			var insta = this.value;
+			var carbide_rtn = insta.flags;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "route") {
+			var insta = this.value;
+			var carbide_rtn = insta.route;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "name") {
+			var insta = this.value;
+			var carbide_rtn = insta.name;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "leveled") {
+			var insta = this.value;
+			var carbide_rtn = insta.leveled;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Class.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var setTo = arguments[1];
+		var c_scope = arguments[2];
+		if (name == "uid") {
+			var c_setCast = setTo.value;
+			this.value.uid = c_setCast;
+			}else if (name == "isFromHeader") {
+			var c_setCast = setTo.value;
+			this.value.isFromHeader = c_setCast;
+			}else if (name == "primitiveValue") {
+			var c_setCast = setTo.value;
+			this.value.primitiveValue = c_setCast;
+			}else if (name == "inherits") {
+			var c_setCast = setTo.value;
+			this.value.inherits = c_setCast;
+			}else if (name == "headerInherits") {
+			var c_setCast = setTo.value;
+			this.value.headerInherits = c_setCast;
+			}else if (name == "templates") {
+			var c_setCast = setTo.value;
+			this.value.templates = c_setCast;
+			}else if (name == "descendants") {
+			var c_setCast = setTo.value;
+			this.value.descendants = c_setCast;
+			}else if (name == "attributes") {
+			var c_setCast = setTo.value;
+			this.value.attributes = c_setCast;
+			}else if (name == "reroute") {
+			var c_setCast = setTo.value;
+			this.value.reroute = c_setCast;
+			}else if (name == "autoReroute") {
+			var c_setCast = setTo.value;
+			this.value.autoReroute = c_setCast;
+			}else if (name == "link") {
+			var c_setCast = setTo.value;
+			this.value.link = c_setCast;
+			}else if (name == "alreadyBuilt") {
+			var c_setCast = setTo.value;
+			this.value.alreadyBuilt = c_setCast;
+			}else if (name == "membersBuilt") {
+			var c_setCast = setTo.value;
+			this.value.membersBuilt = c_setCast;
+			}else if (name == "codeBuilt") {
+			var c_setCast = setTo.value;
+			this.value.codeBuilt = c_setCast;
+			}else if (name == "inherited") {
+			var c_setCast = setTo.value;
+			this.value.inherited = c_setCast;
+			}else if (name == "templateClass") {
+			var c_setCast = setTo.value;
+			this.value.templateClass = c_setCast;
+			}else if (name == "templateInstance") {
+			var c_setCast = setTo.value;
+			this.value.templateInstance = c_setCast;
+			}else if (name == "templateBase") {
+			var c_setCast = setTo.value;
+			this.value.templateBase = c_setCast;
+			}else if (name == "resolvedTemplates") {
+			var c_setCast = setTo.value;
+			this.value.resolvedTemplates = c_setCast;
+			}else if (name == "base") {
+			var c_setCast = setTo.value;
+			this.value.base = c_setCast;
+			}else if (name == "flags") {
+			var c_setCast = setTo.value;
+			this.value.flags = c_setCast;
+			}else if (name == "route") {
+			var c_setCast = setTo.value;
+			this.value.route = c_setCast;
+			}else if (name == "name") {
+			var c_setCast = setTo.value;
+			this.value.name = c_setCast;
+			}else if (name == "leveled") {
+			var c_setCast = setTo.value;
+			this.value.leveled = c_setCast;
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Template = function () {
+	this.value = null;
+
+	this.type = "null";
+
+	this.raw = null;
+
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+		this.raw = raw;
+	}
+
+}
+
+carbide_proxy_Carbonite_Template.make = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Processor) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var data = arguments[0];
+		var proc = arguments[1];
+		var rtn = null;
+		var type = data["type"];
+		if (type == "string") {
+			rtn = new Carbide.Virtual.Values.String(data);
+			}else if (type == "map") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Map(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}else if (type == "number") {
+			rtn = new Carbide.Virtual.Values.Number(data);
+			}else if (type == "bool") {
+			rtn = new Carbide.Virtual.Values.Bool(data);
+			}else if (type == "array") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Array(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}
+		rtn.setValue(data);
+		return rtn;
+	}
+}
+
+carbide_proxy_Carbonite_Template.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Template) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Template(m);
+		value.value = reference;
+		return value;
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Template) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Template(m);
+		value.value = reference;
+		return value;
+	}
+}
+
+carbide_proxy_Carbonite_Template.prototype.getValue = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_proxy_Carbonite_Template.prototype.duplicate = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_proxy_Carbonite_Template.prototype.setValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_proxy_Carbonite_Template.prototype.compare = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_proxy_Carbonite_Template.primitiveToValue = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prim = arguments[0];
+		if (prim == null) {
+			return Carbide.Virtual.Values.Null.create();
+			}
+		var type = (typeof prim == 'object' ? (Array.isArray(prim) ? 'array' : 'map') : (typeof prim == 'number' ? 'float' : typeof prim));
+		if (type == "array") {
+			return Carbide.Virtual.Values.ProxyArray.create(prim);
+			}else if (type == "map") {
+			return Carbide.Virtual.Values.ProxyMap.create(prim);
+			}else if (type == "string") {
+			return Carbide.Virtual.Values.String.create(prim);
+			}else if (type == "boolean") {
+			return Carbide.Virtual.Values.Bool.create(prim);
+			}else if ((type == "integer") || (type == "float")) {
+			return Carbide.Virtual.Values.Number.create(prim);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Template.prototype.call = function () {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+
+	}
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+		var context = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Template.prototype.operate = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var operator = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Template.prototype.iterate = function () {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Variable) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Variable) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Scope) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var variableKey = arguments[0];
+		var variable = arguments[1];
+		var code = arguments[2];
+		var scope = arguments[3];
+
+	}
+}
+
+carbide_proxy_Carbonite_Template.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var args = arguments[1];
+		var c_scope = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Template.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var c_scope = arguments[1];
+		if (name == "name") {
+			var insta = this.value;
+			var carbide_rtn = insta.name;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}else if (name == "parent") {
+			var insta = this.value;
+			var carbide_rtn = insta.parent;
+			return carbide_proxy_Carbonite_Class.create(carbide_rtn);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Template.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var setTo = arguments[1];
+		var c_scope = arguments[2];
+		if (name == "name") {
+			var c_setCast = setTo.value;
+			this.value.name = c_setCast;
+			}else if (name == "parent") {
+			var c_setCast = setTo.value;
+			this.value.parent = c_setCast;
+			}
 	}
 }
 
@@ -41918,49 +42993,6 @@ carbide_proxy_Carbonite_Body = function () {
 		this.raw = raw;
 	}
 
-}
-
-carbide_proxy_Carbonite_Body.create = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
-		var reference = arguments[0];
-		var m = {};
-		var value = new carbide_proxy_Carbonite_Body(m);
-		value.value = reference;
-		return value;
-	}
-}
-
-carbide_proxy_Carbonite_Body.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
-		var name = arguments[0];
-		var args = arguments[1];
-		var c_scope = arguments[2];
-
-	}
-}
-
-carbide_proxy_Carbonite_Body.prototype.property = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
-		var name = arguments[0];
-		var c_scope = arguments[1];
-		if (name == "statements") {
-			var insta = this.value;
-			var carbide_rtn = insta.statements;
-			return new carbide_valueArray_Carbonite_Statement(carbide_rtn);
-			}
-	}
-}
-
-carbide_proxy_Carbonite_Body.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
-		var name = arguments[0];
-		var setTo = arguments[1];
-		var c_scope = arguments[2];
-		if (name == "statements") {
-			var c_setCast = setTo.value;
-			this.value.statements = c_setCast;
-			}
-	}
 }
 
 carbide_proxy_Carbonite_Body.make = function () {
@@ -41999,6 +43031,27 @@ carbide_proxy_Carbonite_Body.make = function () {
 	}
 }
 
+carbide_proxy_Carbonite_Body.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Body(m);
+		value.value = reference;
+		return value;
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Body(m);
+		value.value = reference;
+		return value;
+	}
+}
+
 carbide_proxy_Carbonite_Body.prototype.getValue = function () {
 	if (arguments.length == 0) {
 		return this;
@@ -42026,7 +43079,7 @@ carbide_proxy_Carbonite_Body.prototype.compare = function () {
 }
 
 carbide_proxy_Carbonite_Body.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -42047,12 +43100,12 @@ carbide_proxy_Carbonite_Body.primitiveToValue = function () {
 }
 
 carbide_proxy_Carbonite_Body.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -42061,7 +43114,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 carbide_proxy_Carbonite_Body.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -42079,6 +43132,1384 @@ carbide_proxy_Carbonite_Body.prototype.iterate = function () {
 	}
 }
 
+carbide_proxy_Carbonite_Body.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var args = arguments[1];
+		var c_scope = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Body.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var c_scope = arguments[1];
+		if (name == "statements") {
+			var insta = this.value;
+			var carbide_rtn = insta.statements;
+			return new carbide_valueArray_Carbonite_Statement(carbide_rtn);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Body.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var setTo = arguments[1];
+		var c_scope = arguments[2];
+		if (name == "statements") {
+			var c_setCast = setTo.value;
+			this.value.statements = c_setCast;
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Statement = function () {
+	this.value = null;
+
+	this.type = "null";
+
+	this.raw = null;
+
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+		this.raw = raw;
+	}
+
+}
+
+carbide_proxy_Carbonite_Statement.make = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Processor) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var data = arguments[0];
+		var proc = arguments[1];
+		var rtn = null;
+		var type = data["type"];
+		if (type == "string") {
+			rtn = new Carbide.Virtual.Values.String(data);
+			}else if (type == "map") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Map(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}else if (type == "number") {
+			rtn = new Carbide.Virtual.Values.Number(data);
+			}else if (type == "bool") {
+			rtn = new Carbide.Virtual.Values.Bool(data);
+			}else if (type == "array") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Array(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}
+		rtn.setValue(data);
+		return rtn;
+	}
+}
+
+carbide_proxy_Carbonite_Statement.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Statement(m);
+		value.value = reference;
+		return value;
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Statement(m);
+		value.value = reference;
+		return value;
+	}
+}
+
+carbide_proxy_Carbonite_Statement.prototype.getValue = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_proxy_Carbonite_Statement.prototype.duplicate = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_proxy_Carbonite_Statement.prototype.setValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_proxy_Carbonite_Statement.prototype.compare = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_proxy_Carbonite_Statement.primitiveToValue = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prim = arguments[0];
+		if (prim == null) {
+			return Carbide.Virtual.Values.Null.create();
+			}
+		var type = (typeof prim == 'object' ? (Array.isArray(prim) ? 'array' : 'map') : (typeof prim == 'number' ? 'float' : typeof prim));
+		if (type == "array") {
+			return Carbide.Virtual.Values.ProxyArray.create(prim);
+			}else if (type == "map") {
+			return Carbide.Virtual.Values.ProxyMap.create(prim);
+			}else if (type == "string") {
+			return Carbide.Virtual.Values.String.create(prim);
+			}else if (type == "boolean") {
+			return Carbide.Virtual.Values.Bool.create(prim);
+			}else if ((type == "integer") || (type == "float")) {
+			return Carbide.Virtual.Values.Number.create(prim);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Statement.prototype.call = function () {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+
+	}
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+		var context = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Statement.prototype.operate = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var operator = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Statement.prototype.iterate = function () {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Variable) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Variable) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Scope) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var variableKey = arguments[0];
+		var variable = arguments[1];
+		var code = arguments[2];
+		var scope = arguments[3];
+
+	}
+}
+
+carbide_proxy_Carbonite_Statement.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var args = arguments[1];
+		var c_scope = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Statement.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var c_scope = arguments[1];
+		if (name == "type") {
+			var insta = this.value;
+			var carbide_rtn = insta.type;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Statement.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var setTo = arguments[1];
+		var c_scope = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Type = function () {
+	this.value = null;
+
+	this.type = "null";
+
+	this.raw = null;
+
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+		this.raw = raw;
+	}
+
+}
+
+carbide_proxy_Carbonite_Type.make = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Processor) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var data = arguments[0];
+		var proc = arguments[1];
+		var rtn = null;
+		var type = data["type"];
+		if (type == "string") {
+			rtn = new Carbide.Virtual.Values.String(data);
+			}else if (type == "map") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Map(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}else if (type == "number") {
+			rtn = new Carbide.Virtual.Values.Number(data);
+			}else if (type == "bool") {
+			rtn = new Carbide.Virtual.Values.Bool(data);
+			}else if (type == "array") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Array(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}
+		rtn.setValue(data);
+		return rtn;
+	}
+}
+
+carbide_proxy_Carbonite_Type.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Type(m);
+		value.value = reference;
+		return value;
+	}
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var reference = arguments[0];
+		var m = {};
+		var value = new carbide_proxy_Carbonite_Type(m);
+		value.value = reference;
+		return value;
+	}
+}
+
+carbide_proxy_Carbonite_Type.prototype.getValue = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_proxy_Carbonite_Type.prototype.duplicate = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_proxy_Carbonite_Type.prototype.setValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_proxy_Carbonite_Type.prototype.compare = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_proxy_Carbonite_Type.primitiveToValue = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prim = arguments[0];
+		if (prim == null) {
+			return Carbide.Virtual.Values.Null.create();
+			}
+		var type = (typeof prim == 'object' ? (Array.isArray(prim) ? 'array' : 'map') : (typeof prim == 'number' ? 'float' : typeof prim));
+		if (type == "array") {
+			return Carbide.Virtual.Values.ProxyArray.create(prim);
+			}else if (type == "map") {
+			return Carbide.Virtual.Values.ProxyMap.create(prim);
+			}else if (type == "string") {
+			return Carbide.Virtual.Values.String.create(prim);
+			}else if (type == "boolean") {
+			return Carbide.Virtual.Values.Bool.create(prim);
+			}else if ((type == "integer") || (type == "float")) {
+			return Carbide.Virtual.Values.Number.create(prim);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Type.prototype.call = function () {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+
+	}
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+		var context = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Type.prototype.operate = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var operator = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Type.prototype.iterate = function () {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Variable) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Variable) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Scope) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var variableKey = arguments[0];
+		var variable = arguments[1];
+		var code = arguments[2];
+		var scope = arguments[3];
+
+	}
+}
+
+carbide_proxy_Carbonite_Type.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var args = arguments[1];
+		var c_scope = arguments[2];
+
+	}
+}
+
+carbide_proxy_Carbonite_Type.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var c_scope = arguments[1];
+		if (name == "reference") {
+			var insta = this.value;
+			var carbide_rtn = insta.reference;
+			return carbide_proxy_Carbonite_Class.create(carbide_rtn);
+			}
+	}
+}
+
+carbide_proxy_Carbonite_Type.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var setTo = arguments[1];
+		var c_scope = arguments[2];
+		if (name == "reference") {
+			var c_setCast = setTo.value;
+			this.value.reference = c_setCast;
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Class = function () {
+	this.value = null;
+
+	this.type = "array";
+
+	this.raw = null;
+
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var val = arguments[0];
+		this.value = val;
+	}
+
+}
+
+carbide_valueArray_Carbonite_Class.prototype.castCarbideValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var i = arguments[0];
+		return carbide_proxy_Carbonite_Class.create(this.value[i]);
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.iterate = function () {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Variable) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Variable) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Scope) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var vKey = arguments[0];
+		var v = arguments[1];
+		var code = arguments[2];
+		var scope = arguments[3];
+		for (var i = 0; i < this.value.length; i++) {
+			vKey.value.value = i;
+			v.value = this.castCarbideValue(i);
+			code.run(scope);
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var scope = arguments[1];
+		if (name == "length") {
+			var cast = this.value.length;
+			var rtn = Carbide.Virtual.Values.Number.create(cast);
+			return rtn;
+			}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var input = arguments[1];
+		var scope = arguments[2];
+		if (name == "length") {
+			var len = this.value.length;
+			return Carbide.Virtual.Values.Number.create(len);
+			}else if (name == "index") {
+			var ind = input[0];
+			var found = this.castCarbideValue(ind.value);
+			return found;
+			}else if (name == "push") {
+			var ind = input[0];
+			var cast = this.value;
+			cast.push(ind.value);
+			}else if (name == "pop") {
+			this.value.pop();
+			}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var prop = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+		var v = null;
+		this.value[prop] = value.value;
+		v = Carbide.Virtual.Values.Null.create();
+		return v;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.make = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Processor) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var data = arguments[0];
+		var proc = arguments[1];
+		var rtn = null;
+		var type = data["type"];
+		if (type == "string") {
+			rtn = new Carbide.Virtual.Values.String(data);
+			}else if (type == "map") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Map(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}else if (type == "number") {
+			rtn = new Carbide.Virtual.Values.Number(data);
+			}else if (type == "bool") {
+			rtn = new Carbide.Virtual.Values.Bool(data);
+			}else if (type == "array") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Array(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}
+		rtn.setValue(data);
+		return rtn;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.getValue = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.duplicate = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.setValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.compare = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.primitiveToValue = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prim = arguments[0];
+		if (prim == null) {
+			return Carbide.Virtual.Values.Null.create();
+			}
+		var type = (typeof prim == 'object' ? (Array.isArray(prim) ? 'array' : 'map') : (typeof prim == 'number' ? 'float' : typeof prim));
+		if (type == "array") {
+			return Carbide.Virtual.Values.ProxyArray.create(prim);
+			}else if (type == "map") {
+			return Carbide.Virtual.Values.ProxyMap.create(prim);
+			}else if (type == "string") {
+			return Carbide.Virtual.Values.String.create(prim);
+			}else if (type == "boolean") {
+			return Carbide.Virtual.Values.Bool.create(prim);
+			}else if ((type == "integer") || (type == "float")) {
+			return Carbide.Virtual.Values.Number.create(prim);
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.call = function () {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+
+	}
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+		var context = arguments[2];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.operate = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var operator = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class = function () {
+	this.value = null;
+
+	this.type = "array";
+
+	this.raw = null;
+
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var val = arguments[0];
+		this.value = val;
+	}
+
+}
+
+carbide_valueArray_Carbonite_Class.prototype.castCarbideValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var i = arguments[0];
+		return carbide_proxy_Carbonite_Class.create(this.value[i]);
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.iterate = function () {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Variable) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Variable) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Scope) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var vKey = arguments[0];
+		var v = arguments[1];
+		var code = arguments[2];
+		var scope = arguments[3];
+		for (var i = 0; i < this.value.length; i++) {
+			vKey.value.value = i;
+			v.value = this.castCarbideValue(i);
+			code.run(scope);
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var scope = arguments[1];
+		if (name == "length") {
+			var cast = this.value.length;
+			var rtn = Carbide.Virtual.Values.Number.create(cast);
+			return rtn;
+			}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var input = arguments[1];
+		var scope = arguments[2];
+		if (name == "length") {
+			var len = this.value.length;
+			return Carbide.Virtual.Values.Number.create(len);
+			}else if (name == "index") {
+			var ind = input[0];
+			var found = this.castCarbideValue(ind.value);
+			return found;
+			}else if (name == "push") {
+			var ind = input[0];
+			var cast = this.value;
+			cast.push(ind.value);
+			}else if (name == "pop") {
+			this.value.pop();
+			}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var prop = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+		var v = null;
+		this.value[prop] = value.value;
+		v = Carbide.Virtual.Values.Null.create();
+		return v;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.make = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Processor) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var data = arguments[0];
+		var proc = arguments[1];
+		var rtn = null;
+		var type = data["type"];
+		if (type == "string") {
+			rtn = new Carbide.Virtual.Values.String(data);
+			}else if (type == "map") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Map(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}else if (type == "number") {
+			rtn = new Carbide.Virtual.Values.Number(data);
+			}else if (type == "bool") {
+			rtn = new Carbide.Virtual.Values.Bool(data);
+			}else if (type == "array") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Array(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}
+		rtn.setValue(data);
+		return rtn;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.getValue = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.duplicate = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.setValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.compare = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.primitiveToValue = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prim = arguments[0];
+		if (prim == null) {
+			return Carbide.Virtual.Values.Null.create();
+			}
+		var type = (typeof prim == 'object' ? (Array.isArray(prim) ? 'array' : 'map') : (typeof prim == 'number' ? 'float' : typeof prim));
+		if (type == "array") {
+			return Carbide.Virtual.Values.ProxyArray.create(prim);
+			}else if (type == "map") {
+			return Carbide.Virtual.Values.ProxyMap.create(prim);
+			}else if (type == "string") {
+			return Carbide.Virtual.Values.String.create(prim);
+			}else if (type == "boolean") {
+			return Carbide.Virtual.Values.Bool.create(prim);
+			}else if ((type == "integer") || (type == "float")) {
+			return Carbide.Virtual.Values.Number.create(prim);
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.call = function () {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+
+	}
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+		var context = arguments[2];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.operate = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var operator = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Template = function () {
+	this.value = null;
+
+	this.type = "array";
+
+	this.raw = null;
+
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var val = arguments[0];
+		this.value = val;
+	}
+
+}
+
+carbide_valueArray_Carbonite_Template.prototype.castCarbideValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var i = arguments[0];
+		return carbide_proxy_Carbonite_Template.create(this.value[i]);
+	}
+}
+
+carbide_valueArray_Carbonite_Template.prototype.iterate = function () {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Variable) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Variable) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Scope) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var vKey = arguments[0];
+		var v = arguments[1];
+		var code = arguments[2];
+		var scope = arguments[3];
+		for (var i = 0; i < this.value.length; i++) {
+			vKey.value.value = i;
+			v.value = this.castCarbideValue(i);
+			code.run(scope);
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Template.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var scope = arguments[1];
+		if (name == "length") {
+			var cast = this.value.length;
+			var rtn = Carbide.Virtual.Values.Number.create(cast);
+			return rtn;
+			}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+carbide_valueArray_Carbonite_Template.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var input = arguments[1];
+		var scope = arguments[2];
+		if (name == "length") {
+			var len = this.value.length;
+			return Carbide.Virtual.Values.Number.create(len);
+			}else if (name == "index") {
+			var ind = input[0];
+			var found = this.castCarbideValue(ind.value);
+			return found;
+			}else if (name == "push") {
+			var ind = input[0];
+			var cast = this.value;
+			cast.push(ind.value);
+			}else if (name == "pop") {
+			this.value.pop();
+			}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+carbide_valueArray_Carbonite_Template.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var prop = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+		var v = null;
+		this.value[prop] = value.value;
+		v = Carbide.Virtual.Values.Null.create();
+		return v;
+	}
+}
+
+carbide_valueArray_Carbonite_Template.make = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Processor) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var data = arguments[0];
+		var proc = arguments[1];
+		var rtn = null;
+		var type = data["type"];
+		if (type == "string") {
+			rtn = new Carbide.Virtual.Values.String(data);
+			}else if (type == "map") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Map(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}else if (type == "number") {
+			rtn = new Carbide.Virtual.Values.Number(data);
+			}else if (type == "bool") {
+			rtn = new Carbide.Virtual.Values.Bool(data);
+			}else if (type == "array") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Array(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}
+		rtn.setValue(data);
+		return rtn;
+	}
+}
+
+carbide_valueArray_Carbonite_Template.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Template.prototype.getValue = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_valueArray_Carbonite_Template.prototype.duplicate = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_valueArray_Carbonite_Template.prototype.setValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Template.prototype.compare = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Template.primitiveToValue = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prim = arguments[0];
+		if (prim == null) {
+			return Carbide.Virtual.Values.Null.create();
+			}
+		var type = (typeof prim == 'object' ? (Array.isArray(prim) ? 'array' : 'map') : (typeof prim == 'number' ? 'float' : typeof prim));
+		if (type == "array") {
+			return Carbide.Virtual.Values.ProxyArray.create(prim);
+			}else if (type == "map") {
+			return Carbide.Virtual.Values.ProxyMap.create(prim);
+			}else if (type == "string") {
+			return Carbide.Virtual.Values.String.create(prim);
+			}else if (type == "boolean") {
+			return Carbide.Virtual.Values.Bool.create(prim);
+			}else if ((type == "integer") || (type == "float")) {
+			return Carbide.Virtual.Values.Number.create(prim);
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Template.prototype.call = function () {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+
+	}
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+		var context = arguments[2];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Template.prototype.operate = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var operator = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class = function () {
+	this.value = null;
+
+	this.type = "array";
+
+	this.raw = null;
+
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var val = arguments[0];
+		this.value = val;
+	}
+
+}
+
+carbide_valueArray_Carbonite_Class.prototype.castCarbideValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var i = arguments[0];
+		return carbide_proxy_Carbonite_Class.create(this.value[i]);
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.iterate = function () {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Variable) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Variable) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Scope) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var vKey = arguments[0];
+		var v = arguments[1];
+		var code = arguments[2];
+		var scope = arguments[3];
+		for (var i = 0; i < this.value.length; i++) {
+			vKey.value.value = i;
+			v.value = this.castCarbideValue(i);
+			code.run(scope);
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var scope = arguments[1];
+		if (name == "length") {
+			var cast = this.value.length;
+			var rtn = Carbide.Virtual.Values.Number.create(cast);
+			return rtn;
+			}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var input = arguments[1];
+		var scope = arguments[2];
+		if (name == "length") {
+			var len = this.value.length;
+			return Carbide.Virtual.Values.Number.create(len);
+			}else if (name == "index") {
+			var ind = input[0];
+			var found = this.castCarbideValue(ind.value);
+			return found;
+			}else if (name == "push") {
+			var ind = input[0];
+			var cast = this.value;
+			cast.push(ind.value);
+			}else if (name == "pop") {
+			this.value.pop();
+			}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var prop = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+		var v = null;
+		this.value[prop] = value.value;
+		v = Carbide.Virtual.Values.Null.create();
+		return v;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.make = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Processor) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var data = arguments[0];
+		var proc = arguments[1];
+		var rtn = null;
+		var type = data["type"];
+		if (type == "string") {
+			rtn = new Carbide.Virtual.Values.String(data);
+			}else if (type == "map") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Map(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}else if (type == "number") {
+			rtn = new Carbide.Virtual.Values.Number(data);
+			}else if (type == "bool") {
+			rtn = new Carbide.Virtual.Values.Bool(data);
+			}else if (type == "array") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Array(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}
+		rtn.setValue(data);
+		return rtn;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.getValue = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.duplicate = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.setValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.compare = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.primitiveToValue = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prim = arguments[0];
+		if (prim == null) {
+			return Carbide.Virtual.Values.Null.create();
+			}
+		var type = (typeof prim == 'object' ? (Array.isArray(prim) ? 'array' : 'map') : (typeof prim == 'number' ? 'float' : typeof prim));
+		if (type == "array") {
+			return Carbide.Virtual.Values.ProxyArray.create(prim);
+			}else if (type == "map") {
+			return Carbide.Virtual.Values.ProxyMap.create(prim);
+			}else if (type == "string") {
+			return Carbide.Virtual.Values.String.create(prim);
+			}else if (type == "boolean") {
+			return Carbide.Virtual.Values.Bool.create(prim);
+			}else if ((type == "integer") || (type == "float")) {
+			return Carbide.Virtual.Values.Number.create(prim);
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.call = function () {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+
+	}
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+		var context = arguments[2];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Class.prototype.operate = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var operator = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Type = function () {
+	this.value = null;
+
+	this.type = "array";
+
+	this.raw = null;
+
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var val = arguments[0];
+		this.value = val;
+	}
+
+}
+
+carbide_valueArray_Carbonite_Type.prototype.castCarbideValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var i = arguments[0];
+		return carbide_proxy_Carbonite_Type.create(this.value[i]);
+	}
+}
+
+carbide_valueArray_Carbonite_Type.prototype.iterate = function () {
+	if (arguments.length == 4 && ((arguments[0] instanceof Carbide.Virtual.Variable) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Variable) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Block) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbide.Virtual.Scope) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var vKey = arguments[0];
+		var v = arguments[1];
+		var code = arguments[2];
+		var scope = arguments[3];
+		for (var i = 0; i < this.value.length; i++) {
+			vKey.value.value = i;
+			v.value = this.castCarbideValue(i);
+			code.run(scope);
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Type.prototype.property = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var name = arguments[0];
+		var scope = arguments[1];
+		if (name == "length") {
+			var cast = this.value.length;
+			var rtn = Carbide.Virtual.Values.Number.create(cast);
+			return rtn;
+			}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+carbide_valueArray_Carbonite_Type.prototype.method = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var name = arguments[0];
+		var input = arguments[1];
+		var scope = arguments[2];
+		if (name == "length") {
+			var len = this.value.length;
+			return Carbide.Virtual.Values.Number.create(len);
+			}else if (name == "index") {
+			var ind = input[0];
+			var found = this.castCarbideValue(ind.value);
+			return found;
+			}else if (name == "push") {
+			var ind = input[0];
+			var cast = this.value;
+			cast.push(ind.value);
+			}else if (name == "pop") {
+			this.value.pop();
+			}
+		return Carbide.Virtual.Values.Null.create();
+	}
+}
+
+carbide_valueArray_Carbonite_Type.prototype.dotSet = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var prop = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+		var v = null;
+		this.value[prop] = value.value;
+		v = Carbide.Virtual.Values.Null.create();
+		return v;
+	}
+}
+
+carbide_valueArray_Carbonite_Type.make = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Processor) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var data = arguments[0];
+		var proc = arguments[1];
+		var rtn = null;
+		var type = data["type"];
+		if (type == "string") {
+			rtn = new Carbide.Virtual.Values.String(data);
+			}else if (type == "map") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Map(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}else if (type == "number") {
+			rtn = new Carbide.Virtual.Values.Number(data);
+			}else if (type == "bool") {
+			rtn = new Carbide.Virtual.Values.Bool(data);
+			}else if (type == "array") {
+			var v = new Carbide.Virtual.Data(proc.heapIndex, new Carbide.Virtual.Values.Array(data));
+			v.value.setValue(data);
+			proc.heapIndex++;
+			proc.heap.push(v);
+			var ref = new Carbide.Virtual.Values.Reference({});
+			ref.processor = proc;
+			ref.id = v.id;
+			rtn = ref;
+			}
+		rtn.setValue(data);
+		return rtn;
+	}
+}
+
+carbide_valueArray_Carbonite_Type.create = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var value = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Type.prototype.getValue = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_valueArray_Carbonite_Type.prototype.duplicate = function () {
+	if (arguments.length == 0) {
+		return this;
+	}
+}
+
+carbide_valueArray_Carbonite_Type.prototype.setValue = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Type.prototype.compare = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Type.primitiveToValue = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prim = arguments[0];
+		if (prim == null) {
+			return Carbide.Virtual.Values.Null.create();
+			}
+		var type = (typeof prim == 'object' ? (Array.isArray(prim) ? 'array' : 'map') : (typeof prim == 'number' ? 'float' : typeof prim));
+		if (type == "array") {
+			return Carbide.Virtual.Values.ProxyArray.create(prim);
+			}else if (type == "map") {
+			return Carbide.Virtual.Values.ProxyMap.create(prim);
+			}else if (type == "string") {
+			return Carbide.Virtual.Values.String.create(prim);
+			}else if (type == "boolean") {
+			return Carbide.Virtual.Values.Bool.create(prim);
+			}else if ((type == "integer") || (type == "float")) {
+			return Carbide.Virtual.Values.Number.create(prim);
+			}
+	}
+}
+
+carbide_valueArray_Carbonite_Type.prototype.call = function () {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+
+	}
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var args = arguments[0];
+		var scope = arguments[1];
+		var context = arguments[2];
+
+	}
+}
+
+carbide_valueArray_Carbonite_Type.prototype.operate = function () {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var operator = arguments[0];
+		var value = arguments[1];
+		var scope = arguments[2];
+
+	}
+}
+
 carbide_valueArray_Carbonite_Statement = function () {
 	this.value = null;
 
@@ -42086,7 +44517,7 @@ carbide_valueArray_Carbonite_Statement = function () {
 
 	this.raw = null;
 
-	if (arguments.length == 1 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var val = arguments[0];
 		this.value = val;
 	}
@@ -42128,7 +44559,7 @@ carbide_valueArray_Carbonite_Statement.prototype.property = function () {
 }
 
 carbide_valueArray_Carbonite_Statement.prototype.method = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1]instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var input = arguments[1];
 		var scope = arguments[2];
@@ -42151,7 +44582,7 @@ carbide_valueArray_Carbonite_Statement.prototype.method = function () {
 }
 
 carbide_valueArray_Carbonite_Statement.prototype.dotSet = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var prop = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];
@@ -42232,7 +44663,7 @@ carbide_valueArray_Carbonite_Statement.prototype.compare = function () {
 }
 
 carbide_valueArray_Carbonite_Statement.primitiveToValue = function () {
-	if (arguments.length == 1 && ((arguments[0]instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Array || typeof arguments[0] == 'boolean' || typeof arguments[0] == 'string' || typeof arguments[0] == 'number' || typeof arguments[0] == 'number' || typeof arguments[0] == 'object' || typeof arguments[0] == 'string') || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var prim = arguments[0];
 		if (prim == null) {
 			return Carbide.Virtual.Values.Null.create();
@@ -42253,12 +44684,12 @@ carbide_valueArray_Carbonite_Statement.primitiveToValue = function () {
 }
 
 carbide_valueArray_Carbonite_Statement.prototype.call = function () {
-	if (arguments.length == 2 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 
 	}
-else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+else 	if (arguments.length == 3 && (arguments[0] instanceof Array || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Scope) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Value || (arguments[2] instanceof carbide_proxy_Carbonite_Context) || (arguments[2] instanceof Carbide.Virtual.Values.String) || (arguments[2] instanceof Carbide.Virtual.Values.Map) || (arguments[2] instanceof Carbide.Virtual.Values.Reference) || (arguments[2] instanceof Carbide.Virtual.Values.Number) || (arguments[2] instanceof Carbide.Virtual.Values.Bool) || (arguments[2] instanceof Carbide.Virtual.Values.Array) || (arguments[2] instanceof Carbide.Virtual.Values.Null) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[2] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[2] instanceof carbide_proxy_Carbonite_Class) || (arguments[2] instanceof carbide_proxy_Carbonite_Template) || (arguments[2] instanceof carbide_proxy_Carbonite_Body) || (arguments[2] instanceof carbide_proxy_Carbonite_Statement) || (arguments[2] instanceof carbide_proxy_Carbonite_Type) || (arguments[2] instanceof VirtualArguments) || (arguments[2] instanceof VirtualArgument) || (arguments[2] instanceof VirtualClass) || (arguments[2] instanceof VirtualClasses) || (arguments[2] instanceof VirtualMembers) || (arguments[2] instanceof VirtualMember) || (arguments[2] instanceof VirtualTypes) || (arguments[2] instanceof VirtualType) || (arguments[2] instanceof Carbide.Virtual.Values.Function) || (arguments[2] instanceof Carbide.Virtual.Values.AutoArray || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Template) || (arguments[2] instanceof carbide_valueArray_Carbonite_Class) || (arguments[2] instanceof carbide_valueArray_Carbonite_Type) || (arguments[2] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var args = arguments[0];
 		var scope = arguments[1];
 		var context = arguments[2];
@@ -42267,7 +44698,7 @@ else 	if (arguments.length == 3 && (arguments[0]instanceof Array || typeof argum
 }
 
 carbide_valueArray_Carbonite_Statement.prototype.operate = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement)) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Body)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbide.Virtual.Value || (arguments[1] instanceof carbide_proxy_Carbonite_Context) || (arguments[1] instanceof Carbide.Virtual.Values.String) || (arguments[1] instanceof Carbide.Virtual.Values.Map) || (arguments[1] instanceof Carbide.Virtual.Values.Reference) || (arguments[1] instanceof Carbide.Virtual.Values.Number) || (arguments[1] instanceof Carbide.Virtual.Values.Bool) || (arguments[1] instanceof Carbide.Virtual.Values.Array) || (arguments[1] instanceof Carbide.Virtual.Values.Null) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyArray) || (arguments[1] instanceof Carbide.Virtual.Values.ProxyMap) || (arguments[1] instanceof carbide_proxy_Carbonite_Class) || (arguments[1] instanceof carbide_proxy_Carbonite_Template) || (arguments[1] instanceof carbide_proxy_Carbonite_Body) || (arguments[1] instanceof carbide_proxy_Carbonite_Statement) || (arguments[1] instanceof carbide_proxy_Carbonite_Type) || (arguments[1] instanceof VirtualArguments) || (arguments[1] instanceof VirtualArgument) || (arguments[1] instanceof VirtualClass) || (arguments[1] instanceof VirtualClasses) || (arguments[1] instanceof VirtualMembers) || (arguments[1] instanceof VirtualMember) || (arguments[1] instanceof VirtualTypes) || (arguments[1] instanceof VirtualType) || (arguments[1] instanceof Carbide.Virtual.Values.Function) || (arguments[1] instanceof Carbide.Virtual.Values.AutoArray || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Template) || (arguments[1] instanceof carbide_valueArray_Carbonite_Class) || (arguments[1] instanceof carbide_valueArray_Carbonite_Type) || (arguments[1] instanceof carbide_valueArray_Carbonite_Statement))) || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbide.Virtual.Scope) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var operator = arguments[0];
 		var value = arguments[1];
 		var scope = arguments[2];

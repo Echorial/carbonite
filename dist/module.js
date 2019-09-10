@@ -2,14 +2,14 @@
 //Relative Context
 //Relative Error
 //Relative FileSystem
-//Relative File
-//Relative Stat
 Memory = function () {
 
 
 }
 
 //Relative Buffer
+//Relative File
+//Relative Stat
 //Relative primitive
 //Relative object
 //Relative array
@@ -903,10 +903,10 @@ Carbonite.Compiler.prototype.build = function () {
 				}
 			}
 		this.currentLevel = 4;
-		} catch(err) {};
 		if (this.status.hadError == false) {
 			platform.build();
 			}
+		} catch(err) {};
 		for (var i = 0; i < this.sources.length; i++) {
 			var source = this.sources[i];
 			if (source.doCache) {
@@ -1617,6 +1617,7 @@ Carbonite.Class.prototype.executeInherits = function () {
 		if (this.inherited) {
 
 			}else{
+				this.inherited = true;
 				if (this.route == "primitive") {
 					this.primitiveValue = true;
 					}
@@ -1634,7 +1635,6 @@ Carbonite.Class.prototype.executeInherits = function () {
 					this.inherit(cls);
 					cls.descendants.push(this);
 					}
-				this.inherited = true;
 				var arr = [];
 				arr.push(VirtualClass.create(this));
 				this.compiler.virtualEvents.emit("members.end", arr);
@@ -2810,6 +2810,7 @@ Carbonite.Members.Method.prototype.build = function () {
 						var ownType = new Carbonite.Type(this.parent.compiler, this.parent);
 						ownType.loadFromName(this.parent.route, this.raw);
 						ownType.reference = this.parent;
+						ownType.containsReference = true;
 						var thisName = "this";
 						var defThis = new Carbonite.Define(thisName, ownType);
 						defThis.isLocal = false;
@@ -2957,6 +2958,17 @@ Carbonite.Members.Method.prototype.generate = function () {
 	}
 }
 
+Carbonite.Members.Method.prototype.getCastName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prefix = arguments[0];
+		var nme = "to" + this.output.reference.route.replace(new RegExp(".".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "");
+		if (this.parent.hasMember(nme)) {
+			return this.getCastName("_" + prefix);
+			}
+		return nme;
+	}
+}
+
 Carbonite.Members.Method.prototype.getRealName = function () {
 	if (arguments.length == 0) {
 		if (this.name == "@index") {
@@ -2964,6 +2976,8 @@ Carbonite.Members.Method.prototype.getRealName = function () {
 			var key = attrs[0];
 			var attr = key["value"];
 			return attr;
+			}else if (this.name == "@cast") {
+			return this.getCastName("");
 			}
 		return this.name;
 	}
@@ -3745,6 +3759,7 @@ Carbonite.Members.Operator.prototype.build = function () {
 						var ownType = new Carbonite.Type(this.parent.compiler, this.parent);
 						ownType.loadFromName(this.parent.route, this.raw);
 						ownType.reference = this.parent;
+						ownType.containsReference = true;
 						var thisName = "this";
 						var defThis = new Carbonite.Define(thisName, ownType);
 						defThis.isLocal = false;
@@ -3889,6 +3904,17 @@ Carbonite.Members.Operator.prototype.generate = function () {
 							}
 					}
 			}
+	}
+}
+
+Carbonite.Members.Operator.prototype.getCastName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prefix = arguments[0];
+		var nme = "to" + this.output.reference.route.replace(new RegExp(".".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "");
+		if (this.parent.hasMember(nme)) {
+			return this.getCastName("_" + prefix);
+			}
+		return nme;
 	}
 }
 
@@ -4998,6 +5024,7 @@ Carbonite.Statements.For.prototype.build = function () {
 		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.define = Carbonite.Define.make(raw["define"], this.body);
+		this.define.output.isPure = true;
 		this.check = new Carbonite.Expression(container.parent.parent, this.body);
 		this.check.loadFromRaw(raw["check"]);
 		this.iterate = new Carbonite.Expression(container.parent.parent, this.body);
@@ -5112,6 +5139,7 @@ Carbonite.Statements.ForIn.prototype.build = function () {
 		this.body = new Carbonite.Body(container.parent, raw["body"]);
 		this.body.inherit(container);
 		this.define = Carbonite.Define.make(raw["define"], this.body);
+		this.define.output.isPure = true;
 		this.iterate = new Carbonite.Expression(container.parent.parent, this.body);
 		this.iterate.loadFromRaw(raw["iterate"]);
 		this.body.build();
@@ -7343,6 +7371,8 @@ Carbonite.Type = function () {
 
 	this.magicType = 0;
 
+	this.isPure = false;
+
 	this.autoCast = false;
 
 	this.castTo = null;
@@ -7567,6 +7597,22 @@ Carbonite.Type.prototype.checkCast = function () {
 	}
 }
 
+Carbonite.Type.prototype.polymorph = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var what = arguments[0];
+		if (what.reference.route == "null" || this.reference.route == "null" || what.reference.route == "empty") {
+			return false;
+			}
+		if (what.reference.descendantOf(this.reference)) {
+			return true;
+			}
+		if (this.reference.descendantOf(what.reference)) {
+			return true;
+			}
+		return false;
+	}
+}
+
 Carbonite.Type.prototype.check = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var what = arguments[0];
@@ -7763,6 +7809,8 @@ Carbonite.ReferenceType = function () {
 	this.magic = false;
 
 	this.magicType = 0;
+
+	this.isPure = false;
 
 	this.autoCast = false;
 
@@ -8000,6 +8048,22 @@ Carbonite.ReferenceType.prototype.checkCast = function () {
 				}
 			}
 		return true;
+	}
+}
+
+Carbonite.ReferenceType.prototype.polymorph = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var what = arguments[0];
+		if (what.reference.route == "null" || this.reference.route == "null" || what.reference.route == "empty") {
+			return false;
+			}
+		if (what.reference.descendantOf(this.reference)) {
+			return true;
+			}
+		if (this.reference.descendantOf(what.reference)) {
+			return true;
+			}
+		return false;
 	}
 }
 
@@ -9906,6 +9970,18 @@ Carbonite.Assemblers.Cpp = function () {
 Carbonite.Assemblers.Cpp.prototype.build = function () {
 	if (arguments.length == 0) {
 		var rtn = "// ------- Header ------- //\n\n";
+		for (var i = 0; i < this.compiler.router.levelMap.length; i++) {
+			if (i != 0) {
+				continue;
+				}
+			var level = this.compiler.router.levelMap[i];
+			for (var j = 0; j < level.names.length; j++) {
+				var root = level.names[j];
+				if (root.base != "relative") {
+					rtn += "class " + root.getRoute("::") + ";\n";
+					}
+				}
+			}
 		for (var i = 0; i < this.compiler.roots.length; i++) {
 			var root = this.compiler.roots[i];
 			rtn += this.root(root, false);
@@ -9961,7 +10037,16 @@ Carbonite.Assemblers.Cpp.prototype.root = function () {
 			var castParent = root.parent;
 			pref = castParent.getRoute("::") + "::";
 			}
-		return "class " + pref + root.name + body;
+		var inherits = [];
+		var iPrefix = "";
+		for (var i = 0; i < root.inherits.length; i++) {
+			var inheritRoot = root.inherits[i];
+			if (inheritRoot.route != "everything") {
+				inherits.push("public " + inheritRoot.getRoute("::"));
+				iPrefix = " : ";
+				}
+			}
+		return "class " + pref + root.name + iPrefix + inherits.join(", ") + body;
 	}
 }
 
@@ -10025,13 +10110,35 @@ else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (
 			}else if (what.reference.route == "map") {
 			return "std::unique_ptr<std::map<std::string, " + this.route(what.templates[0]) + ">>" + refFlag;
 			}else if (what.reference.route == "string") {
-			return "std::string";
+			return "std::optional<std::string>";
 			}else if (what.reference.route == "primitive") {
 			return "_c_primitive";
+			}else if (what.reference.route == "void") {
+			return "void";
+			}else if (what.reference.route == "null") {
+			return "std::nullopt";
+			}else if (what.reference.route == "Error") {
+			return "_c_error";
+			}else if (what.reference.route == "function") {
+			var args = [];
+			for (var i = 0; i < what.templates.length; i++) {
+				if (i > 0) {
+					args.push(this.route(what.templates[i]));
+					}
+				}
+			return "std::function<" + this.route(what.templates[0]) + "(" + args.join(", ") + ")>";
 			}else if (what.reference.primitiveValue == false) {
-			return "std::unique_ptr<" + what.reference.getRoute("::") + ">" + refFlag;
+			if (what.containsReference) {
+				return what.reference.getRoute("::") + "*";
+				}else{
+					return "std::unique_ptr<" + what.reference.getRoute("::") + ">";
+				}
 			}
-		return what.reference.getRoute("::");
+		if (what.isPure) {
+			return what.reference.getRoute("::");
+			}else{
+				return "std::optional<" + what.reference.getRoute("::") + ">";
+			}
 	}
 }
 
@@ -10044,7 +10151,10 @@ Carbonite.Assemblers.Cpp.prototype.methods = function () {
 			var member = root.members[i];
 			if (member.type != "property") {
 				if (member.hasFlag("inline") == false) {
-					if (member.hasFlag("relative") == false && member.abstract == false) {
+					if (member.hasFlag("relative") == false) {
+						if (member.abstract && member.name[0] == "@") {
+							continue;
+							}
 						var method = member;
 						var args = [];
 						for (var a = 0; a < method.arguments.length; a++) {
@@ -10065,18 +10175,34 @@ Carbonite.Assemblers.Cpp.prototype.methods = function () {
 							}
 						var rte = this.route(method.output);
 						var nme = method.getRealName();
+						var top = "";
 						if (member.name == "@construct") {
 							rte = "";
 							prefix = "";
 							nme = root.name;
+							top = "\n";
+							for (var m = 0; m < root.members.length; m++) {
+								var propMember = root.members[m];
+								if (propMember.type == "property") {
+									var property = propMember;
+									if ((property.binding != "fixed") && (property.abstract == false)) {
+										top += "this->" + property.name + " = " + this.expression(property.default) + ";\n";
+										}
+									}
+								}
 							}
 						if (member.name == "@cast") {
 							nme = this.getCastName(member, "");
 							}
 						var body = ";\n";
-						if (source) {
-							body = "{\n" + this.body(method.body) + "\n}";
+						if (source && member.abstract == false) {
+							body = "{\n" + top + this.body(method.body) + "\n}";
 							nme = root.getRoute("::") + "::" + nme;
+							}
+						if (member.abstract && source) {
+							continue;
+							}else if (member.abstract) {
+							body = " {}";
 							}
 						methods.push(prefix + rte + " " + nme + "(" + args.join(", ") + ")" + body);
 						}
@@ -10111,12 +10237,34 @@ Carbonite.Assemblers.Cpp.prototype.body = function () {
 	}
 }
 
+Carbonite.Assemblers.Cpp.prototype.poly = function () {
+	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var target = arguments[0];
+		var real = arguments[1];
+		var expr = arguments[2];
+		if (target.polymorph(real)) {
+			return "static_cast<" + this.route(target) + ">(" + expr + ")";
+			}else{
+				return expr;
+			}
+	}
+}
+
 Carbonite.Assemblers.Cpp.prototype.define = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Define) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var define = arguments[0];
 		var set = "";
 		if (define.initializer != null) {
-			set = " = " + this.expression(define.initializer);
+			set = this.expression(define.initializer);
+			if (define.initializer.output.isPrimitiveValue() == false && define.initializer.output.reference.route != "null") {
+				if (define.output.containsReference == false) {
+					set = "std::move(" + set + ")";
+					}else if (define.output.containsReference == true && define.initializer.output.containsReference == false) {
+					set = set + ".get()";
+					}
+				}
+			set = this.poly(define.output, define.initializer.output, set);
+			set = " = " + set;
 			}
 		var typeStr = this.route(define.output);
 		if (define.output.isPrimitiveValue() == false || define.output.reference.name == "array" || define.output.reference.name == "map") {
@@ -10144,7 +10292,14 @@ Carbonite.Assemblers.Cpp.prototype.statement = function () {
 			return this.expression(exp.expression) + ";";
 			}else if (statement.type == "return") {
 			var exp = statement;
-			return "return " + this.expression(exp.expression) + ";";
+			if (statement.container.parent.output.containsReference && exp.expression.output.containsReference == false) {
+				exp.buildError("Illegal return by reference.");
+				}
+			var expStr = this.expression(exp.expression);
+			if (exp.expression.output.isPrimitiveValue() == false && exp.expression.output.reference.route != "null" && statement.container.parent.output.containsReference == false && exp.expression.output.containsReference == false) {
+				expStr = "std::move(" + expStr + ")";
+				}
+			return "return " + expStr + ";";
 			}else if (statement.type == "if") {
 			var ifState = statement;
 			var str = "";
@@ -10167,7 +10322,7 @@ Carbonite.Assemblers.Cpp.prototype.statement = function () {
 			var forState = statement;
 			var str = "";
 			if (forState.iterate.output.reference.route == "array") {
-				str = "for (" + this.define(forState.define) + " = 0; " + this.localName(forState.define.name) + " < " + this.expression(forState.iterate) + ".size(); " + this.localName(forState.define.name) + "++) {\n" + this.body(forState.body) + "}";
+				str = "for (" + this.define(forState.define) + " = 0; " + this.localName(forState.define.name) + " < " + this.expression(forState.iterate) + "->size(); " + this.localName(forState.define.name) + "++) {\n" + this.body(forState.body) + "}";
 				}else{
 					str = "for (" + this.define(forState.define) + " in " + this.expression(forState.iterate) + ") {\n" + this.body(forState.body) + "}";
 				}
@@ -10179,6 +10334,12 @@ Carbonite.Assemblers.Cpp.prototype.statement = function () {
 			return "continue;";
 			}else if (statement.type == "break") {
 			return "break;";
+			}else if (statement.type == "native") {
+			var nativeState = statement;
+			if (nativeState.platform == "cpp") {
+				return nativeState.content;
+				}
+			return "";
 			}
 	}
 }
@@ -10449,9 +10610,18 @@ Carbonite.Assemblers.Cpp.prototype.callMethod = function () {
 		for (var i = 0; i < ___arguments.length; i++) {
 			var arg = ___arguments[i];
 			var exp = this.expression(arg);
-			if (arg.getOutput().isPrimitiveValue() == false && method.arguments[i].reference == false) {
-				exp = "std::move(" + exp + ")";
+			if (arg.getOutput().isPrimitiveValue() == false && arg.getOutput().reference.route != "null") {
+				if (method.arguments[i].reference == false) {
+					exp = "std::move(" + exp + ")";
+					}else{
+						if (arg.getOutput().containsReference == false) {
+							exp = exp + ".get()";
+							}
+					}
+				}else if (arg.getOutput().isPrimitiveValue() && arg.getOutput().isPure == false) {
+				exp = exp + ".value()";
 				}
+			exp = this.poly(arg.getOutput(), arg.output, exp);
 			args.push(exp);
 			}
 		return this.callMethodWithStrings(method, args, templates, context);
@@ -10478,14 +10648,30 @@ Carbonite.Assemblers.Cpp.prototype.expression = function () {
 		if (expression.reference != null) {
 			var args = [];
 			if (expression.last != null) {
+				var arg = expression.reference.arguments[0];
 				if (expression.last.getOutput().isPrimitiveValue() == false) {
-					if (expression.first.getOutput().containsReference) {
-						args.push(this.term(expression.last));
-						}else{
-							args.push("std::move(" + this.term(expression.last) + ")");
+					var eType = arg.type;
+					if (expression.reference.name == "=") {
+						eType = expression.first.output;
 						}
+					var expr = "";
+					if (eType.containsReference) {
+						if (expression.last.output.containsReference) {
+							expr = this.term(expression.last);
+							}else{
+								expr = this.term(expression.last) + ".get()";
+							}
+						}else{
+							expr = "std::move(" + this.term(expression.last) + ")";
+						}
+					expr = this.poly(eType, expression.last.getOutput(), expr);
+					args.push(expr);
 					}else{
-						args.push(this.term(expression.last));
+						var getValue = "";
+						if (expression.last.output.isPure) {
+							getValue = ".value()";
+							}
+						args.push(this.term(expression.last) + getValue);
 					}
 				}
 			var temps = [];
@@ -13060,27 +13246,41 @@ CarboniteCarbonParser.prototype.Inherit = function () {
 				if (currentCode == lit0[literalChar]) {
 					literalChar++;
 					if (literalChar == 8) {
-						c = 1;
+						c = 2;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
-						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
+						c = 1;
+						charPos--;
+						this.offset--;
 					}
 				}else if (c == 1) {
-				var ruleOut1 = this.__(input, charPos);
-				if (ruleOut1.hadError) {
-					this.giveError(ruleOut1.error.code, "White space(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
-					}else{
-						var ruleOutCast1 = ruleOut1.data["data"];
-						charPos = this.offset;
+				var lit1 = [101, 120, 116, 101, 110, 100, 115];
+				if (currentCode == lit1[literalChar]) {
+					literalChar++;
+					if (literalChar == 7) {
 						c = 2;
+						literalChar = 0;
+						}
+					this.error.vested++;
+					}else{
+						this.giveError(1, "inherits, extends", currentChar);
 					}
 				}else if (c == 2) {
-				var ruleOut2 = this.Type(input, charPos);
+				var ruleOut2 = this.__(input, charPos);
 				if (ruleOut2.hadError) {
-					var casttypes2 = data["types"];
-					if (casttypes2.length >= 1) {
+					this.giveError(ruleOut2.error.code, "White space(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
+					}else{
+						var ruleOutCast2 = ruleOut2.data["data"];
+						charPos = this.offset;
+						c = 3;
+					}
+				}else if (c == 3) {
+				var ruleOut3 = this.Type(input, charPos);
+				if (ruleOut3.hadError) {
+					var casttypes3 = data["types"];
+					if (casttypes3.length >= 1) {
 						if (true) {
 							var castactypes0 = data["types"];
 							var actionCap0types = data["types"];
@@ -13093,10 +13293,10 @@ CarboniteCarbonParser.prototype.Inherit = function () {
 							this.giveError(1, "Type", currentChar);
 						}
 					}else{
-						var ruleOutCast2 = ruleOut2.data["data"];
+						var ruleOutCast3 = ruleOut3.data["data"];
 						charPos = this.offset;
-						var casttypes2 = data["types"];
-						casttypes2.push(ruleOutCast2);
+						var casttypes3 = data["types"];
+						casttypes3.push(ruleOutCast3);
 						if (input.charCodeAt(charPos + 1) != 44) {
 							if (true) {
 								var castactypes0 = data["types"];
@@ -13113,7 +13313,7 @@ CarboniteCarbonParser.prototype.Inherit = function () {
 							var actionCap0types = data["types"];
 							dataStore["data"]["types"] = actionCap0types;
 							}
-						c = 2;
+						c = 3;
 						this.error.vested++;
 					}
 				}
@@ -13861,13 +14061,22 @@ CarboniteCarbonParser.prototype.Member_Flag = function () {
 						var ruleOutCast1 = ruleOut1.data["data"];
 						charPos = this.offset;
 						data["str"] = ruleOutCast1;
+						c = 2;
+						this.error.vested++;
+					}
+				}else if (c == 2) {
+				var ruleOut2 = this.__(input, charPos);
+				if (ruleOut2.hadError) {
+					this.giveError(ruleOut2.error.code, "White space(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
+					}else{
+						var ruleOutCast2 = ruleOut2.data["data"];
+						charPos = this.offset;
 						if (true) {
-							var castacstr0 = data["str"];
+							var castac0 = data;
 							var actionCap0str = data["str"];
 							dataStore["data"] = actionCap0str;
 							}
 						c = 0 - 1;
-						this.error.vested++;
 					}
 				}
 			this.offset++;
@@ -14954,21 +15163,25 @@ CarboniteCarbonParser.prototype.Member_Flagged = function () {
 							var castacval0 = data["val"];
 							var actionCap0val = data["val"];
 							var actionCap0name = data["name"];
-							var actionCap0type = data["type"];
 							var actionCap0flags = data["flags"];
+							var actionCap0type = data["type"];
 							var actionCap0templates = data["templates"];
 							var actionCap0attr = data["attr"];
 							var actionCap0doc = data["doc"];
 							dataStore["data"]["type"] = actionCap0val["type"];
 							dataStore["data"]["name"] = actionCap0name;
 							dataStore["data"]["value"] = actionCap0val;
-							if (actionCap0type == null) {
+							if (actionCap0name == null) {
 								dataStore["data"]["output"] = {};
 								if (actionCap0flags.length == 0) {
 									this.giveError(1, "" + "" + "", "");
-									}else if (actionCap0flags.length >= 2) {
+									}else if (actionCap0type == null) {
 									dataStore["data"]["name"] = actionCap0flags[actionCap0flags.length - 1];
 									actionCap0flags.pop();
+									dataStore["data"]["output"]["name"] = actionCap0flags[actionCap0flags.length - 1];
+									actionCap0flags.pop();
+									}else if (actionCap0flags.length >= 1) {
+									dataStore["data"]["name"] = actionCap0type["name"];
 									dataStore["data"]["output"]["name"] = actionCap0flags[actionCap0flags.length - 1];
 									actionCap0flags.pop();
 									}
@@ -31429,7 +31642,7 @@ Carbonite.Pre.Statements.If.prototype.run = function () {
 		for (var i = 0; i < this.checks.length; i++) {
 			var check = this.checks[i];
 			var v = check.run();
-			if (v.value == false) {
+			if (v == null || v.value == false) {
 				ok = false;
 				}
 			}
@@ -42452,7 +42665,12 @@ carbide_proxy_Carbonite_Class.prototype.method = function () {
 		var name = arguments[0];
 		var args = arguments[1];
 		var c_scope = arguments[2];
-
+		if (name == "getRoute") {
+			var cast_join = args[0].value;
+			var insta = this.value;
+			var carbide_rtn = insta.getRoute(cast_join);
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}
 	}
 }
 

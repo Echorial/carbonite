@@ -11,6 +11,8 @@ class Carbonite.Statements.For inherits Carbonite.Statement {
 		this.body.inherit(container);
 
 		this.define = Carbonite.Define.make(raw["define"], this.body);
+		this.define.output.isPure = true;
+		
 		this.check = new Carbonite.Expression(container.parent.parent, this.body);
 		this.check.loadFromRaw(raw["check"]);
 
@@ -33,6 +35,7 @@ class Carbonite.Statements.ForIn inherits Carbonite.Statement {
 		this.body = new Carbonite.Body(container.parent, raw["body"]);
 		this.body.inherit(container);
 		this.define = Carbonite.Define.make(raw["define"], this.body);
+		this.define.output.isPure = true;
 
 		this.iterate = new Carbonite.Expression(container.parent.parent, this.body);
 		this.iterate.loadFromRaw(raw["iterate"]);

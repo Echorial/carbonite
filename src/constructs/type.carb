@@ -12,6 +12,12 @@ class Carbonite.Type inherits Carbonite.Range {
 	bound public bool magic = false;
 	bound public int magicType = 0;
 
+	bound public bool isPure = false;
+
+	`If this type hold a null value.
+	@note all complex primitives (array, map) are always nullable, whereas value primitives are nullable by default.`
+	bound public bool nullable = true;
+
 	bound public bool autoCast = false;
 	bound public Carbonite.Class castTo = null;
 
