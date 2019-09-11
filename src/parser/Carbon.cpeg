@@ -167,7 +167,7 @@ head: Term
 operator: (Operand_Symbolic / Operand_Word)
 {operator: {$operator}, term: {$head}};
 
-map|Anonymous_Function = type: Type _ "(" _ parameters: Parameter*|"," _ ")" _ "=>" _ body: Block {type: "function", output: {$type}, parameters: {$parameters}, body: {$body}};
+map|Anonymous_Function = async: "async "? _ type: Type _ "(" _ parameters: Parameter*|"," _ ")" _ "=>" _ body: Block {type: "function", async: {$async}, output: {$type}, parameters: {$parameters}, body: {$body}};
 
 map|Expression = _ exp: (Expression_Function / Expression_Operation / Expression_Operated) {map|export = $exp;export["start"] = startPos;export["end"] = charPos;};
 
