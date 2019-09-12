@@ -18,6 +18,8 @@ class Carbonite.Statements.If inherits Carbonite.Statement {
 		for (var int i in alternatives) {
 			this.alternatives.push(new Carbonite.Statements.IfAlternative(this, alternatives[i]));
 		}
+
+		this.addAsyncCallsFromExpression(this.check);
 	}
 }
 

@@ -19,8 +19,14 @@ class Carbonite.Statements.For inherits Carbonite.Statement {
 		this.iterate = new Carbonite.Expression(container.parent.parent, this.body);
 		this.iterate.loadFromRaw(raw["iterate"]);
 
-		
 		this.body.build();
+
+		if (this.define.initializer != null) {
+			this.addAsyncCallsFromExpression(this.define.initializer);
+		}
+
+		this.addAsyncCallsFromExpression(this.iterate);
+		this.addAsyncCallsFromExpression(this.check);
 	}
 }
 

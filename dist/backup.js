@@ -452,7 +452,7 @@ Carbonite.Source.prototype.build = function () {
 }
 
 Carbonite.Source.prototype.findClass = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression) || (arguments[1] instanceof Carbonite.Statements.Yield)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var req = arguments[1];
 		return this.parent.findClass(name, req);
@@ -483,7 +483,7 @@ Carbonite.Source.prototype.bake = function () {
 }
 
 Carbonite.Source.prototype.error = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Range || (arguments[0] instanceof Carbonite.Named || (arguments[0] instanceof Carbonite.Class)) || (arguments[0] instanceof Carbonite.Doc) || (arguments[0] instanceof Carbonite.NamedHack) || (arguments[0] instanceof Carbonite.Member || (arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || (arguments[0] instanceof Carbonite.Members.Property)) || (arguments[0] instanceof Carbonite.Template) || (arguments[0] instanceof Carbonite.Define) || (arguments[0] instanceof Carbonite.Body) || (arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || (arguments[0] instanceof Carbonite.Statements.IfAlternative) || (arguments[0] instanceof Carbonite.Argument) || (arguments[0] instanceof Carbonite.Expression) || (arguments[0] instanceof Carbonite.Term || (arguments[0] instanceof Carbonite.Terms.Literal) || (arguments[0] instanceof Carbonite.Terms.Expression) || (arguments[0] instanceof Carbonite.Terms.Sequence) || (arguments[0] instanceof Carbonite.Terms.Prefix) || (arguments[0] instanceof Carbonite.Terms.Function)) || (arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || (arguments[0] instanceof Carbonite.Implements) || (arguments[0] instanceof Carbonite.Native || (arguments[0] instanceof Carbonite.Natives.Integer) || (arguments[0] instanceof Carbonite.Natives.Float) || (arguments[0] instanceof Carbonite.Natives.Boolean) || (arguments[0] instanceof Carbonite.Natives.String) || (arguments[0] instanceof Carbonite.Natives.Array)) || (arguments[0] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Range || (arguments[0] instanceof Carbonite.Named || (arguments[0] instanceof Carbonite.Class)) || (arguments[0] instanceof Carbonite.Doc) || (arguments[0] instanceof Carbonite.NamedHack) || (arguments[0] instanceof Carbonite.Member || (arguments[0] instanceof Carbonite.Members.Method || (arguments[0] instanceof Carbonite.Members.Operator)) || (arguments[0] instanceof Carbonite.Members.Property)) || (arguments[0] instanceof Carbonite.Template) || (arguments[0] instanceof Carbonite.Define) || (arguments[0] instanceof Carbonite.Body) || (arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || (arguments[0] instanceof Carbonite.Statements.IfAlternative) || (arguments[0] instanceof Carbonite.Argument) || (arguments[0] instanceof Carbonite.Expression) || (arguments[0] instanceof Carbonite.Term || (arguments[0] instanceof Carbonite.Terms.Literal) || (arguments[0] instanceof Carbonite.Terms.Expression) || (arguments[0] instanceof Carbonite.Terms.Sequence) || (arguments[0] instanceof Carbonite.Terms.Prefix) || (arguments[0] instanceof Carbonite.Terms.Function)) || (arguments[0] instanceof Carbonite.Type || (arguments[0] instanceof Carbonite.ReferenceType)) || (arguments[0] instanceof Carbonite.Implements) || (arguments[0] instanceof Carbonite.Native || (arguments[0] instanceof Carbonite.Natives.Integer) || (arguments[0] instanceof Carbonite.Natives.Float) || (arguments[0] instanceof Carbonite.Natives.Boolean) || (arguments[0] instanceof Carbonite.Natives.String) || (arguments[0] instanceof Carbonite.Natives.Array)) || (arguments[0] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var range = arguments[0];
 		var message = arguments[1];
 		var notice = new Carbonite.Notice(message);
@@ -686,7 +686,7 @@ Carbonite.Compiler.prototype.getOrCreateInstance = function () {
 }
 
 Carbonite.Compiler.prototype.findClass = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression) || (arguments[1] instanceof Carbonite.Statements.Yield)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var req = arguments[1];
 		for (var i = 0; i < this.roots.length; i++) {
@@ -1421,7 +1421,7 @@ Carbonite.Class.prototype.childOf = function () {
 }
 
 Carbonite.Class.prototype.dotMember = function () {
-	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Range || (arguments[1] instanceof Carbonite.Named || (arguments[1] instanceof Carbonite.Class)) || (arguments[1] instanceof Carbonite.Doc) || (arguments[1] instanceof Carbonite.NamedHack) || (arguments[1] instanceof Carbonite.Member || (arguments[1] instanceof Carbonite.Members.Method || (arguments[1] instanceof Carbonite.Members.Operator)) || (arguments[1] instanceof Carbonite.Members.Property)) || (arguments[1] instanceof Carbonite.Template) || (arguments[1] instanceof Carbonite.Define) || (arguments[1] instanceof Carbonite.Body) || (arguments[1] instanceof Carbonite.Statement || (arguments[1] instanceof Carbonite.Statements.If) || (arguments[1] instanceof Carbonite.Statements.Return) || (arguments[1] instanceof Carbonite.Statements.Define) || (arguments[1] instanceof Carbonite.Statements.For) || (arguments[1] instanceof Carbonite.Statements.ForIn) || (arguments[1] instanceof Carbonite.Statements.While) || (arguments[1] instanceof Carbonite.Statements.Continue) || (arguments[1] instanceof Carbonite.Statements.Break) || (arguments[1] instanceof Carbonite.Statements.Try) || (arguments[1] instanceof Carbonite.Statements.Throw) || (arguments[1] instanceof Carbonite.Statements.Native) || (arguments[1] instanceof Carbonite.Statements.Expression) || (arguments[1] instanceof Carbonite.Statements.Yield)) || (arguments[1] instanceof Carbonite.Statements.IfAlternative) || (arguments[1] instanceof Carbonite.Argument) || (arguments[1] instanceof Carbonite.Expression) || (arguments[1] instanceof Carbonite.Term || (arguments[1] instanceof Carbonite.Terms.Literal) || (arguments[1] instanceof Carbonite.Terms.Expression) || (arguments[1] instanceof Carbonite.Terms.Sequence) || (arguments[1] instanceof Carbonite.Terms.Prefix) || (arguments[1] instanceof Carbonite.Terms.Function)) || (arguments[1] instanceof Carbonite.Type || (arguments[1] instanceof Carbonite.ReferenceType)) || (arguments[1] instanceof Carbonite.Implements) || (arguments[1] instanceof Carbonite.Native || (arguments[1] instanceof Carbonite.Natives.Integer) || (arguments[1] instanceof Carbonite.Natives.Float) || (arguments[1] instanceof Carbonite.Natives.Boolean) || (arguments[1] instanceof Carbonite.Natives.String) || (arguments[1] instanceof Carbonite.Natives.Array)) || (arguments[1] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var name = arguments[0];
 		var req = arguments[1];
 		this.executeInherits();
@@ -1485,7 +1485,7 @@ Carbonite.Class.prototype.makeArgumentsPretty = function () {
 }
 
 Carbonite.Class.prototype.overloadWithCast = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression) || (arguments[2] instanceof Carbonite.Statements.Yield)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 		var req = arguments[2];
@@ -1514,7 +1514,7 @@ Carbonite.Class.prototype.overloadWithCast = function () {
 }
 
 Carbonite.Class.prototype.overload = function () {
-	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+	if (arguments.length == 3 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Range || (arguments[2] instanceof Carbonite.Named || (arguments[2] instanceof Carbonite.Class)) || (arguments[2] instanceof Carbonite.Doc) || (arguments[2] instanceof Carbonite.NamedHack) || (arguments[2] instanceof Carbonite.Member || (arguments[2] instanceof Carbonite.Members.Method || (arguments[2] instanceof Carbonite.Members.Operator)) || (arguments[2] instanceof Carbonite.Members.Property)) || (arguments[2] instanceof Carbonite.Template) || (arguments[2] instanceof Carbonite.Define) || (arguments[2] instanceof Carbonite.Body) || (arguments[2] instanceof Carbonite.Statement || (arguments[2] instanceof Carbonite.Statements.If) || (arguments[2] instanceof Carbonite.Statements.Return) || (arguments[2] instanceof Carbonite.Statements.Define) || (arguments[2] instanceof Carbonite.Statements.For) || (arguments[2] instanceof Carbonite.Statements.ForIn) || (arguments[2] instanceof Carbonite.Statements.While) || (arguments[2] instanceof Carbonite.Statements.Continue) || (arguments[2] instanceof Carbonite.Statements.Break) || (arguments[2] instanceof Carbonite.Statements.Try) || (arguments[2] instanceof Carbonite.Statements.Throw) || (arguments[2] instanceof Carbonite.Statements.Native) || (arguments[2] instanceof Carbonite.Statements.Expression) || (arguments[2] instanceof Carbonite.Statements.Yield)) || (arguments[2] instanceof Carbonite.Statements.IfAlternative) || (arguments[2] instanceof Carbonite.Argument) || (arguments[2] instanceof Carbonite.Expression) || (arguments[2] instanceof Carbonite.Term || (arguments[2] instanceof Carbonite.Terms.Literal) || (arguments[2] instanceof Carbonite.Terms.Expression) || (arguments[2] instanceof Carbonite.Terms.Sequence) || (arguments[2] instanceof Carbonite.Terms.Prefix) || (arguments[2] instanceof Carbonite.Terms.Function)) || (arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || (arguments[2] instanceof Carbonite.Implements) || (arguments[2] instanceof Carbonite.Native || (arguments[2] instanceof Carbonite.Natives.Integer) || (arguments[2] instanceof Carbonite.Natives.Float) || (arguments[2] instanceof Carbonite.Natives.Boolean) || (arguments[2] instanceof Carbonite.Natives.String) || (arguments[2] instanceof Carbonite.Natives.Array)) || (arguments[2] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 		var req = arguments[2];
@@ -1532,7 +1532,7 @@ Carbonite.Class.prototype.overload = function () {
 }
 
 Carbonite.Class.prototype.overloadWithContext = function () {
-	if (arguments.length == 4 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbonite.Range || (arguments[3] instanceof Carbonite.Named || (arguments[3] instanceof Carbonite.Class)) || (arguments[3] instanceof Carbonite.Doc) || (arguments[3] instanceof Carbonite.NamedHack) || (arguments[3] instanceof Carbonite.Member || (arguments[3] instanceof Carbonite.Members.Method || (arguments[3] instanceof Carbonite.Members.Operator)) || (arguments[3] instanceof Carbonite.Members.Property)) || (arguments[3] instanceof Carbonite.Template) || (arguments[3] instanceof Carbonite.Define) || (arguments[3] instanceof Carbonite.Body) || (arguments[3] instanceof Carbonite.Statement || (arguments[3] instanceof Carbonite.Statements.If) || (arguments[3] instanceof Carbonite.Statements.Return) || (arguments[3] instanceof Carbonite.Statements.Define) || (arguments[3] instanceof Carbonite.Statements.For) || (arguments[3] instanceof Carbonite.Statements.ForIn) || (arguments[3] instanceof Carbonite.Statements.While) || (arguments[3] instanceof Carbonite.Statements.Continue) || (arguments[3] instanceof Carbonite.Statements.Break) || (arguments[3] instanceof Carbonite.Statements.Try) || (arguments[3] instanceof Carbonite.Statements.Throw) || (arguments[3] instanceof Carbonite.Statements.Native) || (arguments[3] instanceof Carbonite.Statements.Expression)) || (arguments[3] instanceof Carbonite.Statements.IfAlternative) || (arguments[3] instanceof Carbonite.Argument) || (arguments[3] instanceof Carbonite.Expression) || (arguments[3] instanceof Carbonite.Term || (arguments[3] instanceof Carbonite.Terms.Literal) || (arguments[3] instanceof Carbonite.Terms.Expression) || (arguments[3] instanceof Carbonite.Terms.Sequence) || (arguments[3] instanceof Carbonite.Terms.Prefix) || (arguments[3] instanceof Carbonite.Terms.Function)) || (arguments[3] instanceof Carbonite.Type || (arguments[3] instanceof Carbonite.ReferenceType)) || (arguments[3] instanceof Carbonite.Implements) || (arguments[3] instanceof Carbonite.Native || (arguments[3] instanceof Carbonite.Natives.Integer) || (arguments[3] instanceof Carbonite.Natives.Float) || (arguments[3] instanceof Carbonite.Natives.Boolean) || (arguments[3] instanceof Carbonite.Natives.String) || (arguments[3] instanceof Carbonite.Natives.Array)) || (arguments[3] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+	if (arguments.length == 4 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (arguments[1] instanceof Array || typeof arguments[1] == 'undefined' || arguments[1] === null) && ((arguments[2] instanceof Carbonite.Type || (arguments[2] instanceof Carbonite.ReferenceType)) || typeof arguments[2] == 'undefined' || arguments[2] === null) && ((arguments[3] instanceof Carbonite.Range || (arguments[3] instanceof Carbonite.Named || (arguments[3] instanceof Carbonite.Class)) || (arguments[3] instanceof Carbonite.Doc) || (arguments[3] instanceof Carbonite.NamedHack) || (arguments[3] instanceof Carbonite.Member || (arguments[3] instanceof Carbonite.Members.Method || (arguments[3] instanceof Carbonite.Members.Operator)) || (arguments[3] instanceof Carbonite.Members.Property)) || (arguments[3] instanceof Carbonite.Template) || (arguments[3] instanceof Carbonite.Define) || (arguments[3] instanceof Carbonite.Body) || (arguments[3] instanceof Carbonite.Statement || (arguments[3] instanceof Carbonite.Statements.If) || (arguments[3] instanceof Carbonite.Statements.Return) || (arguments[3] instanceof Carbonite.Statements.Define) || (arguments[3] instanceof Carbonite.Statements.For) || (arguments[3] instanceof Carbonite.Statements.ForIn) || (arguments[3] instanceof Carbonite.Statements.While) || (arguments[3] instanceof Carbonite.Statements.Continue) || (arguments[3] instanceof Carbonite.Statements.Break) || (arguments[3] instanceof Carbonite.Statements.Try) || (arguments[3] instanceof Carbonite.Statements.Throw) || (arguments[3] instanceof Carbonite.Statements.Native) || (arguments[3] instanceof Carbonite.Statements.Expression) || (arguments[3] instanceof Carbonite.Statements.Yield)) || (arguments[3] instanceof Carbonite.Statements.IfAlternative) || (arguments[3] instanceof Carbonite.Argument) || (arguments[3] instanceof Carbonite.Expression) || (arguments[3] instanceof Carbonite.Term || (arguments[3] instanceof Carbonite.Terms.Literal) || (arguments[3] instanceof Carbonite.Terms.Expression) || (arguments[3] instanceof Carbonite.Terms.Sequence) || (arguments[3] instanceof Carbonite.Terms.Prefix) || (arguments[3] instanceof Carbonite.Terms.Function)) || (arguments[3] instanceof Carbonite.Type || (arguments[3] instanceof Carbonite.ReferenceType)) || (arguments[3] instanceof Carbonite.Implements) || (arguments[3] instanceof Carbonite.Native || (arguments[3] instanceof Carbonite.Natives.Integer) || (arguments[3] instanceof Carbonite.Natives.Float) || (arguments[3] instanceof Carbonite.Natives.Boolean) || (arguments[3] instanceof Carbonite.Natives.String) || (arguments[3] instanceof Carbonite.Natives.Array)) || (arguments[3] instanceof Carbonite.Natives.ArrayItem)) || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
 		var name = arguments[0];
 		var ___arguments = arguments[1];
 		var context = arguments[2];
@@ -2575,6 +2575,10 @@ Carbonite.Members.Method = function () {
 
 	this.simpleNative = false;
 
+	this.asyncIndex = 0;
+
+	this.isAsync = false;
+
 	this.nativeBlock = null;
 
 	this.binding = "bound";
@@ -2825,6 +2829,10 @@ Carbonite.Members.Method.prototype.build = function () {
 							var context = new Carbonite.Define(cStr, cc);
 							this.body.scope.add(context);
 							}
+						if (this.hasFlag("async")) {
+							this.isAsync = true;
+							this.body.rootAsyncBody = true;
+							}
 					}
 				if (this.name == "@index") {
 					var attrs = this.getAttributes("name");
@@ -2958,6 +2966,17 @@ Carbonite.Members.Method.prototype.generate = function () {
 	}
 }
 
+Carbonite.Members.Method.prototype.getCastName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prefix = arguments[0];
+		var nme = "to" + this.output.reference.route.replace(new RegExp(".".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "");
+		if (this.parent.hasMember(nme)) {
+			return this.getCastName("_" + prefix);
+			}
+		return nme;
+	}
+}
+
 Carbonite.Members.Method.prototype.getRealName = function () {
 	if (arguments.length == 0) {
 		if (this.name == "@index") {
@@ -2965,6 +2984,8 @@ Carbonite.Members.Method.prototype.getRealName = function () {
 			var key = attrs[0];
 			var attr = key["value"];
 			return attr;
+			}else if (this.name == "@cast") {
+			return this.getCastName("");
 			}
 		return this.name;
 	}
@@ -3498,6 +3519,10 @@ Carbonite.Members.Operator = function () {
 
 	this.simpleNative = false;
 
+	this.asyncIndex = 0;
+
+	this.isAsync = false;
+
 	this.nativeBlock = null;
 
 	this.binding = "bound";
@@ -3761,6 +3786,10 @@ Carbonite.Members.Operator.prototype.build = function () {
 							var context = new Carbonite.Define(cStr, cc);
 							this.body.scope.add(context);
 							}
+						if (this.hasFlag("async")) {
+							this.isAsync = true;
+							this.body.rootAsyncBody = true;
+							}
 					}
 				if (this.name == "@index") {
 					var attrs = this.getAttributes("name");
@@ -3891,6 +3920,17 @@ Carbonite.Members.Operator.prototype.generate = function () {
 							}
 					}
 			}
+	}
+}
+
+Carbonite.Members.Operator.prototype.getCastName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var prefix = arguments[0];
+		var nme = "to" + this.output.reference.route.replace(new RegExp(".".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "");
+		if (this.parent.hasMember(nme)) {
+			return this.getCastName("_" + prefix);
+			}
+		return nme;
 	}
 }
 
@@ -4319,6 +4359,8 @@ Carbonite.Function = function () {
 
 	this.blockIndex = 0;
 
+	this.isAsync = false;
+
 	this.raw = null;
 
 	this.arguments = [];
@@ -4334,6 +4376,10 @@ Carbonite.Function = function () {
 		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
 		this.output.loadFromRaw(this.raw["output"]);
 		this.body.relativeOutput = this.output;
+		if (("async" in this.raw) && this.raw["async"] != null) {
+			this.body.rootAsyncBody = true;
+			this.isAsync = true;
+			}
 		var ___arguments = this.raw["parameters"];
 		for (var i = 0; i < ___arguments.length; i++) {
 			var argument = ___arguments[i];
@@ -4370,6 +4416,8 @@ Carbonite.Body = function () {
 	this.relativeOutput = null;
 
 	this.parentBody = null;
+
+	this.rootAsyncBody = false;
 
 	this.startOffset = 0;
 
@@ -4428,6 +4476,16 @@ Carbonite.Body.prototype.inherit = function () {
 		this.scope.parent = parent.scope;
 		this.relativeOutput = parent.relativeOutput;
 		this.parentBody = parent;
+		this.rootAsyncBody = parent.rootAsyncBody;
+	}
+}
+
+Carbonite.Body.prototype.getRootBody = function () {
+	if (arguments.length == 0) {
+		if (this.parentBody != null) {
+			return this.parentBody.getRootBody();
+			}
+		return this;
 	}
 }
 
@@ -4470,6 +4528,8 @@ Carbonite.Statement = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -4479,6 +4539,7 @@ Carbonite.Statement = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -4490,6 +4551,15 @@ Carbonite.Statement.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statement.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -4526,6 +4596,8 @@ Carbonite.Statement.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -4584,6 +4656,8 @@ Carbonite.Statements.If = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -4593,6 +4667,7 @@ Carbonite.Statements.If = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -4611,6 +4686,7 @@ Carbonite.Statements.If.prototype.build = function () {
 		for (var i = 0; i < alternatives.length; i++) {
 			this.alternatives.push(new Carbonite.Statements.IfAlternative(this, alternatives[i]));
 			}
+		this.addAsyncCallsFromExpression(this.check);
 	}
 }
 
@@ -4620,6 +4696,15 @@ Carbonite.Statements.If.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.If.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -4656,6 +4741,8 @@ Carbonite.Statements.If.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -4752,6 +4839,8 @@ Carbonite.Statements.Return = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -4761,6 +4850,7 @@ Carbonite.Statements.Return = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -4785,6 +4875,9 @@ Carbonite.Statements.Return.prototype.build = function () {
 					}
 				}
 			}
+		if (this.expression != null) {
+			this.addAsyncCallsFromExpression(this.expression);
+			}
 	}
 }
 
@@ -4794,6 +4887,15 @@ Carbonite.Statements.Return.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Return.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -4830,6 +4932,8 @@ Carbonite.Statements.Return.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -4869,6 +4973,8 @@ Carbonite.Statements.Define = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -4878,6 +4984,7 @@ Carbonite.Statements.Define = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -4889,6 +4996,9 @@ Carbonite.Statements.Define.prototype.build = function () {
 		var container = arguments[1];
 		this.define = Carbonite.Define.make(raw, container);
 		this.define.blockIndex = this.blockIndex;
+		if (this.define.initializer != null) {
+			this.addAsyncCallsFromExpression(this.define.initializer);
+			}
 	}
 }
 
@@ -4898,6 +5008,15 @@ Carbonite.Statements.Define.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Define.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -4934,6 +5053,8 @@ Carbonite.Statements.Define.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -4979,6 +5100,8 @@ Carbonite.Statements.For = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -4988,6 +5111,7 @@ Carbonite.Statements.For = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5000,11 +5124,17 @@ Carbonite.Statements.For.prototype.build = function () {
 		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		this.body.inherit(container);
 		this.define = Carbonite.Define.make(raw["define"], this.body);
+		this.define.output.isPure = true;
 		this.check = new Carbonite.Expression(container.parent.parent, this.body);
 		this.check.loadFromRaw(raw["check"]);
 		this.iterate = new Carbonite.Expression(container.parent.parent, this.body);
 		this.iterate.loadFromRaw(raw["iterate"]);
 		this.body.build();
+		if (this.define.initializer != null) {
+			this.addAsyncCallsFromExpression(this.define.initializer);
+			}
+		this.addAsyncCallsFromExpression(this.iterate);
+		this.addAsyncCallsFromExpression(this.check);
 	}
 }
 
@@ -5014,6 +5144,15 @@ Carbonite.Statements.For.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.For.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5050,6 +5189,8 @@ Carbonite.Statements.For.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5093,6 +5234,8 @@ Carbonite.Statements.ForIn = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5102,6 +5245,7 @@ Carbonite.Statements.ForIn = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5114,6 +5258,7 @@ Carbonite.Statements.ForIn.prototype.build = function () {
 		this.body = new Carbonite.Body(container.parent, raw["body"]);
 		this.body.inherit(container);
 		this.define = Carbonite.Define.make(raw["define"], this.body);
+		this.define.output.isPure = true;
 		this.iterate = new Carbonite.Expression(container.parent.parent, this.body);
 		this.iterate.loadFromRaw(raw["iterate"]);
 		this.body.build();
@@ -5126,6 +5271,15 @@ Carbonite.Statements.ForIn.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.ForIn.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5162,6 +5316,8 @@ Carbonite.Statements.ForIn.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5203,6 +5359,8 @@ Carbonite.Statements.While = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5212,6 +5370,7 @@ Carbonite.Statements.While = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5226,6 +5385,7 @@ Carbonite.Statements.While.prototype.build = function () {
 		this.check = new Carbonite.Expression(container.parent.parent, this.body);
 		this.check.loadFromRaw(raw["check"]["expression"]);
 		this.body.build();
+		this.addAsyncCallsFromExpression(this.check);
 	}
 }
 
@@ -5235,6 +5395,15 @@ Carbonite.Statements.While.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.While.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5271,6 +5440,8 @@ Carbonite.Statements.While.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5308,6 +5479,8 @@ Carbonite.Statements.Continue = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5317,6 +5490,7 @@ Carbonite.Statements.Continue = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5328,6 +5502,15 @@ Carbonite.Statements.Continue.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Continue.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5364,6 +5547,8 @@ Carbonite.Statements.Continue.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5409,6 +5594,8 @@ Carbonite.Statements.Break = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5418,6 +5605,7 @@ Carbonite.Statements.Break = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5429,6 +5617,15 @@ Carbonite.Statements.Break.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Break.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5465,6 +5662,8 @@ Carbonite.Statements.Break.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5514,6 +5713,8 @@ Carbonite.Statements.Try = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5523,6 +5724,7 @@ Carbonite.Statements.Try = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5549,6 +5751,15 @@ Carbonite.Statements.Try.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Try.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5585,6 +5796,8 @@ Carbonite.Statements.Try.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5644,6 +5857,8 @@ Carbonite.Statements.Throw = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5653,6 +5868,7 @@ Carbonite.Statements.Throw = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5664,6 +5880,7 @@ Carbonite.Statements.Throw.prototype.build = function () {
 		var container = arguments[1];
 		this.expression = new Carbonite.Expression(container.parent.parent, container);
 		this.expression.loadFromRaw(raw["expression"]);
+		this.addAsyncCallsFromExpression(this.expression);
 	}
 }
 
@@ -5673,6 +5890,15 @@ Carbonite.Statements.Throw.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Throw.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5709,6 +5935,8 @@ Carbonite.Statements.Throw.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5750,6 +5978,8 @@ Carbonite.Statements.Native = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5759,6 +5989,7 @@ Carbonite.Statements.Native = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5779,6 +6010,15 @@ Carbonite.Statements.Native.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Native.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5815,6 +6055,8 @@ Carbonite.Statements.Native.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5854,6 +6096,8 @@ Carbonite.Statements.Expression = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5863,6 +6107,7 @@ Carbonite.Statements.Expression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5875,6 +6120,7 @@ Carbonite.Statements.Expression.prototype.build = function () {
 		this.expression = new Carbonite.Expression(container.parent.parent, container);
 		this.expression.blockIndex = this.blockIndex;
 		this.expression.loadFromRaw(raw);
+		this.addAsyncCallsFromExpression(this.expression);
 	}
 }
 
@@ -5884,6 +6130,15 @@ Carbonite.Statements.Expression.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Expression.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5920,6 +6175,8 @@ Carbonite.Statements.Expression.make = function () {
 			rtn = new Carbonite.Statements.Throw(container);
 			}else if (type == "try") {
 			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
 	}
@@ -5943,6 +6200,134 @@ else 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Source) |
 }
 
 Carbonite.Statements.Expression.prototype.buildError = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var msg = arguments[0];
+		this.source.error(this, msg);
+		throw new Error("Build error");
+	}
+}
+
+Carbonite.Statements.Yield = function () {
+	this.expression = null;
+
+	this.container = null;
+
+	this.raw = null;
+
+	this.blockIndex = 0;
+
+	this.asyncCalls = null;
+
+	this.startOffset = 0;
+
+	this.endOffset = 0;
+
+	this.source = null;
+
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var container = arguments[0];
+		this.container = container;
+		this.asyncCalls = [];
+	}
+
+}
+Carbonite.Statements.Yield.prototype.type = "yield";
+
+Carbonite.Statements.Yield.prototype.build = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var raw = arguments[0];
+		var container = arguments[1];
+		this.expression = new Carbonite.Expression(container.parent.parent, container);
+		this.expression.loadFromRaw(raw["expression"]);
+		if (container.parent != null) {
+			var check = container.parent.output;
+			if (container.relativeOutput != null) {
+				check = container.relativeOutput;
+				}
+			if (check.check(this.expression.output) == false) {
+				this.buildError("Invalid yield type '" + this.expression.output.reference.name + "' in statement");
+				}
+			}
+		this.addAsyncCallsFromExpression(this.expression);
+	}
+}
+
+Carbonite.Statements.Yield.prototype.loadFromRaw = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var raw = arguments[0];
+		this.raw = raw;
+		this.loadLocation(this.container.parent.parent, raw);
+		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Yield.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
+	}
+}
+
+Carbonite.Statements.Yield.make = function () {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var container = arguments[0];
+		var raw = arguments[1];
+		var type = raw["type"];
+		var rtn = null;
+		if (type == "if") {
+			rtn = new Carbonite.Statements.If(container);
+			}else if (type == "define") {
+			rtn = new Carbonite.Statements.Define(container);
+			}else if (type == "return") {
+			rtn = new Carbonite.Statements.Return(container);
+			}else if (type == "for") {
+			var forIn = raw["in"];
+			if (forIn) {
+				rtn = new Carbonite.Statements.ForIn(container);
+				}else{
+					rtn = new Carbonite.Statements.For(container);
+				}
+			}else if (type == "while") {
+			rtn = new Carbonite.Statements.While(container);
+			}else if (type == "expression") {
+			rtn = new Carbonite.Statements.Expression(container);
+			}else if (type == "continue") {
+			rtn = new Carbonite.Statements.Continue(container);
+			}else if (type == "break") {
+			rtn = new Carbonite.Statements.Break(container);
+			}else if (type == "native") {
+			rtn = new Carbonite.Statements.Native(container);
+			}else if (type == "throw") {
+			rtn = new Carbonite.Statements.Throw(container);
+			}else if (type == "try") {
+			rtn = new Carbonite.Statements.Try(container);
+			}else if (type == "yield") {
+			rtn = new Carbonite.Statements.Yield(container);
+			}
+		return rtn;
+	}
+}
+
+Carbonite.Statements.Yield.prototype.loadLocation = function () {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Class) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var parent = arguments[0];
+		var raw = arguments[1];
+		this.startOffset = raw["start"];
+		this.endOffset = raw["end"];
+		this.source = parent.source;
+	}
+else 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Source) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var parent = arguments[0];
+		var raw = arguments[1];
+		this.startOffset = raw["start"];
+		this.endOffset = raw["end"];
+		this.source = parent;
+	}
+}
+
+Carbonite.Statements.Yield.prototype.buildError = function () {
 	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var msg = arguments[0];
 		this.source.error(this, msg);
@@ -6115,6 +6500,8 @@ Carbonite.Expression = function () {
 
 	this.castMethod = null;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -6126,6 +6513,7 @@ Carbonite.Expression = function () {
 		var container = arguments[1];
 		this.parent = parent;
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -7345,6 +7733,10 @@ Carbonite.Type = function () {
 
 	this.magicType = 0;
 
+	this.isPure = false;
+
+	this.nullable = true;
+
 	this.autoCast = false;
 
 	this.castTo = null;
@@ -7781,6 +8173,10 @@ Carbonite.ReferenceType = function () {
 	this.magic = false;
 
 	this.magicType = 0;
+
+	this.isPure = false;
+
+	this.nullable = true;
 
 	this.autoCast = false;
 
@@ -8369,6 +8765,10 @@ Carbonite.Parts.Call = function () {
 
 	this.type = "call";
 
+	this.asyncIndex = 0;
+
+	this.isAsyncCall = false;
+
 	this.output = null;
 
 	this.parent = null;
@@ -8430,6 +8830,13 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (
 									}
 								this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
 								this.output = method.output;
+								if (method.isAsync) {
+									var parentMethod = this.parent.container.parent;
+									parentMethod.asyncIndex++;
+									this.isAsyncCall = true;
+									this.asyncIndex = parentMethod.asyncIndex;
+									this.parent.parent.asyncCalls.push(this);
+									}
 								if (method.binding == "bound") {
 									parent.source.error(parent, "Cannot call bounded method on a fixed reference in type '" + refMeth.reference.parent.name + "'");
 									throw new Error("Build error");
@@ -8449,6 +8856,12 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (
 												}
 											this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
 											this.output = method.output;
+											if (method.isAsync) {
+												var parentMethod = this.parent.container.parent;
+												parentMethod.asyncIndex++;
+												this.isAsyncCall = true;
+												this.asyncIndex = parentMethod.asyncIndex;
+												}
 										}
 								}
 						}
@@ -9516,7 +9929,7 @@ Carbonite.Assemblers.Javascript.prototype.define = function () {
 }
 
 Carbonite.Assemblers.Javascript.prototype.statement = function () {
-	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var statement = arguments[0];
 		var indent = arguments[1];
 		if (statement.type == "define") {
@@ -9531,6 +9944,9 @@ Carbonite.Assemblers.Javascript.prototype.statement = function () {
 			}else if (statement.type == "return") {
 			var exp = statement;
 			return "return " + this.expression(exp.expression, indent) + ";";
+			}else if (statement.type == "yield") {
+			var exp = statement;
+			return "$_c_yield_cb(" + this.expression(exp.expression, indent) + ");";
 			}else if (statement.type == "if") {
 			var ifState = statement;
 			var str = "";
@@ -10080,13 +10496,13 @@ else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (
 			}else if (what.reference.route == "map") {
 			return "std::unique_ptr<std::map<std::string, " + this.route(what.templates[0]) + ">>" + refFlag;
 			}else if (what.reference.route == "string") {
-			return "std::string";
+			return "std::optional<std::string>";
 			}else if (what.reference.route == "primitive") {
 			return "_c_primitive";
 			}else if (what.reference.route == "void") {
 			return "void";
 			}else if (what.reference.route == "null") {
-			return "null";
+			return "std::nullopt";
 			}else if (what.reference.route == "Error") {
 			return "_c_error";
 			}else if (what.reference.route == "function") {
@@ -10104,7 +10520,25 @@ else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Type || (
 					return "std::unique_ptr<" + what.reference.getRoute("::") + ">";
 				}
 			}
-		return what.reference.getRoute("::");
+		if (what.isPure) {
+			return what.reference.getRoute("::");
+			}else{
+				return this.wrapIf(what.nullable, what.reference.getRoute("::"), "std::optional<", ">");
+			}
+	}
+}
+
+Carbonite.Assemblers.Cpp.prototype.wrapIf = function () {
+	if (arguments.length == 4 && (typeof arguments[0] == 'boolean' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'string' || typeof arguments[3] == 'undefined' || arguments[3] === null)) {
+		var test = arguments[0];
+		var subject = arguments[1];
+		var w1 = arguments[2];
+		var w2 = arguments[3];
+		if (test) {
+			return w1 + subject + w2;
+			}else{
+				return subject;
+			}
 	}
 }
 
@@ -10141,17 +10575,28 @@ Carbonite.Assemblers.Cpp.prototype.methods = function () {
 							}
 						var rte = this.route(method.output);
 						var nme = method.getRealName();
+						var top = "";
 						if (member.name == "@construct") {
 							rte = "";
 							prefix = "";
 							nme = root.name;
+							top = "\n";
+							for (var m = 0; m < root.members.length; m++) {
+								var propMember = root.members[m];
+								if (propMember.type == "property") {
+									var property = propMember;
+									if ((property.binding != "fixed") && (property.abstract == false)) {
+										top += "this->" + property.name + " = " + this.expression(property.default) + ";\n";
+										}
+									}
+								}
 							}
 						if (member.name == "@cast") {
 							nme = this.getCastName(member, "");
 							}
 						var body = ";\n";
 						if (source && member.abstract == false) {
-							body = "{\n" + this.body(method.body) + "\n}";
+							body = "{\n" + top + this.body(method.body) + "\n}";
 							nme = root.getRoute("::") + "::" + nme;
 							}
 						if (member.abstract && source) {
@@ -10237,7 +10682,7 @@ Carbonite.Assemblers.Cpp.prototype.localName = function () {
 }
 
 Carbonite.Assemblers.Cpp.prototype.statement = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var statement = arguments[0];
 		if (statement.type == "define") {
 			var def = statement;
@@ -10249,6 +10694,16 @@ Carbonite.Assemblers.Cpp.prototype.statement = function () {
 			var exp = statement;
 			if (statement.container.parent.output.containsReference && exp.expression.output.containsReference == false) {
 				exp.buildError("Illegal return by reference.");
+				}
+			var expStr = this.expression(exp.expression);
+			if (exp.expression.output.isPrimitiveValue() == false && exp.expression.output.reference.route != "null" && statement.container.parent.output.containsReference == false && exp.expression.output.containsReference == false) {
+				expStr = "std::move(" + expStr + ")";
+				}
+			return "return " + expStr + ";";
+			}else if (statement.type == "yield") {
+			var exp = statement;
+			if (statement.container.parent.output.containsReference && exp.expression.output.containsReference == false) {
+				exp.buildError("Illegal yield by reference.");
 				}
 			var expStr = this.expression(exp.expression);
 			if (exp.expression.output.isPrimitiveValue() == false && exp.expression.output.reference.route != "null" && statement.container.parent.output.containsReference == false && exp.expression.output.containsReference == false) {
@@ -10573,6 +11028,8 @@ Carbonite.Assemblers.Cpp.prototype.callMethod = function () {
 							exp = exp + ".get()";
 							}
 					}
+				}else if (arg.getOutput().isPrimitiveValue() && arg.getOutput().isPure == false) {
+				exp = exp + ".value()";
 				}
 			exp = this.poly(arg.getOutput(), arg.output, exp);
 			args.push(exp);
@@ -10620,7 +11077,11 @@ Carbonite.Assemblers.Cpp.prototype.expression = function () {
 					expr = this.poly(eType, expression.last.getOutput(), expr);
 					args.push(expr);
 					}else{
-						args.push(this.term(expression.last));
+						var getValue = "";
+						if (expression.last.output.isPure) {
+							getValue = ".value()";
+							}
+						args.push(this.term(expression.last) + getValue);
 					}
 				}
 			var temps = [];
@@ -10985,7 +11446,7 @@ Carbonite.Assemblers.Php.prototype.define = function () {
 }
 
 Carbonite.Assemblers.Php.prototype.statement = function () {
-	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var statement = arguments[0];
 		if (statement.type == "define") {
 			var def = statement;
@@ -10994,6 +11455,9 @@ Carbonite.Assemblers.Php.prototype.statement = function () {
 			var exp = statement;
 			return this.expression(exp.expression) + ";";
 			}else if (statement.type == "return") {
+			var exp = statement;
+			return "return " + this.expression(exp.expression) + ";";
+			}else if (statement.type == "yield") {
 			var exp = statement;
 			return "return " + this.expression(exp.expression) + ";";
 			}else if (statement.type == "if") {
@@ -12197,65 +12661,69 @@ else 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof ar
 																																																																																																																																		if (rule == "Return") {
 																																																																																																																																			output = parser.Return(input, 0);
 																																																																																																																																			}else{
-																																																																																																																																				if (rule == "Native") {
-																																																																																																																																					output = parser.Native(input, 0);
+																																																																																																																																				if (rule == "Yield") {
+																																																																																																																																					output = parser.Yield(input, 0);
 																																																																																																																																					}else{
-																																																																																																																																						if (rule == "Define_Auto") {
-																																																																																																																																							output = parser.Define_Auto(input, 0);
+																																																																																																																																						if (rule == "Native") {
+																																																																																																																																							output = parser.Native(input, 0);
 																																																																																																																																							}else{
-																																																																																																																																								if (rule == "Define") {
-																																																																																																																																									output = parser.Define(input, 0);
+																																																																																																																																								if (rule == "Define_Auto") {
+																																																																																																																																									output = parser.Define_Auto(input, 0);
 																																																																																																																																									}else{
-																																																																																																																																										if (rule == "Inline_Def") {
-																																																																																																																																											output = parser.Inline_Def(input, 0);
+																																																																																																																																										if (rule == "Define") {
+																																																																																																																																											output = parser.Define(input, 0);
 																																																																																																																																											}else{
-																																																																																																																																												if (rule == "Define_List") {
-																																																																																																																																													output = parser.Define_List(input, 0);
+																																																																																																																																												if (rule == "Inline_Def") {
+																																																																																																																																													output = parser.Inline_Def(input, 0);
 																																																																																																																																													}else{
-																																																																																																																																														if (rule == "Inline_Define") {
-																																																																																																																																															output = parser.Inline_Define(input, 0);
+																																																																																																																																														if (rule == "Define_List") {
+																																																																																																																																															output = parser.Define_List(input, 0);
 																																																																																																																																															}else{
-																																																																																																																																																if (rule == "Multi_Define") {
-																																																																																																																																																	output = parser.Multi_Define(input, 0);
+																																																																																																																																																if (rule == "Inline_Define") {
+																																																																																																																																																	output = parser.Inline_Define(input, 0);
 																																																																																																																																																	}else{
-																																																																																																																																																		if (rule == "Inline_Define_Auto") {
-																																																																																																																																																			output = parser.Inline_Define_Auto(input, 0);
+																																																																																																																																																		if (rule == "Multi_Define") {
+																																																																																																																																																			output = parser.Multi_Define(input, 0);
 																																																																																																																																																			}else{
-																																																																																																																																																				if (rule == "String_Tick") {
-																																																																																																																																																					output = parser.String_Tick(input, 0);
+																																																																																																																																																				if (rule == "Inline_Define_Auto") {
+																																																																																																																																																					output = parser.Inline_Define_Auto(input, 0);
 																																																																																																																																																					}else{
-																																																																																																																																																						if (rule == "_") {
-																																																																																																																																																							output = parser._(input, 0);
+																																																																																																																																																						if (rule == "String_Tick") {
+																																																																																																																																																							output = parser.String_Tick(input, 0);
 																																																																																																																																																							}else{
-																																																																																																																																																								if (rule == "__") {
-																																																																																																																																																									output = parser.__(input, 0);
+																																																																																																																																																								if (rule == "_") {
+																																																																																																																																																									output = parser._(input, 0);
 																																																																																																																																																									}else{
-																																																																																																																																																										if (rule == "String") {
-																																																																																																																																																											output = parser.String(input, 0);
+																																																																																																																																																										if (rule == "__") {
+																																																																																																																																																											output = parser.__(input, 0);
 																																																																																																																																																											}else{
-																																																																																																																																																												if (rule == "String_Double") {
-																																																																																																																																																													output = parser.String_Double(input, 0);
+																																																																																																																																																												if (rule == "String") {
+																																																																																																																																																													output = parser.String(input, 0);
 																																																																																																																																																													}else{
-																																																																																																																																																														if (rule == "String_Single") {
-																																																																																																																																																															output = parser.String_Single(input, 0);
+																																																																																																																																																														if (rule == "String_Double") {
+																																																																																																																																																															output = parser.String_Double(input, 0);
 																																																																																																																																																															}else{
-																																																																																																																																																																if (rule == "Json") {
-																																																																																																																																																																	output = parser.Json(input, 0);
+																																																																																																																																																																if (rule == "String_Single") {
+																																																																																																																																																																	output = parser.String_Single(input, 0);
 																																																																																																																																																																	}else{
-																																																																																																																																																																		if (rule == "Json_Array") {
-																																																																																																																																																																			output = parser.Json_Array(input, 0);
+																																																																																																																																																																		if (rule == "Json") {
+																																																																																																																																																																			output = parser.Json(input, 0);
 																																																																																																																																																																			}else{
-																																																																																																																																																																				if (rule == "Json_EmptyArray") {
-																																																																																																																																																																					output = parser.Json_EmptyArray(input, 0);
+																																																																																																																																																																				if (rule == "Json_Array") {
+																																																																																																																																																																					output = parser.Json_Array(input, 0);
 																																																																																																																																																																					}else{
-																																																																																																																																																																						if (rule == "Json_EmptyMap") {
-																																																																																																																																																																							output = parser.Json_EmptyMap(input, 0);
+																																																																																																																																																																						if (rule == "Json_EmptyArray") {
+																																																																																																																																																																							output = parser.Json_EmptyArray(input, 0);
 																																																																																																																																																																							}else{
-																																																																																																																																																																								if (rule == "Json_Value") {
-																																																																																																																																																																									output = parser.Json_Value(input, 0);
+																																																																																																																																																																								if (rule == "Json_EmptyMap") {
+																																																																																																																																																																									output = parser.Json_EmptyMap(input, 0);
 																																																																																																																																																																									}else{
-																																																																																																																																																																										if (rule == "Json_Number") {
-																																																																																																																																																																											output = parser.Json_Number(input, 0);
+																																																																																																																																																																										if (rule == "Json_Value") {
+																																																																																																																																																																											output = parser.Json_Value(input, 0);
+																																																																																																																																																																											}else{
+																																																																																																																																																																												if (rule == "Json_Number") {
+																																																																																																																																																																													output = parser.Json_Number(input, 0);
+																																																																																																																																																																													}
 																																																																																																																																																																											}
 																																																																																																																																																																									}
 																																																																																																																																																																							}
@@ -14010,13 +14478,22 @@ CarboniteCarbonParser.prototype.Member_Flag = function () {
 						var ruleOutCast1 = ruleOut1.data["data"];
 						charPos = this.offset;
 						data["str"] = ruleOutCast1;
+						c = 2;
+						this.error.vested++;
+					}
+				}else if (c == 2) {
+				var ruleOut2 = this.__(input, charPos);
+				if (ruleOut2.hadError) {
+					this.giveError(ruleOut2.error.code, "White space(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
+					}else{
+						var ruleOutCast2 = ruleOut2.data["data"];
+						charPos = this.offset;
 						if (true) {
-							var castacstr0 = data["str"];
+							var castac0 = data;
 							var actionCap0str = data["str"];
 							dataStore["data"] = actionCap0str;
 							}
 						c = 0 - 1;
-						this.error.vested++;
 					}
 				}
 			this.offset++;
@@ -15103,21 +15580,25 @@ CarboniteCarbonParser.prototype.Member_Flagged = function () {
 							var castacval0 = data["val"];
 							var actionCap0val = data["val"];
 							var actionCap0name = data["name"];
-							var actionCap0type = data["type"];
 							var actionCap0flags = data["flags"];
+							var actionCap0type = data["type"];
 							var actionCap0templates = data["templates"];
 							var actionCap0attr = data["attr"];
 							var actionCap0doc = data["doc"];
 							dataStore["data"]["type"] = actionCap0val["type"];
 							dataStore["data"]["name"] = actionCap0name;
 							dataStore["data"]["value"] = actionCap0val;
-							if (actionCap0type == null) {
+							if (actionCap0name == null) {
 								dataStore["data"]["output"] = {};
 								if (actionCap0flags.length == 0) {
 									this.giveError(1, "" + "" + "", "");
-									}else if (actionCap0flags.length >= 2) {
+									}else if (actionCap0type == null) {
 									dataStore["data"]["name"] = actionCap0flags[actionCap0flags.length - 1];
 									actionCap0flags.pop();
+									dataStore["data"]["output"]["name"] = actionCap0flags[actionCap0flags.length - 1];
+									actionCap0flags.pop();
+									}else if (actionCap0flags.length >= 1) {
+									dataStore["data"]["name"] = actionCap0type["name"];
 									dataStore["data"]["output"]["name"] = actionCap0flags[actionCap0flags.length - 1];
 									actionCap0flags.pop();
 									}
@@ -17357,15 +17838,19 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
-				var ruleOut0 = this.Type(input, charPos);
-				if (ruleOut0.hadError) {
-					this.giveError(ruleOut0.error.code, "Type(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
-					}else{
-						var ruleOutCast0 = ruleOut0.data["data"];
-						charPos = this.offset;
-						data["type"] = ruleOutCast0;
+				var lit0 = [97, 115, 121, 110, 99, 32];
+				if (currentCode == lit0[literalChar]) {
+					literalChar++;
+					if (literalChar == 6) {
+						data["async"] = this.assembleCodes(lit0);
 						c = 1;
-						this.error.vested++;
+						literalChar = 0;
+						}
+					this.error.vested++;
+					}else{
+						c = 1;
+						charPos--;
+						this.offset--;
 					}
 				}else if (c == 1) {
 				var ruleOut1 = this._(input, charPos);
@@ -17377,11 +17862,15 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 						c = 2;
 					}
 				}else if (c == 2) {
-				if (currentCode == 40) {
-					c = 3;
-					this.error.vested++;
+				var ruleOut2 = this.Type(input, charPos);
+				if (ruleOut2.hadError) {
+					this.giveError(ruleOut2.error.code, "Type(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
 					}else{
-						this.giveError(1, "(", currentChar);
+						var ruleOutCast2 = ruleOut2.data["data"];
+						charPos = this.offset;
+						data["type"] = ruleOutCast2;
+						c = 3;
+						this.error.vested++;
 					}
 				}else if (c == 3) {
 				var ruleOut3 = this._(input, charPos);
@@ -17393,30 +17882,11 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 						c = 4;
 					}
 				}else if (c == 4) {
-				var ruleOut4 = this.Parameter(input, charPos);
-				if (ruleOut4.hadError) {
+				if (currentCode == 40) {
 					c = 5;
-					charPos--;
-					this.offset--;
-					if (ruleOut4.error.vested > 1) {
-						this.giveError(ruleOut4.error.code, ruleOut4.error.expected, ruleOut4.error.found);
-						}
+					this.error.vested++;
 					}else{
-						var ruleOutCast4 = ruleOut4.data["data"];
-						charPos = this.offset;
-						var castparameters4 = data["parameters"];
-						castparameters4.push(ruleOutCast4);
-						if (input.charCodeAt(charPos + 1) != 44) {
-							c = 5;
-							continue;
-							}else{
-								charPos++;
-							}
-						if (charPos == input.length - 1) {
-							this.giveError(2, "EOF", currentChar);
-							}
-						c = 4;
-						this.error.vested++;
+						this.giveError(1, "(", currentChar);
 					}
 				}else if (c == 5) {
 				var ruleOut5 = this._(input, charPos);
@@ -17428,11 +17898,30 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 						c = 6;
 					}
 				}else if (c == 6) {
-				if (currentCode == 41) {
+				var ruleOut6 = this.Parameter(input, charPos);
+				if (ruleOut6.hadError) {
 					c = 7;
-					this.error.vested++;
+					charPos--;
+					this.offset--;
+					if (ruleOut6.error.vested > 1) {
+						this.giveError(ruleOut6.error.code, ruleOut6.error.expected, ruleOut6.error.found);
+						}
 					}else{
-						this.giveError(1, ")", currentChar);
+						var ruleOutCast6 = ruleOut6.data["data"];
+						charPos = this.offset;
+						var castparameters6 = data["parameters"];
+						castparameters6.push(ruleOutCast6);
+						if (input.charCodeAt(charPos + 1) != 44) {
+							c = 7;
+							continue;
+							}else{
+								charPos++;
+							}
+						if (charPos == input.length - 1) {
+							this.giveError(2, "EOF", currentChar);
+							}
+						c = 6;
+						this.error.vested++;
 					}
 				}else if (c == 7) {
 				var ruleOut7 = this._(input, charPos);
@@ -17444,16 +17933,11 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 						c = 8;
 					}
 				}else if (c == 8) {
-				var lit8 = [61, 62];
-				if (currentCode == lit8[literalChar]) {
-					literalChar++;
-					if (literalChar == 2) {
-						c = 9;
-						literalChar = 0;
-						}
+				if (currentCode == 41) {
+					c = 9;
 					this.error.vested++;
 					}else{
-						this.giveError(1, "" + this.assembleCodes(lit8) + "", currentChar);
+						this.giveError(1, ")", currentChar);
 					}
 				}else if (c == 9) {
 				var ruleOut9 = this._(input, charPos);
@@ -17465,19 +17949,42 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 						c = 10;
 					}
 				}else if (c == 10) {
-				var ruleOut10 = this.Block(input, charPos);
-				if (ruleOut10.hadError) {
-					this.giveError(ruleOut10.error.code, "Block(" + ruleOut10.error.expected + ")", ruleOut10.error.found);
+				var lit10 = [61, 62];
+				if (currentCode == lit10[literalChar]) {
+					literalChar++;
+					if (literalChar == 2) {
+						c = 11;
+						literalChar = 0;
+						}
+					this.error.vested++;
 					}else{
-						var ruleOutCast10 = ruleOut10.data["data"];
+						this.giveError(1, "" + this.assembleCodes(lit10) + "", currentChar);
+					}
+				}else if (c == 11) {
+				var ruleOut11 = this._(input, charPos);
+				if (ruleOut11.hadError) {
+					this.giveError(ruleOut11.error.code, "White space(optional)(" + ruleOut11.error.expected + ")", ruleOut11.error.found);
+					}else{
+						var ruleOutCast11 = ruleOut11.data["data"];
 						charPos = this.offset;
-						data["body"] = ruleOutCast10;
+						c = 12;
+					}
+				}else if (c == 12) {
+				var ruleOut12 = this.Block(input, charPos);
+				if (ruleOut12.hadError) {
+					this.giveError(ruleOut12.error.code, "Block(" + ruleOut12.error.expected + ")", ruleOut12.error.found);
+					}else{
+						var ruleOutCast12 = ruleOut12.data["data"];
+						charPos = this.offset;
+						data["body"] = ruleOutCast12;
 						if (true) {
 							var castacbody0 = data["body"];
+							var actionCap0async = data["async"];
 							var actionCap0type = data["type"];
 							var actionCap0parameters = data["parameters"];
 							var actionCap0body = data["body"];
 							dataStore["data"]["type"] = "function";
+							dataStore["data"]["async"] = actionCap0async;
 							dataStore["data"]["output"] = actionCap0type;
 							dataStore["data"]["parameters"] = actionCap0parameters;
 							dataStore["data"]["body"] = actionCap0body;
@@ -18219,7 +18726,7 @@ CarboniteCarbonParser.prototype.Statement = function () {
 						this.error.vested++;
 					}
 				}else if (c == 12) {
-				var ruleOut12 = this.Native(input, charPos);
+				var ruleOut12 = this.Yield(input, charPos);
 				if (ruleOut12.hadError) {
 					c = 13;
 					charPos--;
@@ -18239,13 +18746,33 @@ CarboniteCarbonParser.prototype.Statement = function () {
 						this.error.vested++;
 					}
 				}else if (c == 13) {
-				var ruleOut13 = this.Expression_Line(input, charPos);
+				var ruleOut13 = this.Native(input, charPos);
 				if (ruleOut13.hadError) {
-					this.giveError(1, "If, Define, Define_Auto, For, For_In, Break, Try, Throw, Continue, While, Return, Native, Expression_Line", currentChar);
+					c = 14;
+					charPos--;
+					this.offset--;
 					}else{
 						var ruleOutCast13 = ruleOut13.data["data"];
 						charPos = this.offset;
 						data["state"] = ruleOutCast13;
+						if (true) {
+							var castacstate0 = data["state"];
+							var actionCap0state = data["state"];
+							dataStore["data"] = actionCap0state;
+							dataStore["data"]["start"] = startPos;
+							dataStore["data"]["end"] = charPos;
+							}
+						c = 0 - 1;
+						this.error.vested++;
+					}
+				}else if (c == 14) {
+				var ruleOut14 = this.Expression_Line(input, charPos);
+				if (ruleOut14.hadError) {
+					this.giveError(1, "If, Define, Define_Auto, For, For_In, Break, Try, Throw, Continue, While, Return, Yield, Native, Expression_Line", currentChar);
+					}else{
+						var ruleOutCast14 = ruleOut14.data["data"];
+						charPos = this.offset;
+						data["state"] = ruleOutCast14;
 						if (true) {
 							var castacstate0 = data["state"];
 							var actionCap0state = data["state"];
@@ -19854,6 +20381,97 @@ CarboniteCarbonParser.prototype.Return = function () {
 	}
 }
 
+CarboniteCarbonParser.prototype.Yield = function () {
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var input = arguments[0];
+		var startPos = arguments[1];
+		var oldVest = this.error.vested;
+		var dataStore = {};
+		dataStore["data"] = {};
+		dataStore["temp"] = {};
+		var data = dataStore["temp"];
+		var c = 0;
+		var literalChar = 0;
+		for (var charPos = startPos;charPos < input.length;charPos++) {
+			var currentChar = input[charPos];
+			var currentCode = input.charCodeAt(charPos);
+			if (currentCode == 10) {
+				this.line++;
+				this.column = 0;
+				}
+			if (c == 0) {
+				var lit0 = [121, 105, 101, 108, 100, 32];
+				if (currentCode == lit0[literalChar]) {
+					literalChar++;
+					if (literalChar == 6) {
+						c = 1;
+						literalChar = 0;
+						}
+					this.error.vested++;
+					}else{
+						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
+					}
+				}else if (c == 1) {
+				var ruleOut1 = this._(input, charPos);
+				if (ruleOut1.hadError) {
+					this.giveError(ruleOut1.error.code, "White space(optional)(" + ruleOut1.error.expected + ")", ruleOut1.error.found);
+					}else{
+						var ruleOutCast1 = ruleOut1.data["data"];
+						charPos = this.offset;
+						c = 2;
+					}
+				}else if (c == 2) {
+				var ruleOut2 = this.Expression(input, charPos);
+				if (ruleOut2.hadError) {
+					this.giveError(ruleOut2.error.code, "Expression(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
+					}else{
+						var ruleOutCast2 = ruleOut2.data["data"];
+						charPos = this.offset;
+						data["exp"] = ruleOutCast2;
+						c = 3;
+						this.error.vested++;
+					}
+				}else if (c == 3) {
+				var ruleOut3 = this._(input, charPos);
+				if (ruleOut3.hadError) {
+					this.giveError(ruleOut3.error.code, "White space(optional)(" + ruleOut3.error.expected + ")", ruleOut3.error.found);
+					}else{
+						var ruleOutCast3 = ruleOut3.data["data"];
+						charPos = this.offset;
+						c = 4;
+					}
+				}else if (c == 4) {
+				if (currentCode == 59) {
+					if (true) {
+						var castac0 = data;
+						var actionCap0exp = data["exp"];
+						dataStore["data"]["type"] = "yield";
+						dataStore["data"]["expression"] = actionCap0exp;
+						}
+					c = 0 - 1;
+					this.error.vested++;
+					}else{
+						this.giveError(1, ";", currentChar);
+					}
+				}
+			this.offset++;
+			this.column++;
+			if (c == 0 - 1) {
+				this.offset = charPos;
+				break;
+				}
+			if (this.hadError) {
+				break;
+				}
+			}
+		var parseOutput = new CarboniteCarbonParserOutput(this.hadError, this.error.clone(), dataStore);
+		parseOutput.error.vested = this.error.vested - oldVest;
+		this.error.vested = oldVest;
+		this.hadError = false;
+		return parseOutput;
+	}
+}
+
 CarboniteCarbonParser.prototype.Native = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var input = arguments[0];
@@ -19877,16 +20495,19 @@ CarboniteCarbonParser.prototype.Native = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
-				var lit0 = [110, 97, 116, 105, 118, 101, 32];
+				var lit0 = [101, 108, 115, 101];
 				if (currentCode == lit0[literalChar]) {
 					literalChar++;
-					if (literalChar == 7) {
+					if (literalChar == 4) {
+						data["els"] = this.assembleCodes(lit0);
 						c = 1;
 						literalChar = 0;
 						}
 					this.error.vested++;
 					}else{
-						this.giveError(1, "" + this.assembleCodes(lit0) + "", currentChar);
+						c = 1;
+						charPos--;
+						this.offset--;
 					}
 				}else if (c == 1) {
 				var ruleOut1 = this._(input, charPos);
@@ -19898,15 +20519,16 @@ CarboniteCarbonParser.prototype.Native = function () {
 						c = 2;
 					}
 				}else if (c == 2) {
-				var ruleOut2 = this.Safe_Name(input, charPos);
-				if (ruleOut2.hadError) {
-					this.giveError(ruleOut2.error.code, "Safe_Name(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
-					}else{
-						var ruleOutCast2 = ruleOut2.data["data"];
-						charPos = this.offset;
-						data["platform"] = ruleOutCast2;
+				var lit2 = [110, 97, 116, 105, 118, 101, 32];
+				if (currentCode == lit2[literalChar]) {
+					literalChar++;
+					if (literalChar == 7) {
 						c = 3;
-						this.error.vested++;
+						literalChar = 0;
+						}
+					this.error.vested++;
+					}else{
+						this.giveError(1, "" + this.assembleCodes(lit2) + "", currentChar);
 					}
 				}else if (c == 3) {
 				var ruleOut3 = this._(input, charPos);
@@ -19918,14 +20540,34 @@ CarboniteCarbonParser.prototype.Native = function () {
 						c = 4;
 					}
 				}else if (c == 4) {
+				var ruleOut4 = this.Safe_Name(input, charPos);
+				if (ruleOut4.hadError) {
+					this.giveError(ruleOut4.error.code, "Safe_Name(" + ruleOut4.error.expected + ")", ruleOut4.error.found);
+					}else{
+						var ruleOutCast4 = ruleOut4.data["data"];
+						charPos = this.offset;
+						data["platform"] = ruleOutCast4;
+						c = 5;
+						this.error.vested++;
+					}
+				}else if (c == 5) {
+				var ruleOut5 = this._(input, charPos);
+				if (ruleOut5.hadError) {
+					this.giveError(ruleOut5.error.code, "White space(optional)(" + ruleOut5.error.expected + ")", ruleOut5.error.found);
+					}else{
+						var ruleOutCast5 = ruleOut5.data["data"];
+						charPos = this.offset;
+						c = 6;
+					}
+				}else if (c == 6) {
 				if (currentCode == 123) {
-					c = 5;
+					c = 7;
 					this.error.vested++;
 					}else{
 						this.giveError(1, "{", currentChar);
 					}
-				}else if (c == 5) {
-				var castnaccontent5 = data["content"];
+				}else if (c == 7) {
+				var castnaccontent7 = data["content"];
 				var doCap = true;
 				var setEscape = false;
 				var isString = false;
@@ -19945,7 +20587,7 @@ CarboniteCarbonParser.prototype.Native = function () {
 					}else if (currentChar == "}") {
 					if (inString == false) {
 						if (open == 0) {
-							c = 6;
+							c = 8;
 							charPos--;
 							this.offset--;
 							doCap = false;
@@ -19972,14 +20614,16 @@ CarboniteCarbonParser.prototype.Native = function () {
 				if (setEscape) {
 					escape = true;
 					}
-				}else if (c == 6) {
+				}else if (c == 8) {
 				if (currentCode == 125) {
 					if (true) {
 						var castac0 = data;
 						var actionCap0platform = data["platform"];
+						var actionCap0els = data["els"];
 						var actionCap0content = data["content"];
 						dataStore["data"]["type"] = "native";
 						dataStore["data"]["platform"] = actionCap0platform;
+						dataStore["data"]["else"] = actionCap0els;
 						dataStore["data"]["content"] = actionCap0content;
 						}
 					c = 0 - 1;
@@ -42601,7 +43245,12 @@ carbide_proxy_Carbonite_Class.prototype.method = function () {
 		var name = arguments[0];
 		var args = arguments[1];
 		var c_scope = arguments[2];
-
+		if (name == "getRoute") {
+			var cast_join = args[0].value;
+			var insta = this.value;
+			var carbide_rtn = insta.getRoute(cast_join);
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
+			}
 	}
 }
 
@@ -43220,14 +43869,14 @@ carbide_proxy_Carbonite_Statement.create = function () {
 		var value = arguments[0];
 
 	}
-else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var reference = arguments[0];
 		var m = {};
 		var value = new carbide_proxy_Carbonite_Statement(m);
 		value.value = reference;
 		return value;
 	}
-else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+else 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Statement || (arguments[0] instanceof Carbonite.Statements.If) || (arguments[0] instanceof Carbonite.Statements.Return) || (arguments[0] instanceof Carbonite.Statements.Define) || (arguments[0] instanceof Carbonite.Statements.For) || (arguments[0] instanceof Carbonite.Statements.ForIn) || (arguments[0] instanceof Carbonite.Statements.While) || (arguments[0] instanceof Carbonite.Statements.Continue) || (arguments[0] instanceof Carbonite.Statements.Break) || (arguments[0] instanceof Carbonite.Statements.Try) || (arguments[0] instanceof Carbonite.Statements.Throw) || (arguments[0] instanceof Carbonite.Statements.Native) || (arguments[0] instanceof Carbonite.Statements.Expression) || (arguments[0] instanceof Carbonite.Statements.Yield)) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var reference = arguments[0];
 		var m = {};
 		var value = new carbide_proxy_Carbonite_Statement(m);

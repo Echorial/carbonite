@@ -128,7 +128,12 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 								argInit.push("		var " + defName + " = arguments[" + a + "];\n");
 							}
 							
-							overloads.push("	if (arguments.length == " + method.arguments.length() + check.join("") + ") {\n" + argInit.join("") + this.methodStr(method) + "\n	}\n");
+							let argsLength = method.arguments.length();
+
+							if (method.isAsync)
+								argsLength++;
+
+							overloads.push("	if (arguments.length == " + argsLength + check.join("") + ") {\n" + argInit.join("") + this.methodStr(method) + "\n	}\n");
 						}
 					}
 				}
@@ -203,13 +208,31 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 
 	bound public override <string>function body(Carbonite.Body body, int indent) {
 		var <string>array statements = new <string>array();
+		var <string>array asyncCloses = new <string>array();
 
 		for (var int i in body.statements) {
 			var Carbonite.Statement statement = body.statements[i];
+			
+			for (let int a in statement.asyncCalls) {
+				let call = statement.asyncCalls[a];
+				let asyncCall = this.sequence(call.parent, call.asyncIndex, indent + 1);
+				let comma = ", ";
+
+				if (call.arguments.length == 0) {
+					comma = "";
+				}
+				
+				statements.push(this.indent(indent) + asyncCall.substr(0, asyncCall.length - 1) + comma + "function (" + this.asyncName(call.asyncIndex) + ") {");
+
+				asyncCloses.push(this.indent(indent - 1) + "});");
+
+				indent++;
+			}
+
 			statements.push(this.indent(indent) + this.statement(statement, indent + 1));
 		}
 
-		return statements.join("\n");
+		return statements.join("\n") + asyncCloses.join("\n");
 	}
 
 	bound public override <string>function define(Carbonite.Define define, int indent) {
@@ -287,7 +310,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		}else if (statement.type == "native") {
 			var Carbonite.Statements.Native nativeState = statement;
 			if (nativeState.platform == "javascript")
-				return nativeState.content;
+				return nativeState.content.replace("@" + "return", "arguments[arguments.length - 1]");
 			return "";
 		}
 	}
@@ -386,8 +409,18 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		}
 	}
 
+	bound public string asyncName(int index) {
+		return "_c_async" + index;
+	}
+
 	bound public override <string>function sequence(Carbonite.Terms.Sequence sequence, int indent) {
+		return this.sequence(sequence, 0, indent);
+	}
+
+	bound public override <string>function sequence(Carbonite.Terms.Sequence sequence, int asyncIndex, int indent) {
 		var string rtn = "";
+
+		var string callSection = "";
 
 		for (var int i in sequence.parts) {
 			var Carbonite.Part part = sequence.parts[i];
@@ -460,6 +493,13 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 						rtn = this.callMethod(callOn, cast.arguments, rtn + methodName, indent);
 					}else{
 						rtn += this.callMethod(callOn, cast.arguments, "", indent);
+					}
+
+					if (cast.isAsyncCall and cast.asyncIndex == asyncIndex)
+						return rtn;
+
+					if (callOn.isAsync) {
+						rtn = this.asyncName(cast.asyncIndex);
 					}
 				}else{
 					var <string>array args = new <string>array();

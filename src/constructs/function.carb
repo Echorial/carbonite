@@ -4,6 +4,8 @@ class Carbonite.Function {
 	Carbonite.Body body = null;
 	int blockIndex = 0;
 
+	bool isAsync = false;
+
 	map raw = null;
 	<Carbonite.Argument>array arguments = new <Carbonite.Argument>array();
 
@@ -17,6 +19,12 @@ class Carbonite.Function {
 		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
 		this.output.loadFromRaw(this.raw["output"]);
 		this.body.relativeOutput = this.output;
+
+		// Handle anonymous async declaration
+		if (this.raw.hasKey("async") and this.raw["async"] != null) {
+			this.body.rootAsyncBody = true;
+			this.isAsync = true;
+		}
 		
 		var <map>array arguments = this.raw["parameters"];
 		for (var int i in arguments) {

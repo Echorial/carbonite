@@ -4,6 +4,9 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 	bound public <Carbonite.Expression>array arguments = new <Carbonite.Expression>array();
 	bound public override string type = "call";
 
+	bound public int asyncIndex = 0;
+	bound public bool isAsyncCall = false;
+
 	fixed public <Carbonite.Parts.Call>function @construct(Carbonite.Part prev, Carbonite.Term parent) {
 		this.previous = prev;
 		this.parent = parent;
@@ -56,7 +59,18 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 
 						this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
 						this.output = method.output;
-						if (method.binding == "bound") {
+
+						if (method.isAsync) {
+							var Carbonite.Members.Method parentMethod = this.parent.container.parent;
+
+							parentMethod.asyncIndex++;
+							this.isAsyncCall = true;
+							this.asyncIndex = parentMethod.asyncIndex;
+							
+							this.parent.parent.asyncCalls.push(this);
+						}
+
+						if (prev.type == "reference" and method.binding == "bound") {
 							parent.source.error(parent, "Cannot call bounded method on a fixed reference in type '" + refMeth.reference.parent.name + "'");
 							Exception.throw("Build error");
 						}
@@ -65,6 +79,16 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 							var Carbonite.Members.Method method = refMeth.reference.parent.overloadWithContext(cast.text, types, prev.context, parent);
 							this.reference = Carbonite.Member.makeReference(prev.output.reference, method, prev.context);
 							this.output = method.output.getWithContext(prev.context);
+
+							if (refMeth.reference.isAsync) {
+								var Carbonite.Members.Method parentMethod = this.parent.container.parent;
+
+								parentMethod.asyncIndex++;
+								this.isAsyncCall = true;
+								this.asyncIndex = parentMethod.asyncIndex;
+								
+								this.parent.parent.asyncCalls.push(this);
+							}
 						}else{
 							var info = refMeth.reference.parent.overloadWithCast(cast.text, types, parent);
 							var Carbonite.Members.Method method = info.method;
@@ -77,6 +101,14 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 
 							this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
 							this.output = method.output;
+
+							if (refMeth.reference.isAsync) {
+								var Carbonite.Members.Method parentMethod = this.parent.container.parent;
+
+								parentMethod.asyncIndex++;
+								this.isAsyncCall = true;
+								this.asyncIndex = parentMethod.asyncIndex;
+							}
 						}
 					}
 				}

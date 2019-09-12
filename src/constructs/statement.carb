@@ -4,17 +4,27 @@ class Carbonite.Statement inherits Carbonite.Range, object {
 	bound public map raw = empty;
 	bound public int blockIndex = 0;
 
+	bound public <Carbonite.Parts.Call&>array asyncCalls = null;
+
 	[Expose, ReadOnly]
 	fixed public string type = "";
 
 	fixed public <Carbonite.Statement>function @construct(Carbonite.Body container) {
 		this.container = container;
+
+		this.asyncCalls = new <Carbonite.Parts.Call&>array();
 	}
 
 	bound public <void>function loadFromRaw(map raw) {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+
+	bound public void addAsyncCallsFromExpression(Carbonite.Expression& exp) {
+		for (let int i in exp.asyncCalls) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+		}
 	}
 
 	fixed public <Carbonite.Statement>function make(Carbonite.Body container, map raw) {

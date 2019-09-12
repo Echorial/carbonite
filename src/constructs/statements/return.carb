@@ -19,5 +19,9 @@ class Carbonite.Statements.Return inherits Carbonite.Statement {
 				}
 			}
 		}
+
+		if (this.expression != null) {
+			this.addAsyncCallsFromExpression(this.expression);
+		}
 	}
 }

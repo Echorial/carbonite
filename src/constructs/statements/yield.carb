@@ -17,5 +17,7 @@ class Carbonite.Statements.Yield inherits Carbonite.Statement {
 				this.buildError("Invalid yield type '" + this.expression.output.reference.name + "' in statement");
 			}
 		}
+
+		this.addAsyncCallsFromExpression(this.expression);
 	}
 }

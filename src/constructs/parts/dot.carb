@@ -11,10 +11,13 @@ class Carbonite.Parts.Dot inherits Carbonite.Part {
 		if (prev.output.reference.hasChild(text)) {
 			this.output = new Carbonite.Type(parent.parent.parent.compiler, parent.parent.parent);
 			var Carbonite.Class found = prev.output.reference.getChild(text);
+			/*this.root = new Carbonite.Define("_c_dotRoot", this.output);
+			this.context = this.output;*/
 			this.output.loadFromName(found.route, parent.raw);
 		}else{
 			this.reference = Carbonite.Member.makeReference(prev.output.reference, prev.output.reference.dotMember(text, parent), prev.context);
 			this.output = this.reference.output;
+			//this.root = new Carbonite.Define("_c_dotRoot", this.output);
 			if (this.reference.type == "property") {
 				var Carbonite.Members.ReferenceProperty cast = this.reference;
 				this.context = cast.reference.output;
@@ -22,6 +25,8 @@ class Carbonite.Parts.Dot inherits Carbonite.Part {
 				this.context = prev.context;
 			}
 		}
-		this.root = prev.root;
+		if (prev.root != null) {
+			this.root = prev.root;
+		}
 	}
 }

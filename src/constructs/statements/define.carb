@@ -6,5 +6,9 @@ class Carbonite.Statements.Define inherits Carbonite.Statement {
 	bound public override <void>function build(map raw, Carbonite.Body container) {
 		this.define = Carbonite.Define.make(raw, container);
 		this.define.blockIndex = this.blockIndex;
+
+		if (this.define.initializer != null) {
+			this.addAsyncCallsFromExpression(this.define.initializer);
+		}
 	}
 }

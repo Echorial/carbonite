@@ -4,6 +4,11 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 	bound public bool variadic = false;
 	bound public bool simpleNative = false;
 
+	`Used to build unique async call ids`
+	bound public int asyncIndex = 0;
+
+	bound public bool isAsync = false;
+
 	bound public Carbide.Virtual.Block nativeBlock = null;
 
 	bound public <Carbonite.Members.Method>function getReference() {
@@ -175,6 +180,12 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 					var string cStr = "context";
 					var Carbonite.Define context = new Carbonite.Define(cStr, cc);
 					this.body.scope.add(context);
+				}
+
+				// Handle async declaration
+				if (this.hasFlag("async")) {
+					this.isAsync = true;
+					this.body.rootAsyncBody = true;
 				}
 			}
 

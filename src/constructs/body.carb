@@ -14,6 +14,9 @@ class Carbonite.Body inherits object, Carbonite.Range {
 
 	bound public Carbonite.Body parentBody = null;
 
+	`Is this body apart of an async function or method.`
+	bound public bool rootAsyncBody = false;
+
 	fixed public <Carbonite.Body>function @construct(Carbonite.Member parent, map raw) {
 		this.parent = parent;
 		this.raw = raw;
@@ -53,5 +56,13 @@ class Carbonite.Body inherits object, Carbonite.Range {
 		this.scope.parent = parent.scope;
 		this.relativeOutput = parent.relativeOutput;
 		this.parentBody = parent;
+		this.rootAsyncBody = parent.rootAsyncBody;
+	}
+
+	bound public <Carbonite.Body>function getRootBody() {
+		if (this.parentBody != null)
+			return this.parentBody.getRootBody();
+		
+		return this;
 	}
 }

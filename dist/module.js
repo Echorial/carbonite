@@ -2575,6 +2575,10 @@ Carbonite.Members.Method = function () {
 
 	this.simpleNative = false;
 
+	this.asyncIndex = 0;
+
+	this.isAsync = false;
+
 	this.nativeBlock = null;
 
 	this.binding = "bound";
@@ -2824,6 +2828,10 @@ Carbonite.Members.Method.prototype.build = function () {
 							var cStr = "context";
 							var context = new Carbonite.Define(cStr, cc);
 							this.body.scope.add(context);
+							}
+						if (this.hasFlag("async")) {
+							this.isAsync = true;
+							this.body.rootAsyncBody = true;
 							}
 					}
 				if (this.name == "@index") {
@@ -3511,6 +3519,10 @@ Carbonite.Members.Operator = function () {
 
 	this.simpleNative = false;
 
+	this.asyncIndex = 0;
+
+	this.isAsync = false;
+
 	this.nativeBlock = null;
 
 	this.binding = "bound";
@@ -3773,6 +3785,10 @@ Carbonite.Members.Operator.prototype.build = function () {
 							var cStr = "context";
 							var context = new Carbonite.Define(cStr, cc);
 							this.body.scope.add(context);
+							}
+						if (this.hasFlag("async")) {
+							this.isAsync = true;
+							this.body.rootAsyncBody = true;
 							}
 					}
 				if (this.name == "@index") {
@@ -4343,6 +4359,8 @@ Carbonite.Function = function () {
 
 	this.blockIndex = 0;
 
+	this.isAsync = false;
+
 	this.raw = null;
 
 	this.arguments = [];
@@ -4358,6 +4376,10 @@ Carbonite.Function = function () {
 		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
 		this.output.loadFromRaw(this.raw["output"]);
 		this.body.relativeOutput = this.output;
+		if (("async" in this.raw) && this.raw["async"] != null) {
+			this.body.rootAsyncBody = true;
+			this.isAsync = true;
+			}
 		var ___arguments = this.raw["parameters"];
 		for (var i = 0; i < ___arguments.length; i++) {
 			var argument = ___arguments[i];
@@ -4394,6 +4416,8 @@ Carbonite.Body = function () {
 	this.relativeOutput = null;
 
 	this.parentBody = null;
+
+	this.rootAsyncBody = false;
 
 	this.startOffset = 0;
 
@@ -4452,6 +4476,16 @@ Carbonite.Body.prototype.inherit = function () {
 		this.scope.parent = parent.scope;
 		this.relativeOutput = parent.relativeOutput;
 		this.parentBody = parent;
+		this.rootAsyncBody = parent.rootAsyncBody;
+	}
+}
+
+Carbonite.Body.prototype.getRootBody = function () {
+	if (arguments.length == 0) {
+		if (this.parentBody != null) {
+			return this.parentBody.getRootBody();
+			}
+		return this;
 	}
 }
 
@@ -4494,6 +4528,8 @@ Carbonite.Statement = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -4503,6 +4539,7 @@ Carbonite.Statement = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -4514,6 +4551,15 @@ Carbonite.Statement.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statement.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -4610,6 +4656,8 @@ Carbonite.Statements.If = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -4619,6 +4667,7 @@ Carbonite.Statements.If = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -4637,6 +4686,7 @@ Carbonite.Statements.If.prototype.build = function () {
 		for (var i = 0; i < alternatives.length; i++) {
 			this.alternatives.push(new Carbonite.Statements.IfAlternative(this, alternatives[i]));
 			}
+		this.addAsyncCallsFromExpression(this.check);
 	}
 }
 
@@ -4646,6 +4696,15 @@ Carbonite.Statements.If.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.If.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -4780,6 +4839,8 @@ Carbonite.Statements.Return = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -4789,6 +4850,7 @@ Carbonite.Statements.Return = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -4813,6 +4875,9 @@ Carbonite.Statements.Return.prototype.build = function () {
 					}
 				}
 			}
+		if (this.expression != null) {
+			this.addAsyncCallsFromExpression(this.expression);
+			}
 	}
 }
 
@@ -4822,6 +4887,15 @@ Carbonite.Statements.Return.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Return.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -4899,6 +4973,8 @@ Carbonite.Statements.Define = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -4908,6 +4984,7 @@ Carbonite.Statements.Define = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -4919,6 +4996,9 @@ Carbonite.Statements.Define.prototype.build = function () {
 		var container = arguments[1];
 		this.define = Carbonite.Define.make(raw, container);
 		this.define.blockIndex = this.blockIndex;
+		if (this.define.initializer != null) {
+			this.addAsyncCallsFromExpression(this.define.initializer);
+			}
 	}
 }
 
@@ -4928,6 +5008,15 @@ Carbonite.Statements.Define.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Define.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5011,6 +5100,8 @@ Carbonite.Statements.For = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5020,6 +5111,7 @@ Carbonite.Statements.For = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5038,6 +5130,11 @@ Carbonite.Statements.For.prototype.build = function () {
 		this.iterate = new Carbonite.Expression(container.parent.parent, this.body);
 		this.iterate.loadFromRaw(raw["iterate"]);
 		this.body.build();
+		if (this.define.initializer != null) {
+			this.addAsyncCallsFromExpression(this.define.initializer);
+			}
+		this.addAsyncCallsFromExpression(this.iterate);
+		this.addAsyncCallsFromExpression(this.check);
 	}
 }
 
@@ -5047,6 +5144,15 @@ Carbonite.Statements.For.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.For.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5128,6 +5234,8 @@ Carbonite.Statements.ForIn = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5137,6 +5245,7 @@ Carbonite.Statements.ForIn = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5162,6 +5271,15 @@ Carbonite.Statements.ForIn.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.ForIn.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5241,6 +5359,8 @@ Carbonite.Statements.While = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5250,6 +5370,7 @@ Carbonite.Statements.While = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5264,6 +5385,7 @@ Carbonite.Statements.While.prototype.build = function () {
 		this.check = new Carbonite.Expression(container.parent.parent, this.body);
 		this.check.loadFromRaw(raw["check"]["expression"]);
 		this.body.build();
+		this.addAsyncCallsFromExpression(this.check);
 	}
 }
 
@@ -5273,6 +5395,15 @@ Carbonite.Statements.While.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.While.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5348,6 +5479,8 @@ Carbonite.Statements.Continue = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5357,6 +5490,7 @@ Carbonite.Statements.Continue = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5368,6 +5502,15 @@ Carbonite.Statements.Continue.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Continue.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5451,6 +5594,8 @@ Carbonite.Statements.Break = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5460,6 +5605,7 @@ Carbonite.Statements.Break = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5471,6 +5617,15 @@ Carbonite.Statements.Break.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Break.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5558,6 +5713,8 @@ Carbonite.Statements.Try = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5567,6 +5724,7 @@ Carbonite.Statements.Try = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5593,6 +5751,15 @@ Carbonite.Statements.Try.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Try.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5690,6 +5857,8 @@ Carbonite.Statements.Throw = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5699,6 +5868,7 @@ Carbonite.Statements.Throw = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5710,6 +5880,7 @@ Carbonite.Statements.Throw.prototype.build = function () {
 		var container = arguments[1];
 		this.expression = new Carbonite.Expression(container.parent.parent, container);
 		this.expression.loadFromRaw(raw["expression"]);
+		this.addAsyncCallsFromExpression(this.expression);
 	}
 }
 
@@ -5719,6 +5890,15 @@ Carbonite.Statements.Throw.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Throw.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5798,6 +5978,8 @@ Carbonite.Statements.Native = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5807,6 +5989,7 @@ Carbonite.Statements.Native = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5827,6 +6010,15 @@ Carbonite.Statements.Native.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Native.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -5904,6 +6096,8 @@ Carbonite.Statements.Expression = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -5913,6 +6107,7 @@ Carbonite.Statements.Expression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -5925,6 +6120,7 @@ Carbonite.Statements.Expression.prototype.build = function () {
 		this.expression = new Carbonite.Expression(container.parent.parent, container);
 		this.expression.blockIndex = this.blockIndex;
 		this.expression.loadFromRaw(raw);
+		this.addAsyncCallsFromExpression(this.expression);
 	}
 }
 
@@ -5934,6 +6130,15 @@ Carbonite.Statements.Expression.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Expression.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -6011,6 +6216,8 @@ Carbonite.Statements.Yield = function () {
 
 	this.blockIndex = 0;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -6020,6 +6227,7 @@ Carbonite.Statements.Yield = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var container = arguments[0];
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -6040,6 +6248,7 @@ Carbonite.Statements.Yield.prototype.build = function () {
 				this.buildError("Invalid yield type '" + this.expression.output.reference.name + "' in statement");
 				}
 			}
+		this.addAsyncCallsFromExpression(this.expression);
 	}
 }
 
@@ -6049,6 +6258,15 @@ Carbonite.Statements.Yield.prototype.loadFromRaw = function () {
 		this.raw = raw;
 		this.loadLocation(this.container.parent.parent, raw);
 		this.build(raw, this.container);
+	}
+}
+
+Carbonite.Statements.Yield.prototype.addAsyncCallsFromExpression = function () {
+	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var exp = arguments[0];
+		for (var i = 0; i < exp.asyncCalls.length; i++) {
+			this.asyncCalls.push(exp.asyncCalls[i]);
+			}
 	}
 }
 
@@ -6282,6 +6500,8 @@ Carbonite.Expression = function () {
 
 	this.castMethod = null;
 
+	this.asyncCalls = null;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -6293,6 +6513,7 @@ Carbonite.Expression = function () {
 		var container = arguments[1];
 		this.parent = parent;
 		this.container = container;
+		this.asyncCalls = [];
 	}
 
 }
@@ -8530,7 +8751,9 @@ Carbonite.Parts.Dot = function () {
 						this.context = prev.context;
 					}
 			}
-		this.root = prev.root;
+		if (prev.root != null) {
+			this.root = prev.root;
+			}
 	}
 
 }
@@ -8543,6 +8766,10 @@ Carbonite.Parts.Call = function () {
 	this.arguments = [];
 
 	this.type = "call";
+
+	this.asyncIndex = 0;
+
+	this.isAsyncCall = false;
 
 	this.output = null;
 
@@ -8605,7 +8832,14 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (
 									}
 								this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
 								this.output = method.output;
-								if (method.binding == "bound") {
+								if (method.isAsync) {
+									var parentMethod = this.parent.container.parent;
+									parentMethod.asyncIndex++;
+									this.isAsyncCall = true;
+									this.asyncIndex = parentMethod.asyncIndex;
+									this.parent.parent.asyncCalls.push(this);
+									}
+								if (prev.type == "reference" && method.binding == "bound") {
 									parent.source.error(parent, "Cannot call bounded method on a fixed reference in type '" + refMeth.reference.parent.name + "'");
 									throw new Error("Build error");
 									}
@@ -8614,6 +8848,13 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (
 										var method = refMeth.reference.parent.overloadWithContext(cast.text, types, prev.context, parent);
 										this.reference = Carbonite.Member.makeReference(prev.output.reference, method, prev.context);
 										this.output = method.output.getWithContext(prev.context);
+										if (refMeth.reference.isAsync) {
+											var parentMethod = this.parent.container.parent;
+											parentMethod.asyncIndex++;
+											this.isAsyncCall = true;
+											this.asyncIndex = parentMethod.asyncIndex;
+											this.parent.parent.asyncCalls.push(this);
+											}
 										}else{
 											var info = refMeth.reference.parent.overloadWithCast(cast.text, types, parent);
 											var method = info.method;
@@ -8624,6 +8865,12 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (
 												}
 											this.reference = new Carbonite.Members.ReferenceMethod(method, this.previous.context);
 											this.output = method.output;
+											if (refMeth.reference.isAsync) {
+												var parentMethod = this.parent.container.parent;
+												parentMethod.asyncIndex++;
+												this.isAsyncCall = true;
+												this.asyncIndex = parentMethod.asyncIndex;
+												}
 										}
 								}
 						}
@@ -9578,7 +9825,11 @@ Carbonite.Assemblers.Javascript.prototype.methods = function () {
 									}
 								argInit.push("		var " + defName + " = arguments[" + a + "];\n");
 								}
-							overloads.push("	if (arguments.length == " + method.arguments.length + check.join("") + ") {\n" + argInit.join("") + this.methodStr(method) + "\n	}\n");
+							var argsLength = method.arguments.length;
+							if (method.isAsync) {
+								argsLength++;
+								}
+							overloads.push("	if (arguments.length == " + argsLength + check.join("") + ") {\n" + argInit.join("") + this.methodStr(method) + "\n	}\n");
 							}
 						}
 					}
@@ -9666,11 +9917,23 @@ Carbonite.Assemblers.Javascript.prototype.body = function () {
 		var body = arguments[0];
 		var indent = arguments[1];
 		var statements = [];
+		var asyncCloses = [];
 		for (var i = 0; i < body.statements.length; i++) {
 			var statement = body.statements[i];
+			for (var a = 0; a < statement.asyncCalls.length; a++) {
+				var call = statement.asyncCalls[a];
+				var asyncCall = this.sequence(call.parent, call.asyncIndex, indent + 1);
+				var comma = ", ";
+				if (call.arguments.length == 0) {
+					comma = "";
+					}
+				statements.push(this.indent(indent) + asyncCall.substr(0,asyncCall.length - 1) + comma + "function (" + this.asyncName(call.asyncIndex) + ") {");
+				asyncCloses.push(this.indent(indent - 1) + "});");
+				indent++;
+				}
 			statements.push(this.indent(indent) + this.statement(statement, indent + 1));
 			}
-		return statements.join("\n");
+		return statements.join("\n") + asyncCloses.join("\n");
 	}
 }
 
@@ -9756,7 +10019,7 @@ Carbonite.Assemblers.Javascript.prototype.statement = function () {
 			}else if (statement.type == "native") {
 			var nativeState = statement;
 			if (nativeState.platform == "javascript") {
-				return nativeState.content;
+				return nativeState.content.replace(new RegExp("@" + "return".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "arguments[arguments.length - 1]");
 				}
 			return "";
 			}
@@ -9872,11 +10135,25 @@ Carbonite.Assemblers.Javascript.prototype.term = function () {
 	}
 }
 
+Carbonite.Assemblers.Javascript.prototype.asyncName = function () {
+	if (arguments.length == 1 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
+		var index = arguments[0];
+		return "_c_async" + index;
+	}
+}
+
 Carbonite.Assemblers.Javascript.prototype.sequence = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Terms.Sequence) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var sequence = arguments[0];
 		var indent = arguments[1];
+		return this.sequence(sequence, 0, indent);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Terms.Sequence) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var sequence = arguments[0];
+		var asyncIndex = arguments[1];
+		var indent = arguments[2];
 		var rtn = "";
+		var callSection = "";
 		for (var i = 0; i < sequence.parts.length; i++) {
 			var part = sequence.parts[i];
 			if (part.type == "reference") {
@@ -9948,6 +10225,12 @@ Carbonite.Assemblers.Javascript.prototype.sequence = function () {
 						rtn = this.callMethod(callOn, cast.arguments, rtn + methodName, indent);
 						}else{
 							rtn += this.callMethod(callOn, cast.arguments, "", indent);
+						}
+					if (cast.isAsyncCall && cast.asyncIndex == asyncIndex) {
+						return rtn;
+						}
+					if (callOn.isAsync) {
+						rtn = this.asyncName(cast.asyncIndex);
 						}
 					}else{
 						var args = [];
@@ -17600,15 +17883,19 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 				this.column = 0;
 				}
 			if (c == 0) {
-				var ruleOut0 = this.Type(input, charPos);
-				if (ruleOut0.hadError) {
-					this.giveError(ruleOut0.error.code, "Type(" + ruleOut0.error.expected + ")", ruleOut0.error.found);
-					}else{
-						var ruleOutCast0 = ruleOut0.data["data"];
-						charPos = this.offset;
-						data["type"] = ruleOutCast0;
+				var lit0 = [97, 115, 121, 110, 99, 32];
+				if (currentCode == lit0[literalChar]) {
+					literalChar++;
+					if (literalChar == 6) {
+						data["async"] = this.assembleCodes(lit0);
 						c = 1;
-						this.error.vested++;
+						literalChar = 0;
+						}
+					this.error.vested++;
+					}else{
+						c = 1;
+						charPos--;
+						this.offset--;
 					}
 				}else if (c == 1) {
 				var ruleOut1 = this._(input, charPos);
@@ -17620,11 +17907,15 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 						c = 2;
 					}
 				}else if (c == 2) {
-				if (currentCode == 40) {
-					c = 3;
-					this.error.vested++;
+				var ruleOut2 = this.Type(input, charPos);
+				if (ruleOut2.hadError) {
+					this.giveError(ruleOut2.error.code, "Type(" + ruleOut2.error.expected + ")", ruleOut2.error.found);
 					}else{
-						this.giveError(1, "(", currentChar);
+						var ruleOutCast2 = ruleOut2.data["data"];
+						charPos = this.offset;
+						data["type"] = ruleOutCast2;
+						c = 3;
+						this.error.vested++;
 					}
 				}else if (c == 3) {
 				var ruleOut3 = this._(input, charPos);
@@ -17636,30 +17927,11 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 						c = 4;
 					}
 				}else if (c == 4) {
-				var ruleOut4 = this.Parameter(input, charPos);
-				if (ruleOut4.hadError) {
+				if (currentCode == 40) {
 					c = 5;
-					charPos--;
-					this.offset--;
-					if (ruleOut4.error.vested > 1) {
-						this.giveError(ruleOut4.error.code, ruleOut4.error.expected, ruleOut4.error.found);
-						}
+					this.error.vested++;
 					}else{
-						var ruleOutCast4 = ruleOut4.data["data"];
-						charPos = this.offset;
-						var castparameters4 = data["parameters"];
-						castparameters4.push(ruleOutCast4);
-						if (input.charCodeAt(charPos + 1) != 44) {
-							c = 5;
-							continue;
-							}else{
-								charPos++;
-							}
-						if (charPos == input.length - 1) {
-							this.giveError(2, "EOF", currentChar);
-							}
-						c = 4;
-						this.error.vested++;
+						this.giveError(1, "(", currentChar);
 					}
 				}else if (c == 5) {
 				var ruleOut5 = this._(input, charPos);
@@ -17671,11 +17943,30 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 						c = 6;
 					}
 				}else if (c == 6) {
-				if (currentCode == 41) {
+				var ruleOut6 = this.Parameter(input, charPos);
+				if (ruleOut6.hadError) {
 					c = 7;
-					this.error.vested++;
+					charPos--;
+					this.offset--;
+					if (ruleOut6.error.vested > 1) {
+						this.giveError(ruleOut6.error.code, ruleOut6.error.expected, ruleOut6.error.found);
+						}
 					}else{
-						this.giveError(1, ")", currentChar);
+						var ruleOutCast6 = ruleOut6.data["data"];
+						charPos = this.offset;
+						var castparameters6 = data["parameters"];
+						castparameters6.push(ruleOutCast6);
+						if (input.charCodeAt(charPos + 1) != 44) {
+							c = 7;
+							continue;
+							}else{
+								charPos++;
+							}
+						if (charPos == input.length - 1) {
+							this.giveError(2, "EOF", currentChar);
+							}
+						c = 6;
+						this.error.vested++;
 					}
 				}else if (c == 7) {
 				var ruleOut7 = this._(input, charPos);
@@ -17687,16 +17978,11 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 						c = 8;
 					}
 				}else if (c == 8) {
-				var lit8 = [61, 62];
-				if (currentCode == lit8[literalChar]) {
-					literalChar++;
-					if (literalChar == 2) {
-						c = 9;
-						literalChar = 0;
-						}
+				if (currentCode == 41) {
+					c = 9;
 					this.error.vested++;
 					}else{
-						this.giveError(1, "" + this.assembleCodes(lit8) + "", currentChar);
+						this.giveError(1, ")", currentChar);
 					}
 				}else if (c == 9) {
 				var ruleOut9 = this._(input, charPos);
@@ -17708,19 +17994,42 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 						c = 10;
 					}
 				}else if (c == 10) {
-				var ruleOut10 = this.Block(input, charPos);
-				if (ruleOut10.hadError) {
-					this.giveError(ruleOut10.error.code, "Block(" + ruleOut10.error.expected + ")", ruleOut10.error.found);
+				var lit10 = [61, 62];
+				if (currentCode == lit10[literalChar]) {
+					literalChar++;
+					if (literalChar == 2) {
+						c = 11;
+						literalChar = 0;
+						}
+					this.error.vested++;
 					}else{
-						var ruleOutCast10 = ruleOut10.data["data"];
+						this.giveError(1, "" + this.assembleCodes(lit10) + "", currentChar);
+					}
+				}else if (c == 11) {
+				var ruleOut11 = this._(input, charPos);
+				if (ruleOut11.hadError) {
+					this.giveError(ruleOut11.error.code, "White space(optional)(" + ruleOut11.error.expected + ")", ruleOut11.error.found);
+					}else{
+						var ruleOutCast11 = ruleOut11.data["data"];
 						charPos = this.offset;
-						data["body"] = ruleOutCast10;
+						c = 12;
+					}
+				}else if (c == 12) {
+				var ruleOut12 = this.Block(input, charPos);
+				if (ruleOut12.hadError) {
+					this.giveError(ruleOut12.error.code, "Block(" + ruleOut12.error.expected + ")", ruleOut12.error.found);
+					}else{
+						var ruleOutCast12 = ruleOut12.data["data"];
+						charPos = this.offset;
+						data["body"] = ruleOutCast12;
 						if (true) {
 							var castacbody0 = data["body"];
+							var actionCap0async = data["async"];
 							var actionCap0type = data["type"];
 							var actionCap0parameters = data["parameters"];
 							var actionCap0body = data["body"];
 							dataStore["data"]["type"] = "function";
+							dataStore["data"]["async"] = actionCap0async;
 							dataStore["data"]["output"] = actionCap0type;
 							dataStore["data"]["parameters"] = actionCap0parameters;
 							dataStore["data"]["body"] = actionCap0body;
@@ -20960,6 +21269,8 @@ CarboniteCarbonParser.prototype.Inline_Define = function () {
 							var actionCap0type = data["type"];
 							dataStore["data"]["type"] = "define";
 							dataStore["data"]["name"] = actionCap0name;
+							dataStore["data"]["end"] = charPos;
+							dataStore["data"]["start"] = startPos;
 							dataStore["data"]["valueType"] = actionCap0type;
 							}
 						c = 0 - 1;

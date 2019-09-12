@@ -11,5 +11,7 @@ class Carbonite.Statements.While inherits Carbonite.Statement {
 		this.check.loadFromRaw(raw["check"]["expression"]);
 
 		this.body.build();
+
+		this.addAsyncCallsFromExpression(this.check);
 	}
 }

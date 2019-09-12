@@ -7779,6 +7779,8 @@ charPos = this.offset;
 var map castacname0 = data["name"];
 var string actionCap0name = data["name"];var map actionCap0type = data["type"];dataStore["data"]["type"] = "define";
 dataStore["data"]["name"] = actionCap0name;
+dataStore["data"]["end"] = charPos;
+dataStore["data"]["start"] = startPos;
 dataStore["data"]["valueType"] = actionCap0type;
 }
 		c = 0 - 1;

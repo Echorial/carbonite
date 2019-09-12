@@ -23,10 +23,14 @@ class Carbonite.Expression inherits Carbonite.Range {
 
 	bound public bool doesCast = false;
 	bound public Carbonite.Members.Method castMethod = null;
+
+	bound public <Carbonite.Parts.Call&>array asyncCalls = null;
 	
 	fixed public <Carbonite.Expression>function @construct(Carbonite.Class parent, Carbonite.Body container) {
 		this.parent = parent;
 		this.container = container;
+
+		this.asyncCalls = new <Carbonite.Parts.Call&>array();
 	}
 
 	bound public <Carbonite.Terms.Expression>function spawnChild(<map>array terms) {

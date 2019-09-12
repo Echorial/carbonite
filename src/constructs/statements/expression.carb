@@ -7,5 +7,7 @@ class Carbonite.Statements.Expression inherits Carbonite.Statement {
 		this.expression = new Carbonite.Expression(container.parent.parent, container);
 		this.expression.blockIndex = this.blockIndex;
 		this.expression.loadFromRaw(raw);
+
+		this.addAsyncCallsFromExpression(this.expression);
 	}
 }
