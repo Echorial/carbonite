@@ -17,6 +17,9 @@ class Carbonite.Body inherits object, Carbonite.Range {
 	`Is this body apart of an async function or method.`
 	bound public bool rootAsyncBody = false;
 
+	`If this or its children contain an async statement.`
+	bound public bool hasAsyncStatement = false;
+
 	fixed public <Carbonite.Body>function @construct(Carbonite.Member parent, map raw) {
 		this.parent = parent;
 		this.raw = raw;
@@ -50,6 +53,13 @@ class Carbonite.Body inherits object, Carbonite.Range {
 			state.blockIndex = i;
 			this.statements.push(state);
 		}
+	}
+
+	bound public <void>function setHasAsyncStatement() {
+		this.hasAsyncStatement = true;
+
+		if (this.parentBody != null)
+			this.parentBody.setHasAsyncStatement();
 	}
 
 	bound public <void>function inherit(Carbonite.Body parent) {

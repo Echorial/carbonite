@@ -4,15 +4,32 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 	bound public bool variadic = false;
 	bound public bool simpleNative = false;
 
-	`Used to build unique async call ids`
+	`Used to build unique async call ids.`
 	bound public int asyncIndex = 0;
+
+	`Used by assemblers as a way to uid loops and other complex statements.`
+	bound public int complexAsyncIndex = 0;
 
 	bound public bool isAsync = false;
 
 	bound public Carbide.Virtual.Block nativeBlock = null;
 
+	bound public <Carbonite.Parts.Call&>array callGraph = new <Carbonite.Parts.Call&>array();
+
 	bound public <Carbonite.Members.Method>function getReference() {
 		return this;
+	}
+
+	bound public <void>function updateCallGraphForAsync() {
+		for (let int i in this.callGraph) {
+			let call = this.callGraph[i];
+
+			call.isAsync = true;
+		}
+	}
+
+	bound public <void>function addCaller(Carbonite.Parts.Call& call) {
+		this.callGraph.push(call);
 	}
 
 	bound public bool hasOverload() {

@@ -22,6 +22,9 @@ class Carbonite.Statement inherits Carbonite.Range, object {
 	}
 
 	bound public void addAsyncCallsFromExpression(Carbonite.Expression& exp) {
+		if (exp.asyncCalls.length > 0)
+			this.container.setHasAsyncStatement();
+
 		for (let int i in exp.asyncCalls) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 		}
@@ -61,6 +64,10 @@ class Carbonite.Statement inherits Carbonite.Range, object {
 			rtn = new Carbonite.Statements.Yield(container);
 		}
 		return rtn;
+	}
+
+	virtual bound public <bool>function containsAsyncStatement() {
+		return false;
 	}
 
 	bound public <void>function build(map raw, Carbonite.Body container) {}

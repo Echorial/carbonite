@@ -869,14 +869,14 @@ Carbonite.Compiler.prototype.build = function () {
 				}
 			}
 		this.currentLevel = 1;
-		for (var i = this.roots.length - 1;i >= 0;i--) {
+		for (var i = this.roots.length - 1; i >= 0; i--) {
 			var root = this.roots[i];
 			if (root.alreadyBuilt == false && root.raw != null) {
 				root.buildDefaultTemplates();
 				}
 			}
 		this.currentLevel = 2;
-		for (var i = this.roots.length - 1;i >= 0;i--) {
+		for (var i = this.roots.length - 1; i >= 0; i--) {
 			var root = this.roots[i];
 			if (root.alreadyBuilt == false && root.raw != null) {
 				root.buildMembers();
@@ -1153,14 +1153,14 @@ Carbonite.Router.prototype.bake = function () {
 				high = level;
 				}
 			}
-		for (var i = 1;i <= high;i++) {
+		for (var i = 1; i <= high; i++) {
 			var lvl = this.getLevel(i);
 			if (lvl != null) {
 				if (i == 1) {
 
 					}else{
 						var nmes = lvl.names;
-						for (var j = 0;j < lvl.names.length;j++) {
+						for (var j = 0; j < lvl.names.length; j++) {
 							var nme = nmes[j];
 							var parent = this.getNamedAtLevel(this.getParentString(nme), i - 1);
 							if (nme.leveled == false) {
@@ -1715,7 +1715,7 @@ Carbonite.Class.prototype.buildMembers = function () {
 			}
 		if (shouldDo) {
 			var members = this.raw["members"];
-			for (var i = members.length - 1;i >= 0;i--) {
+			for (var i = members.length - 1; i >= 0; i--) {
 				var mem = members[i];
 				if (mem["attribute"] != null) {
 					var cst = mem["attribute"];
@@ -1790,7 +1790,7 @@ Carbonite.Class.prototype.buildInheritance = function () {
 Carbonite.Class.prototype.destroyMembers = function () {
 	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var name = arguments[0];
-		for (var i = this.members.length - 1;i >= 0;i--) {
+		for (var i = this.members.length - 1; i >= 0; i--) {
 			var member = this.members[i];
 			if (member.name == name) {
 				this.members.splice(i, 1);
@@ -2386,7 +2386,7 @@ Carbonite.Member = function () {
 					}
 				this.output.loadFromRaw(rawOutput);
 				var flags = raw["flags"];
-				for (var i = flags.length - 1;i >= 0;i--) {
+				for (var i = flags.length - 1; i >= 0; i--) {
 					var flag = flags[i];
 					if (flag == "fixed") {
 						this.binding = "fixed";
@@ -2577,6 +2577,8 @@ Carbonite.Members.Method = function () {
 
 	this.asyncIndex = 0;
 
+	this.complexAsyncIndex = 0;
+
 	this.isAsync = false;
 
 	this.nativeBlock = null;
@@ -2638,7 +2640,7 @@ Carbonite.Members.Method = function () {
 					}
 				this.output.loadFromRaw(rawOutput);
 				var flags = raw["flags"];
-				for (var i = flags.length - 1;i >= 0;i--) {
+				for (var i = flags.length - 1; i >= 0; i--) {
 					var flag = flags[i];
 					if (flag == "fixed") {
 						this.binding = "fixed";
@@ -3266,7 +3268,7 @@ Carbonite.Members.Property = function () {
 					}
 				this.output.loadFromRaw(rawOutput);
 				var flags = raw["flags"];
-				for (var i = flags.length - 1;i >= 0;i--) {
+				for (var i = flags.length - 1; i >= 0; i--) {
 					var flag = flags[i];
 					if (flag == "fixed") {
 						this.binding = "fixed";
@@ -3521,6 +3523,8 @@ Carbonite.Members.Operator = function () {
 
 	this.asyncIndex = 0;
 
+	this.complexAsyncIndex = 0;
+
 	this.isAsync = false;
 
 	this.nativeBlock = null;
@@ -3582,7 +3586,7 @@ Carbonite.Members.Operator = function () {
 					}
 				this.output.loadFromRaw(rawOutput);
 				var flags = raw["flags"];
-				for (var i = flags.length - 1;i >= 0;i--) {
+				for (var i = flags.length - 1; i >= 0; i--) {
 					var flag = flags[i];
 					if (flag == "fixed") {
 						this.binding = "fixed";
@@ -4419,6 +4423,8 @@ Carbonite.Body = function () {
 
 	this.rootAsyncBody = false;
 
+	this.hasAsyncStatement = false;
+
 	this.startOffset = 0;
 
 	this.endOffset = 0;
@@ -4466,6 +4472,15 @@ Carbonite.Body.prototype.build = function () {
 			state.loadFromRaw(statement);
 			state.blockIndex = i;
 			this.statements.push(state);
+			}
+	}
+}
+
+Carbonite.Body.prototype.setHasAsyncStatement = function () {
+	if (arguments.length == 0) {
+		this.hasAsyncStatement = true;
+		if (this.parentBody != null) {
+			this.parentBody.setHasAsyncStatement();
 			}
 	}
 }
@@ -4557,6 +4572,9 @@ Carbonite.Statement.prototype.loadFromRaw = function () {
 Carbonite.Statement.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -4600,6 +4618,12 @@ Carbonite.Statement.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statement.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -4702,6 +4726,9 @@ Carbonite.Statements.If.prototype.loadFromRaw = function () {
 Carbonite.Statements.If.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -4745,6 +4772,12 @@ Carbonite.Statements.If.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statements.If.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -4893,6 +4926,9 @@ Carbonite.Statements.Return.prototype.loadFromRaw = function () {
 Carbonite.Statements.Return.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -4936,6 +4972,12 @@ Carbonite.Statements.Return.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statements.Return.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -5014,6 +5056,9 @@ Carbonite.Statements.Define.prototype.loadFromRaw = function () {
 Carbonite.Statements.Define.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -5057,6 +5102,12 @@ Carbonite.Statements.Define.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statements.Define.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -5117,6 +5168,12 @@ Carbonite.Statements.For = function () {
 }
 Carbonite.Statements.For.prototype.type = "for";
 
+Carbonite.Statements.For.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return this.body.hasAsyncStatement;
+	}
+}
+
 Carbonite.Statements.For.prototype.build = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var raw = arguments[0];
@@ -5150,6 +5207,9 @@ Carbonite.Statements.For.prototype.loadFromRaw = function () {
 Carbonite.Statements.For.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -5251,6 +5311,12 @@ Carbonite.Statements.ForIn = function () {
 }
 Carbonite.Statements.ForIn.prototype.type = "forin";
 
+Carbonite.Statements.ForIn.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return this.body.hasAsyncStatement;
+	}
+}
+
 Carbonite.Statements.ForIn.prototype.build = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var raw = arguments[0];
@@ -5277,6 +5343,9 @@ Carbonite.Statements.ForIn.prototype.loadFromRaw = function () {
 Carbonite.Statements.ForIn.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -5376,6 +5445,12 @@ Carbonite.Statements.While = function () {
 }
 Carbonite.Statements.While.prototype.type = "while";
 
+Carbonite.Statements.While.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return this.body.hasAsyncStatement;
+	}
+}
+
 Carbonite.Statements.While.prototype.build = function () {
 	if (arguments.length == 2 && (typeof arguments[0] == 'object' || typeof arguments[0] == 'undefined' || arguments[0] === null) && ((arguments[1] instanceof Carbonite.Body) || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var raw = arguments[0];
@@ -5401,6 +5476,9 @@ Carbonite.Statements.While.prototype.loadFromRaw = function () {
 Carbonite.Statements.While.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -5508,6 +5586,9 @@ Carbonite.Statements.Continue.prototype.loadFromRaw = function () {
 Carbonite.Statements.Continue.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -5551,6 +5632,12 @@ Carbonite.Statements.Continue.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statements.Continue.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -5623,6 +5710,9 @@ Carbonite.Statements.Break.prototype.loadFromRaw = function () {
 Carbonite.Statements.Break.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -5666,6 +5756,12 @@ Carbonite.Statements.Break.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statements.Break.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -5757,6 +5853,9 @@ Carbonite.Statements.Try.prototype.loadFromRaw = function () {
 Carbonite.Statements.Try.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -5800,6 +5899,12 @@ Carbonite.Statements.Try.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statements.Try.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -5896,6 +6001,9 @@ Carbonite.Statements.Throw.prototype.loadFromRaw = function () {
 Carbonite.Statements.Throw.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -5939,6 +6047,12 @@ Carbonite.Statements.Throw.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statements.Throw.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -6016,6 +6130,9 @@ Carbonite.Statements.Native.prototype.loadFromRaw = function () {
 Carbonite.Statements.Native.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -6059,6 +6176,12 @@ Carbonite.Statements.Native.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statements.Native.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -6136,6 +6259,9 @@ Carbonite.Statements.Expression.prototype.loadFromRaw = function () {
 Carbonite.Statements.Expression.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -6179,6 +6305,12 @@ Carbonite.Statements.Expression.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statements.Expression.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -6264,6 +6396,9 @@ Carbonite.Statements.Yield.prototype.loadFromRaw = function () {
 Carbonite.Statements.Yield.prototype.addAsyncCallsFromExpression = function () {
 	if (arguments.length == 1 && ((arguments[0] instanceof Carbonite.Expression) || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var exp = arguments[0];
+		if (exp.asyncCalls.length > 0) {
+			this.container.setHasAsyncStatement();
+			}
 		for (var i = 0; i < exp.asyncCalls.length; i++) {
 			this.asyncCalls.push(exp.asyncCalls[i]);
 			}
@@ -6307,6 +6442,12 @@ Carbonite.Statements.Yield.make = function () {
 			rtn = new Carbonite.Statements.Yield(container);
 			}
 		return rtn;
+	}
+}
+
+Carbonite.Statements.Yield.prototype.containsAsyncStatement = function () {
+	if (arguments.length == 0) {
+		return false;
 	}
 }
 
@@ -6780,7 +6921,7 @@ Carbonite.Expression.buildTermsIntoExpression = function () {
 				}
 			return null;
 			}
-		for (var i = start;i <= end;i++) {
+		for (var i = start; i <= end; i++) {
 			var term = terms[i];
 			if (("operator" in term) && (i != end)) {
 				var operator = term["operator"];
@@ -9788,7 +9929,7 @@ Carbonite.Assemblers.Javascript.prototype.methodStr = function () {
 		var body = "";
 		if (method.hasFlag("native")) {
 			var argumentMaps = [];
-			for (var i = 0;i < method.arguments.length;i++) {
+			for (var i = 0; i < method.arguments.length; i++) {
 				argumentMaps.push("arguments[" + i + "]");
 				}
 			var context = "this";
@@ -9912,10 +10053,40 @@ Carbonite.Assemblers.Javascript.prototype.compareClass = function () {
 	}
 }
 
+Carbonite.Assemblers.Javascript.prototype.asyncLoop = function () {
+	if (arguments.length == 5 && (typeof arguments[0] == 'number' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'string' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'string' || typeof arguments[2] == 'undefined' || arguments[2] === null) && (typeof arguments[3] == 'string' || typeof arguments[3] == 'undefined' || arguments[3] === null) && (typeof arguments[4] == 'string' || typeof arguments[4] == 'undefined' || arguments[4] === null)) {
+		var loopId = arguments[0];
+		var initialize = arguments[1];
+		var check = arguments[2];
+		var iterate = arguments[3];
+		var body = arguments[4];
+		var loopFront = "var _c_loop_async" + loopId + " = function (_c_loop_end" + loopId + ") {";
+		loopFront += "\n	" + initialize;
+		loopFront += "\n	var _c_next" + loopId + " = function () {";
+		loopFront += "\n		if (" + check + ") {";
+		loopFront += "\n			" + body;
+		loopFront += "\n		}else{";
+		loopFront += "\n			_c_loop_end" + loopId + "();";
+		loopFront += "\n		}";
+		loopFront += "\n	};";
+		loopFront += "\n	var _c_complex_exit" + loopId + " = function (_first_run) {if (!_first_run) {" + iterate + "} _c_next" + loopId + "(_c_complex_exit" + loopId + ")};";
+		loopFront += "\n			_c_complex_exit" + loopId + "(true);";
+		loopFront += "\n	};";
+		loopFront += "\n	_c_loop_async" + loopId + "(function () {";
+		return loopFront;
+	}
+}
+
 Carbonite.Assemblers.Javascript.prototype.body = function () {
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var body = arguments[0];
 		var indent = arguments[1];
+		return this.body(body, indent, 0);
+	}
+else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'number' || typeof arguments[1] == 'undefined' || arguments[1] === null) && (typeof arguments[2] == 'number' || typeof arguments[2] == 'undefined' || arguments[2] === null)) {
+		var body = arguments[0];
+		var indent = arguments[1];
+		var complexExitIndex = arguments[2];
 		var statements = [];
 		var asyncCloses = [];
 		for (var i = 0; i < body.statements.length; i++) {
@@ -9931,9 +10102,37 @@ Carbonite.Assemblers.Javascript.prototype.body = function () {
 				asyncCloses.push(this.indent(indent - 1) + "});");
 				indent++;
 				}
-			statements.push(this.indent(indent) + this.statement(statement, indent + 1));
+			if (statement.containsAsyncStatement()) {
+				var parentMethod = body.parent;
+				parentMethod.complexAsyncIndex++;
+				var loopId = parentMethod.complexAsyncIndex;
+				if (statement.type == "for") {
+					var forState = statement;
+					statements.push(this.asyncLoop(loopId, this.define(forState.define, indent), this.expression(forState.check, indent), this.expression(forState.iterate, indent), this.body(forState.body, indent, loopId)));
+					asyncCloses.push(this.indent(indent - 1) + "});");
+					}else if (statement.type == "forin") {
+					var forState = statement;
+					var def = this.define(forState.define, indent);
+					if (forState.iterate.output.reference.route == "array") {
+						statements.push(this.asyncLoop(loopId, def + " = 0;", forState.define.name + " < " + this.expression(forState.iterate, indent) + ".length", forState.define.name + "++", this.body(forState.body, indent, loopId)));
+						}else{
+							statements.push(this.asyncLoop(loopId, "var _c_keys_expr" + forState.define.name + " = " + this.expression(forState.iterate, indent) + "; var _c_key_index" + forState.define.name + " = 0; var _c_keys" + forState.define.name + " = Object.keys(_c_keys_expr" + forState.define.name + "); var " + forState.define.name + " = _c_keys" + forState.define.name + "[0];", "_c_key_index" + forState.define.name + " < " + "_c_keys" + forState.define.name + ".length", "_c_key_index" + forState.define.name + "++; " + forState.define.name + " = _c_keys" + forState.define.name + "[_c_key_index" + forState.define.name + "]", this.body(forState.body, indent, loopId)));
+						}
+					asyncCloses.push(this.indent(indent - 1) + "});");
+					}else if (statement.type == "while") {
+					var whileLoop = statement;
+					statements.push(this.asyncLoop(loopId, "", this.expression(whileLoop.check, indent), "", this.body(whileLoop.body, indent, loopId)));
+					asyncCloses.push(this.indent(indent - 1) + "});");
+					}
+				}else{
+					statements.push(this.indent(indent) + this.statement(statement, indent + 1));
+				}
 			}
-		return statements.join("\n") + asyncCloses.join("\n");
+		var beforeAsyncClose = "";
+		if (complexExitIndex != 0) {
+			beforeAsyncClose = "\n" + this.indent(indent) + "_c_complex_exit" + complexExitIndex + "();\n";
+			}
+		return statements.join("\n") + beforeAsyncClose + asyncCloses.join("\n");
 	}
 }
 
@@ -9988,7 +10187,7 @@ Carbonite.Assemblers.Javascript.prototype.statement = function () {
 			}else if (statement.type == "for") {
 			var forState = statement;
 			var str = "";
-			str = "for (" + this.define(forState.define, indent) + ";" + this.expression(forState.check, indent) + ";" + this.expression(forState.iterate, indent) + ") {\n" + this.body(forState.body, indent) + "\n" + this.indent(indent) + "}";
+			str = "for (" + this.define(forState.define, indent) + "; " + this.expression(forState.check, indent) + "; " + this.expression(forState.iterate, indent) + ") {\n" + this.body(forState.body, indent) + "\n" + this.indent(indent) + "}";
 			return str;
 			}else if (statement.type == "try") {
 			var tryState = statement;
@@ -10037,7 +10236,7 @@ Carbonite.Assemblers.Javascript.prototype.escape = function () {
 	if (arguments.length == 1 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null)) {
 		var content = arguments[0];
 		var newString = "";
-		for (var i = 0;i < content.length;i++) {
+		for (var i = 0; i < content.length; i++) {
 			var cur = content[i];
 			if (cur == "\"" || cur == "\\") {
 				newString += "\\" + cur;
@@ -11291,11 +11490,11 @@ Carbonite.Assemblers.Php.prototype.methodStr = function () {
 		if (method.hasFlag("native")) {
 			var argumentMaps = [];
 			if (single) {
-				for (var i = 0;i < method.arguments.length;i++) {
+				for (var i = 0; i < method.arguments.length; i++) {
 					argumentMaps.push("$" + method.arguments[i].name);
 					}
 				}else{
-					for (var i = 0;i < method.arguments.length;i++) {
+					for (var i = 0; i < method.arguments.length; i++) {
 						argumentMaps.push("$arguments[" + i + "]");
 						}
 				}
@@ -12857,7 +13056,7 @@ else 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof ar
 		if (parser.hadError && (parser.error.found == String.fromCharCode(1))) {
 			parser.error.found = "End of input";
 			}
-		for (var i = 0;i < parser.error.offset;i++) {
+		for (var i = 0; i < parser.error.offset; i++) {
 			parser.error.column++;
 			if (i < parser.currentInput.length) {
 				if (parser.currentInput[i] == "\n") {
@@ -12906,7 +13105,7 @@ CarboniteCarbonParser.prototype.start = function () {
 		var data = this.data["data"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = 0;charPos < input.length;charPos++) {
+		for (var charPos = 0; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (c == 0 - 1) {
@@ -12936,7 +13135,7 @@ CarboniteCarbonParser.prototype.start = function () {
 				break;
 				}
 			}
-		for (var i = 0;i < this.error.offset;i++) {
+		for (var i = 0; i < this.error.offset; i++) {
 			this.error.column++;
 			if (i < this.currentInput.length) {
 				if (this.currentInput[i] == "\n") {
@@ -12965,7 +13164,7 @@ CarboniteCarbonParser.prototype.Document = function () {
 		var c = 0;
 		data["roots"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -13052,7 +13251,7 @@ CarboniteCarbonParser.prototype.Safe_Name = function () {
 		var c = 0;
 		data["after"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -13150,7 +13349,7 @@ CarboniteCarbonParser.prototype.Safe_Name_Seg = function () {
 		var c = 0;
 		data["after"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -13266,7 +13465,7 @@ CarboniteCarbonParser.prototype.Template = function () {
 		var c = 0;
 		data["types"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -13359,7 +13558,7 @@ CarboniteCarbonParser.prototype.Template_Def = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -13452,7 +13651,7 @@ CarboniteCarbonParser.prototype.Template_Default = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -13584,7 +13783,7 @@ CarboniteCarbonParser.prototype.Template_Type = function () {
 		var c = 0;
 		data["templates"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -13696,7 +13895,7 @@ CarboniteCarbonParser.prototype.Inherit = function () {
 		var c = 0;
 		data["types"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -13812,7 +14011,7 @@ CarboniteCarbonParser.prototype.Root = function () {
 		data["templates"] = [];
 		data["members"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -14184,7 +14383,7 @@ CarboniteCarbonParser.prototype.Implements = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -14309,7 +14508,7 @@ CarboniteCarbonParser.prototype.Type = function () {
 		var c = 0;
 		data["reference"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -14422,7 +14621,7 @@ CarboniteCarbonParser.prototype.Flag = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -14499,7 +14698,7 @@ CarboniteCarbonParser.prototype.Member_Flag = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -14570,7 +14769,7 @@ CarboniteCarbonParser.prototype.Optional = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -14641,7 +14840,7 @@ CarboniteCarbonParser.prototype.Parameter = function () {
 		data["op"] = [];
 		data["doc"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -14796,7 +14995,7 @@ CarboniteCarbonParser.prototype.Method = function () {
 		var c = 0;
 		data["parameters"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -14940,7 +15139,7 @@ CarboniteCarbonParser.prototype.Property = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -15026,7 +15225,7 @@ CarboniteCarbonParser.prototype.Attribute_Value = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -15105,7 +15304,7 @@ CarboniteCarbonParser.prototype.Attribute_Pair = function () {
 		var c = 0;
 		data["val"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -15202,7 +15401,7 @@ CarboniteCarbonParser.prototype.Attribute = function () {
 		var c = 0;
 		data["attrs"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -15302,7 +15501,7 @@ CarboniteCarbonParser.prototype.Interface = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -15350,7 +15549,7 @@ CarboniteCarbonParser.prototype.Member_Value = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -15442,7 +15641,7 @@ CarboniteCarbonParser.prototype.Member_Flagged = function () {
 		data["flags"] = [];
 		data["templates"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -15694,7 +15893,7 @@ CarboniteCarbonParser.prototype.Member = function () {
 		data["doc"] = [];
 		data["templates"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -15890,7 +16089,7 @@ CarboniteCarbonParser.prototype.Any_Member = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -15961,7 +16160,7 @@ CarboniteCarbonParser.prototype.Group = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16029,7 +16228,7 @@ CarboniteCarbonParser.prototype.Constant = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16084,7 +16283,7 @@ CarboniteCarbonParser.prototype.Literal_Number = function () {
 		var c = 0;
 		data["num"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16171,7 +16370,7 @@ CarboniteCarbonParser.prototype.Literal_Boolean = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16270,7 +16469,7 @@ CarboniteCarbonParser.prototype.Literal_String = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16326,7 +16525,7 @@ CarboniteCarbonParser.prototype.Literal_Array = function () {
 		var c = 0;
 		data["arr"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16419,7 +16618,7 @@ CarboniteCarbonParser.prototype.Literal_Map_Key = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16533,7 +16732,7 @@ CarboniteCarbonParser.prototype.Literal_Map = function () {
 		var c = 0;
 		data["arr"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16635,7 +16834,7 @@ CarboniteCarbonParser.prototype.Literal = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16769,7 +16968,7 @@ CarboniteCarbonParser.prototype.Prefix = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16847,7 +17046,7 @@ CarboniteCarbonParser.prototype.Appendix_Dot = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -16927,7 +17126,7 @@ CarboniteCarbonParser.prototype.Appendix_Call = function () {
 		var c = 0;
 		data["exp"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -17061,7 +17260,7 @@ CarboniteCarbonParser.prototype.Appendix_Index = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -17156,7 +17355,7 @@ CarboniteCarbonParser.prototype.Appendix_Code = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -17219,7 +17418,7 @@ CarboniteCarbonParser.prototype.Appendix = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -17328,7 +17527,7 @@ CarboniteCarbonParser.prototype.Term = function () {
 		data["prefix"] = "";
 		data["appendix"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -17547,7 +17746,7 @@ CarboniteCarbonParser.prototype.Operand_Symbolic = function () {
 		var c = 0;
 		data["operator"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -17664,7 +17863,7 @@ CarboniteCarbonParser.prototype.Operand_Word = function () {
 		var c = 0;
 		data["operator"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -17788,7 +17987,7 @@ CarboniteCarbonParser.prototype.Operation = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -17875,7 +18074,7 @@ CarboniteCarbonParser.prototype.Anonymous_Function = function () {
 		var c = 0;
 		data["parameters"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -18067,7 +18266,7 @@ CarboniteCarbonParser.prototype.Expression = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -18170,7 +18369,7 @@ CarboniteCarbonParser.prototype.Expression_Line = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -18239,7 +18438,7 @@ CarboniteCarbonParser.prototype.Expression_Function = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -18294,7 +18493,7 @@ CarboniteCarbonParser.prototype.Expression_Operation = function () {
 		var c = 0;
 		data["exp"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -18368,7 +18567,7 @@ CarboniteCarbonParser.prototype.Expression_Operated = function () {
 		var c = 0;
 		data["exp"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -18437,7 +18636,7 @@ CarboniteCarbonParser.prototype.Block = function () {
 		var c = 0;
 		data["code"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -18534,7 +18733,7 @@ CarboniteCarbonParser.prototype.Statement = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -18858,7 +19057,7 @@ CarboniteCarbonParser.prototype.Single_Statement = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -18915,7 +19114,7 @@ CarboniteCarbonParser.prototype.If = function () {
 		var c = 0;
 		data["alt"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -19084,7 +19283,7 @@ CarboniteCarbonParser.prototype.ElseIf = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -19202,7 +19401,7 @@ CarboniteCarbonParser.prototype.Else = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -19296,7 +19495,7 @@ CarboniteCarbonParser.prototype.For = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -19505,7 +19704,7 @@ CarboniteCarbonParser.prototype.For_In = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -19717,7 +19916,7 @@ CarboniteCarbonParser.prototype.Break = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -19786,7 +19985,7 @@ CarboniteCarbonParser.prototype.Continue = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -19855,7 +20054,7 @@ CarboniteCarbonParser.prototype.While = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -19974,7 +20173,7 @@ CarboniteCarbonParser.prototype.Try = function () {
 		var c = 0;
 		data["catch"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -20098,7 +20297,7 @@ CarboniteCarbonParser.prototype.Catch = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -20255,7 +20454,7 @@ CarboniteCarbonParser.prototype.Throw = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -20346,7 +20545,7 @@ CarboniteCarbonParser.prototype.Return = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -20437,7 +20636,7 @@ CarboniteCarbonParser.prototype.Yield = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -20532,7 +20731,7 @@ CarboniteCarbonParser.prototype.Native = function () {
 		var open = 0;
 		var escape = false;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -20706,7 +20905,7 @@ CarboniteCarbonParser.prototype.Define_Auto = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -20871,7 +21070,7 @@ CarboniteCarbonParser.prototype.Define = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21016,7 +21215,7 @@ CarboniteCarbonParser.prototype.Inline_Def = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21091,7 +21290,7 @@ CarboniteCarbonParser.prototype.Define_List = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21193,7 +21392,7 @@ CarboniteCarbonParser.prototype.Inline_Define = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21306,7 +21505,7 @@ CarboniteCarbonParser.prototype.Multi_Define = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21437,7 +21636,7 @@ CarboniteCarbonParser.prototype.Inline_Define_Auto = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21538,7 +21737,7 @@ CarboniteCarbonParser.prototype.String_Tick = function () {
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21620,7 +21819,7 @@ CarboniteCarbonParser.prototype._ = function () {
 		var c = 0;
 		data = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21680,7 +21879,7 @@ CarboniteCarbonParser.prototype.__ = function () {
 		var c = 0;
 		data["w"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21712,7 +21911,7 @@ CarboniteCarbonParser.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \r, \n", currentChar);
+								this.giveError(1, " , 	, \r, \r\n", currentChar);
 							}
 					}
 				}
@@ -21745,7 +21944,7 @@ CarboniteCarbonParser.prototype.String = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21826,7 +22025,7 @@ CarboniteCarbonParser.prototype.String_Double = function () {
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -21917,7 +22116,7 @@ CarboniteCarbonParser.prototype.String_Single = function () {
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -22000,7 +22199,7 @@ CarboniteCarbonParser.prototype.Json = function () {
 		data["keys"] = [];
 		var captureRoot1 = {};
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -22160,7 +22359,7 @@ CarboniteCarbonParser.prototype.Json_Array = function () {
 		var c = 0;
 		data["vals"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -22260,7 +22459,7 @@ CarboniteCarbonParser.prototype.Json_EmptyArray = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -22324,7 +22523,7 @@ CarboniteCarbonParser.prototype.Json_EmptyMap = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -22388,7 +22587,7 @@ CarboniteCarbonParser.prototype.Json_Value = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -22578,7 +22777,7 @@ CarboniteCarbonParser.prototype.Json_Number = function () {
 		var c = 0;
 		data["nums"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -23010,7 +23209,7 @@ else 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof ar
 		if (parser.hadError && (parser.error.found == String.fromCharCode(1))) {
 			parser.error.found = "End of input";
 			}
-		for (var i = 0;i < parser.error.offset;i++) {
+		for (var i = 0; i < parser.error.offset; i++) {
 			parser.error.column++;
 			if (i < parser.currentInput.length) {
 				if (parser.currentInput[i] == "\n") {
@@ -23059,7 +23258,7 @@ CarbonitePreprocessor.prototype.start = function () {
 		var data = this.data["data"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = 0;charPos < input.length;charPos++) {
+		for (var charPos = 0; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (c == 0 - 1) {
@@ -23088,7 +23287,7 @@ CarbonitePreprocessor.prototype.start = function () {
 				break;
 				}
 			}
-		for (var i = 0;i < this.error.offset;i++) {
+		for (var i = 0; i < this.error.offset; i++) {
 			this.error.column++;
 			if (i < this.currentInput.length) {
 				if (this.currentInput[i] == "\n") {
@@ -23117,7 +23316,7 @@ CarbonitePreprocessor.prototype.Source = function () {
 		var c = 0;
 		data["s"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -23196,7 +23395,7 @@ CarbonitePreprocessor.prototype.Pre = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -23558,7 +23757,7 @@ CarbonitePreprocessor.prototype.Raw = function () {
 		var checkComment = false;
 		var openComment = false;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -23804,7 +24003,7 @@ CarbonitePreprocessor.prototype.SourceLine = function () {
 		var c = 0;
 		data["s"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -23884,7 +24083,7 @@ CarbonitePreprocessor.prototype.RawLine = function () {
 		var c = 0;
 		data["c"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -23916,7 +24115,7 @@ CarbonitePreprocessor.prototype.RawLine = function () {
 						charPos--;
 						this.offset--;
 						}else{
-							this.giveError(1, "#, \n", currentChar);
+							this.giveError(1, "#, \r\n", currentChar);
 						}
 					this.error.vested++;
 					}else{
@@ -23962,7 +24161,7 @@ CarbonitePreprocessor.prototype.If = function () {
 		var c = 0;
 		data["checks"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -24069,7 +24268,7 @@ CarbonitePreprocessor.prototype.As = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -24152,7 +24351,7 @@ CarbonitePreprocessor.prototype.Include = function () {
 		var c = 0;
 		data["as"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -24260,7 +24459,7 @@ CarbonitePreprocessor.prototype.Import = function () {
 		var c = 0;
 		data["as"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -24367,7 +24566,7 @@ CarbonitePreprocessor.prototype.Output = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -24432,7 +24631,7 @@ CarbonitePreprocessor.prototype.Return = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -24498,7 +24697,7 @@ CarbonitePreprocessor.prototype.On = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -24588,7 +24787,7 @@ CarbonitePreprocessor.prototype.DocName = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -24683,7 +24882,7 @@ CarbonitePreprocessor.prototype.DocNameLine = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -24779,7 +24978,7 @@ CarbonitePreprocessor.prototype.Doc = function () {
 		var c = 0;
 		data["arguments"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -24901,7 +25100,7 @@ CarbonitePreprocessor.prototype.Doc_Line = function () {
 		var c = 0;
 		data["arguments"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -25004,7 +25203,7 @@ CarbonitePreprocessor.prototype.Script = function () {
 		var c = 0;
 		data["language"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -25116,7 +25315,7 @@ CarbonitePreprocessor.prototype.Function = function () {
 		var c = 0;
 		data["args"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -25283,7 +25482,7 @@ CarbonitePreprocessor.prototype.For = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -25462,7 +25661,7 @@ CarbonitePreprocessor.prototype.ForIn = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -25603,7 +25802,7 @@ CarbonitePreprocessor.prototype.Define = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -25715,7 +25914,7 @@ CarbonitePreprocessor.prototype.Var = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -25827,7 +26026,7 @@ CarbonitePreprocessor.prototype.Backslash = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -25881,7 +26080,7 @@ CarbonitePreprocessor.prototype.Lost = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -25951,7 +26150,7 @@ CarbonitePreprocessor.prototype.Sub = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -26039,7 +26238,7 @@ CarbonitePreprocessor.prototype._Expression = function () {
 		var c = 0;
 		data["subs"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -26169,7 +26368,7 @@ CarbonitePreprocessor.prototype.Expression = function () {
 		var c = 0;
 		data["subs"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -26308,7 +26507,7 @@ CarbonitePreprocessor.prototype.If_Expression = function () {
 		var c = 0;
 		data["subs"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -26457,7 +26656,7 @@ CarbonitePreprocessor.prototype.Safe_Name = function () {
 		var c = 0;
 		data["a"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -26533,7 +26732,7 @@ CarbonitePreprocessor.prototype.Argument = function () {
 		var c = 0;
 		data["a"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -26617,7 +26816,7 @@ CarbonitePreprocessor.prototype.Literal_Map = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -26671,7 +26870,7 @@ CarbonitePreprocessor.prototype.Value = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -26825,7 +27024,7 @@ CarbonitePreprocessor.prototype.Literal_String = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -26880,7 +27079,7 @@ CarbonitePreprocessor.prototype.Number = function () {
 		var c = 0;
 		data["n"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -26968,7 +27167,7 @@ CarbonitePreprocessor.prototype.Literal_Array = function () {
 		var c = 0;
 		data["items"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27069,7 +27268,7 @@ CarbonitePreprocessor.prototype.Bool = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27164,7 +27363,7 @@ CarbonitePreprocessor.prototype.Constant = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27217,7 +27416,7 @@ CarbonitePreprocessor.prototype.Group = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27285,7 +27484,7 @@ CarbonitePreprocessor.prototype.Operation = function () {
 		var c = 0;
 		data["o"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27497,7 +27696,7 @@ CarbonitePreprocessor.prototype.Check = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27574,7 +27773,7 @@ CarbonitePreprocessor.prototype.Call = function () {
 		var c = 0;
 		data["params"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27689,7 +27888,7 @@ CarbonitePreprocessor.prototype._ = function () {
 		var c = 0;
 		data = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27749,7 +27948,7 @@ CarbonitePreprocessor.prototype.__ = function () {
 		var c = 0;
 		data["w"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27781,7 +27980,7 @@ CarbonitePreprocessor.prototype.__ = function () {
 							charPos--;
 							this.offset--;
 							}else{
-								this.giveError(1, " , 	, \r, \n", currentChar);
+								this.giveError(1, " , 	, \r, \r\n", currentChar);
 							}
 					}
 				}
@@ -27814,7 +28013,7 @@ CarbonitePreprocessor.prototype.String = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27895,7 +28094,7 @@ CarbonitePreprocessor.prototype.String_Double = function () {
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -27986,7 +28185,7 @@ CarbonitePreprocessor.prototype.String_Single = function () {
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -28069,7 +28268,7 @@ CarbonitePreprocessor.prototype.Json = function () {
 		data["keys"] = [];
 		var captureRoot1 = {};
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -28229,7 +28428,7 @@ CarbonitePreprocessor.prototype.Json_Array = function () {
 		var c = 0;
 		data["vals"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -28329,7 +28528,7 @@ CarbonitePreprocessor.prototype.Json_EmptyArray = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -28393,7 +28592,7 @@ CarbonitePreprocessor.prototype.Json_EmptyMap = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -28457,7 +28656,7 @@ CarbonitePreprocessor.prototype.Json_Value = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -28647,7 +28846,7 @@ CarbonitePreprocessor.prototype.Json_Number = function () {
 		var c = 0;
 		data["nums"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -28890,7 +29089,7 @@ else 	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof ar
 		if (parser.hadError && (parser.error.found == String.fromCharCode(1))) {
 			parser.error.found = "End of input";
 			}
-		for (var i = 0;i < parser.error.offset;i++) {
+		for (var i = 0; i < parser.error.offset; i++) {
 			parser.error.column++;
 			if (parser.currentInput[i] == "\n") {
 				parser.error.line++;
@@ -28938,7 +29137,7 @@ PipelineParser.prototype.start = function () {
 		var c = 0;
 		data["rules"] = [];
 		var literalChar = 0;
-		for (var charPos = 0;charPos < input.length;charPos++) {
+		for (var charPos = 0; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (c == 0 - 1) {
@@ -28985,7 +29184,7 @@ PipelineParser.prototype.start = function () {
 				break;
 				}
 			}
-		for (var i = 0;i < this.error.offset;i++) {
+		for (var i = 0; i < this.error.offset; i++) {
 			this.error.column++;
 			if (this.currentInput[i] == "\n") {
 				this.error.line++;
@@ -29012,7 +29211,7 @@ PipelineParser.prototype.Call = function () {
 		var c = 0;
 		data["values"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29145,7 +29344,7 @@ PipelineParser.prototype.Rule = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29248,7 +29447,7 @@ PipelineParser.prototype.Safe_Name = function () {
 		var c = 0;
 		data["name"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29339,7 +29538,7 @@ PipelineParser.prototype.Value = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29419,7 +29618,7 @@ PipelineParser.prototype.Literal_Boolean = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29518,7 +29717,7 @@ PipelineParser.prototype.Literal_String = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29574,7 +29773,7 @@ PipelineParser.prototype.Literal_Number = function () {
 		var c = 0;
 		data["num"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29661,7 +29860,7 @@ PipelineParser.prototype.Literal = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29755,7 +29954,7 @@ PipelineParser.prototype.Reference = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29827,7 +30026,7 @@ PipelineParser.prototype._ = function () {
 		var c = 0;
 		data = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29887,7 +30086,7 @@ PipelineParser.prototype.__ = function () {
 		var c = 0;
 		data["w"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -29953,7 +30152,7 @@ PipelineParser.prototype.String = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -30034,7 +30233,7 @@ PipelineParser.prototype.String_Double = function () {
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -30125,7 +30324,7 @@ PipelineParser.prototype.String_Single = function () {
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -32391,7 +32590,7 @@ Carbonite.Pre.Statements.For.prototype.run = function () {
 				var it = new Carbonite.Pre.Variable(this.itName, this.initial.run());
 				this.code.scope.addVariable(it);
 				var value = it.value;
-				for (var i = it.value.value;i < to.value;i++) {
+				for (var i = it.value.value; i < to.value; i++) {
 					value.value = i;
 					this.code.run();
 					}
@@ -33403,7 +33602,7 @@ Carbonite.Pre.Processor.prototype.getRealLocation = function () {
 		var offset = arguments[0];
 		var line = 1;
 		var column = 1;
-		for (var i = 0;i < offset;i++) {
+		for (var i = 0; i < offset; i++) {
 			var code = this.source.data.charCodeAt(i);
 			column++;
 			if (code == 10) {
@@ -34299,7 +34498,7 @@ Carbonite.Pre.Scope.prototype.addVariable = function () {
 
 Carbonite.Pre.Scope.prototype.clear = function () {
 	if (arguments.length == 0) {
-		for (var i = this.data.length;i > 0;i--) {
+		for (var i = this.data.length; i > 0; i--) {
 			this.data.pop();
 			}
 	}
@@ -35115,7 +35314,7 @@ Carbide.Languages.Calcium.buildSub = function () {
 		var splits = name.split(".");
 		var rtn = new Carbide.Virtual.Expressions.Reference(splits[0]);
 		if (splits.length > 1) {
-			for (var s = 1;s < splits.length;s++) {
+			for (var s = 1; s < splits.length; s++) {
 				var sub = new Carbide.Virtual.Sub(null);
 				sub.type = 1;
 				sub.property = splits[s];
@@ -35322,7 +35521,7 @@ CarbideCalciumParser.prototype.start = function () {
 		var data = this.data["data"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = 0;charPos < input.length;charPos++) {
+		for (var charPos = 0; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (c == 0 - 1) {
@@ -35351,7 +35550,7 @@ CarbideCalciumParser.prototype.start = function () {
 				break;
 				}
 			}
-		for (var i = 0;i < this.error.offset;i++) {
+		for (var i = 0; i < this.error.offset; i++) {
 			this.error.column++;
 			if (this.currentInput[i] == "\n") {
 				this.error.line++;
@@ -35378,7 +35577,7 @@ CarbideCalciumParser.prototype.Document = function () {
 		var c = 0;
 		data["exp"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -35453,7 +35652,7 @@ CarbideCalciumParser.prototype.Expression = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -35570,7 +35769,7 @@ CarbideCalciumParser.prototype.Call = function () {
 		var c = 0;
 		data["args"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -35684,7 +35883,7 @@ CarbideCalciumParser.prototype.Operation = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -35782,7 +35981,7 @@ CarbideCalciumParser.prototype.Operator = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -36027,7 +36226,7 @@ CarbideCalciumParser.prototype.Statement = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -36197,7 +36396,7 @@ CarbideCalciumParser.prototype.Return = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -36272,7 +36471,7 @@ CarbideCalciumParser.prototype.If = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -36389,7 +36588,7 @@ CarbideCalciumParser.prototype.Set = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -36490,7 +36689,7 @@ CarbideCalciumParser.prototype.Let = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -36603,7 +36802,7 @@ CarbideCalciumParser.prototype.For = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -36822,7 +37021,7 @@ CarbideCalciumParser.prototype.Constant = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -36877,7 +37076,7 @@ CarbideCalciumParser.prototype.Literal_Number = function () {
 		var c = 0;
 		data["num"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -36952,7 +37151,7 @@ CarbideCalciumParser.prototype.Literal_Boolean = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -37051,7 +37250,7 @@ CarbideCalciumParser.prototype.Literal_String = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -37107,7 +37306,7 @@ CarbideCalciumParser.prototype.Literal_Array = function () {
 		var c = 0;
 		data["arr"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -37200,7 +37399,7 @@ CarbideCalciumParser.prototype.Literal_Map_Key = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -37314,7 +37513,7 @@ CarbideCalciumParser.prototype.Literal_Map = function () {
 		var c = 0;
 		data["arr"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -37416,7 +37615,7 @@ CarbideCalciumParser.prototype.Literal = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -37551,7 +37750,7 @@ CarbideCalciumParser.prototype.Safe_Name = function () {
 		var c = 0;
 		data["after"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -37646,7 +37845,7 @@ CarbideCalciumParser.prototype.Value = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -37736,7 +37935,7 @@ CarbideCalciumParser.prototype.Function = function () {
 		var c = 0;
 		data["params"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -37901,7 +38100,7 @@ CarbideCalciumParser.prototype._ = function () {
 		var c = 0;
 		data = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -37961,7 +38160,7 @@ CarbideCalciumParser.prototype.__ = function () {
 		var c = 0;
 		data["w"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -38027,7 +38226,7 @@ CarbideCalciumParser.prototype.String = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -38108,7 +38307,7 @@ CarbideCalciumParser.prototype.String_Double = function () {
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -38199,7 +38398,7 @@ CarbideCalciumParser.prototype.String_Single = function () {
 		escapeCodes["v"] = "";
 		escapeCodes["\\"] = "\\";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -38282,7 +38481,7 @@ CarbideCalciumParser.prototype.Json = function () {
 		data["keys"] = [];
 		var captureRoot1 = {};
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -38442,7 +38641,7 @@ CarbideCalciumParser.prototype.Json_Array = function () {
 		var c = 0;
 		data["vals"] = [];
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -38542,7 +38741,7 @@ CarbideCalciumParser.prototype.Json_EmptyArray = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -38606,7 +38805,7 @@ CarbideCalciumParser.prototype.Json_EmptyMap = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -38670,7 +38869,7 @@ CarbideCalciumParser.prototype.Json_Value = function () {
 		var data = dataStore["temp"];
 		var c = 0;
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -38860,7 +39059,7 @@ CarbideCalciumParser.prototype.Json_Number = function () {
 		var c = 0;
 		data["nums"] = "";
 		var literalChar = 0;
-		for (var charPos = startPos;charPos < input.length;charPos++) {
+		for (var charPos = startPos; charPos < input.length; charPos++) {
 			var currentChar = input[charPos];
 			var currentCode = input.charCodeAt(charPos);
 			if (currentCode == 10) {
@@ -39030,7 +39229,7 @@ Carbide.Languages.Carbon.buildSub = function () {
 		var splits = name.split(".");
 		var rtn = new Carbide.Virtual.Expressions.Reference(splits[0]);
 		if (splits.length > 1) {
-			for (var s = 1;s < splits.length;s++) {
+			for (var s = 1; s < splits.length; s++) {
 				var sub = new Carbide.Virtual.Sub(null);
 				sub.type = 1;
 				sub.property = splits[s];
@@ -39093,7 +39292,7 @@ Carbide.Languages.Carbon.buildExpression = function () {
 					var constantName = exp["name"];
 					var splits = constantName.split(".");
 					rtn = new Carbide.Virtual.Expressions.Reference(splits[0]);
-					for (var i = 1;i < splits.length;i++) {
+					for (var i = 1; i < splits.length; i++) {
 						var sub = new Carbide.Virtual.Sub(null);
 						sub.type = 1;
 						sub.property = splits[i];
@@ -42307,7 +42506,7 @@ Carbide.Virtual.Scope.prototype.addVariable = function () {
 
 Carbide.Virtual.Scope.prototype.clear = function () {
 	if (arguments.length == 0) {
-		for (var i = this.data.length;i > 0;i--) {
+		for (var i = this.data.length; i > 0; i--) {
 			this.data.pop();
 			}
 	}
@@ -42647,7 +42846,7 @@ Carbide.Virtual.Expressions.Call.prototype.run = function () {
 				if (val != null) {
 					var realValue = val.value;
 					if (splits.length > 2) {
-						for (var i = 1;i < splits.length - 1;i++) {
+						for (var i = 1; i < splits.length - 1; i++) {
 							realValue = realValue.property(splits[i], scope);
 							}
 						}

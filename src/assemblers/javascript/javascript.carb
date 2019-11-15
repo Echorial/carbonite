@@ -206,7 +206,33 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		}
 	}
 
+	bound public <string>function asyncLoop(int loopId, string initialize, string check, string iterate, string body) {
+		let loopFront = "var _c_loop_async" + loopId + " = function (_c_loop_end" + loopId + ") {";
+		loopFront += "\n	" + initialize;
+
+		loopFront += "\n	var _c_next" +  loopId + " = function () {";
+		loopFront += "\n		if (" + check + ") {";
+
+		loopFront += "\n			" + body;
+		loopFront += "\n		}else{";
+		loopFront += "\n			_c_loop_end" + loopId + "();";
+		loopFront += "\n		}";
+		loopFront += "\n	};";
+		loopFront += "\n	var _c_complex_exit" + loopId + " = function (_first_run) {if (!_first_run) {" + iterate + "} _c_next" + loopId + "(_c_complex_exit" + loopId + ")};";
+				
+		loopFront += "\n			_c_complex_exit" + loopId + "(true);";
+		loopFront += "\n	};";
+
+		loopFront += "\n	_c_loop_async" + loopId + "(function () {";
+
+		return loopFront;
+	}
+
 	bound public override <string>function body(Carbonite.Body body, int indent) {
+		return this.body(body, indent, 0);
+	}
+
+	bound public override <string>function body(Carbonite.Body body, int indent, int complexExitIndex) {
 		var <string>array statements = new <string>array();
 		var <string>array asyncCloses = new <string>array();
 
@@ -229,10 +255,62 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 				indent++;
 			}
 
-			statements.push(this.indent(indent) + this.statement(statement, indent + 1));
+			if (statement.containsAsyncStatement()) {
+				let Carbonite.Members.Method parentMethod = body.parent;
+				parentMethod.complexAsyncIndex++;
+				let loopId = parentMethod.complexAsyncIndex;
+
+				if (statement.type == "for") {
+					let Carbonite.Statements.For forState = statement;
+
+					statements.push(
+						this.asyncLoop(
+							loopId,
+							this.define(forState.define, indent),
+							this.expression(forState.check, indent),
+							this.expression(forState.iterate, indent),
+							this.body(forState.body, indent, loopId)
+						)
+					);
+
+					asyncCloses.push(this.indent(indent - 1) + "});");
+				}else if (statement.type == "forin") {
+					let Carbonite.Statements.ForIn forState = statement;
+					let def = this.define(forState.define, indent);
+					if (forState.iterate.output.reference.route == "array") {
+						statements.push(this.asyncLoop(loopId, def + " = 0;", forState.define.name + " < " + this.expression(forState.iterate, indent) + ".length", forState.define.name + "++", this.body(forState.body, indent, loopId)));
+					}else{
+						statements.push(this.asyncLoop(loopId, "var _c_keys_expr" + forState.define.name + " = " + this.expression(forState.iterate, indent) + "; var _c_key_index" + forState.define.name + " = 0; var _c_keys" + forState.define.name + " = Object.keys(_c_keys_expr" + forState.define.name + "); var " + forState.define.name + " = _c_keys" + forState.define.name + "[0];", "_c_key_index" + forState.define.name + " < " + "_c_keys" + forState.define.name + ".length", "_c_key_index" + forState.define.name + "++; " + forState.define.name + " = _c_keys" + forState.define.name + "[_c_key_index" + forState.define.name + "]", this.body(forState.body, indent, loopId)));
+					}
+
+					asyncCloses.push(this.indent(indent - 1) + "});");
+				}else if (statement.type == "while") {
+					let Carbonite.Statements.While whileLoop = statement;
+
+					statements.push(
+						this.asyncLoop(
+							loopId,
+							"",
+							this.expression(whileLoop.check, indent),
+							"",
+							this.body(whileLoop.body, indent, loopId)
+						)
+					);
+
+					asyncCloses.push(this.indent(indent - 1) + "});");
+				}
+			}else{
+				statements.push(this.indent(indent) + this.statement(statement, indent + 1));
+			}
 		}
 
-		return statements.join("\n") + asyncCloses.join("\n");
+		let string beforeAsyncClose = "";
+
+		if (complexExitIndex != 0) {
+			beforeAsyncClose = "\n" + this.indent(indent) + "_c_complex_exit" + complexExitIndex + "();\n";
+		}
+
+		return statements.join("\n") + beforeAsyncClose + asyncCloses.join("\n");
 	}
 
 	bound public override <string>function define(Carbonite.Define define, int indent) {
@@ -279,7 +357,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		}else if (statement.type == "for") {
 			var Carbonite.Statements.For forState = statement;
 			var string str = "";
-			str = "for (" + this.define(forState.define, indent) + ";" + this.expression(forState.check, indent) + ";" + this.expression(forState.iterate, indent) + ") {\n" + this.body(forState.body, indent) + "\n" + this.indent(indent) + "}";
+			str = "for (" + this.define(forState.define, indent) + "; " + this.expression(forState.check, indent) + "; " + this.expression(forState.iterate, indent) + ") {\n" + this.body(forState.body, indent) + "\n" + this.indent(indent) + "}";
 			return str;
 		}else if (statement.type == "try") {
 			var Carbonite.Statements.Try tryState = statement;
