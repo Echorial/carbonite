@@ -11,5 +11,5 @@ relative char inherits primitive {
 	native inline string toLower() {return "strtolower(" + context.instance + ")";}
 	native inline string toUpper() {return "strtoupper(" + context.instance + ")";}
 	
-	native inline string @cast() {return context.instance};
+	native inline string @cast() {return context.instance;}
 }
