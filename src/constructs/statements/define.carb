@@ -9,6 +9,7 @@ class Carbonite.Statements.Define inherits Carbonite.Statement {
 
 		if (this.define.initializer != null) {
 			this.addAsyncCallsFromExpression(this.define.initializer);
+			this.define.initializer.setParentStatement(this);
 		}
 	}
 }

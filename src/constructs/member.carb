@@ -2,6 +2,7 @@ class Carbonite.Member inherits object, Carbonite.Range {
 	bound public string binding = "bound";
 	bound public string visibility = "public";
 	bound public Carbonite.Class inheritedFrom = null;
+	bound public Carbonite.Class inheritedFromBase = null;
 	bound public Carbonite.Doc doc = null;
 	bound public string name = "";
 	bound public Carbonite.Type output = empty;

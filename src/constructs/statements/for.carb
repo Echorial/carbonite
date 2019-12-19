@@ -12,6 +12,7 @@ class Carbonite.Statements.For inherits Carbonite.Statement {
 
 	bound public override <void>function build(map raw, Carbonite.Body container) {
 		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
+		this.body.isLoopBody = true;
 		this.body.inherit(container);
 
 		this.define = Carbonite.Define.make(raw["define"], this.body);
@@ -27,10 +28,13 @@ class Carbonite.Statements.For inherits Carbonite.Statement {
 
 		if (this.define.initializer != null) {
 			this.addAsyncCallsFromExpression(this.define.initializer);
+			this.define.initializer.setParentStatement(this);
 		}
 
 		this.addAsyncCallsFromExpression(this.iterate);
 		this.addAsyncCallsFromExpression(this.check);
+		this.iterate.setParentStatement(this);
+		this.check.setParentStatement(this);
 	}
 }
 
@@ -48,11 +52,15 @@ class Carbonite.Statements.ForIn inherits Carbonite.Statement {
 	bound public override <void>function build(map raw, Carbonite.Body container) {
 		this.body = new Carbonite.Body(container.parent, raw["body"]);
 		this.body.inherit(container);
+		this.body.isLoopBody = true;
 		this.define = Carbonite.Define.make(raw["define"], this.body);
 		this.define.output.isPure = true;
 
 		this.iterate = new Carbonite.Expression(container.parent.parent, this.body);
 		this.iterate.loadFromRaw(raw["iterate"]);
+
+		this.addAsyncCallsFromExpression(this.iterate);
+		this.iterate.setParentStatement(this);
 
 		this.body.build();
 	}

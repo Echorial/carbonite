@@ -21,6 +21,11 @@ class Carbonite.Statement inherits Carbonite.Range, object {
 		this.build(raw, this.container);
 	}
 
+	void addAsync(Carbonite.Parts.Call& call) {
+		this.asyncCalls.push(call);
+		this.container.setHasAsyncStatement();
+	}
+
 	bound public void addAsyncCallsFromExpression(Carbonite.Expression& exp) {
 		if (exp.asyncCalls.length > 0)
 			this.container.setHasAsyncStatement();

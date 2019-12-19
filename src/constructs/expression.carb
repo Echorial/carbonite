@@ -3,6 +3,7 @@ class Carbonite.Expression inherits Carbonite.Range {
 	bound public Carbonite.Class parent = empty;
 	bound public Carbonite.Body container = empty;
 	bound public Carbonite.Compiler compiler = empty;
+	bound public Carbonite.Statement& statement = empty;
 	bound public bool grouped = false;
 
 	bound public int blockIndex = 0;
@@ -42,6 +43,18 @@ class Carbonite.Expression inherits Carbonite.Range {
 		exp.expression.loadTerms(terms);
 		exp.output = exp.expression.output;
 		return exp;
+	}
+
+	void setParentStatement(Carbonite.Statement& statement) {
+		this.statement = statement;
+	}
+
+	void addAsync(Carbonite.Parts.Call& call) {
+		if (this.statement != null) {
+			this.statement.addAsync(call);
+		}else{
+			this.asyncCalls.push(call);
+		}
 	}
 
 	bound public <void>function reOrder(<map>array terms) {
@@ -275,7 +288,8 @@ class Carbonite.Expression inherits Carbonite.Range {
 	bound public <void>function loadFromRaw(map raw) {
 		this.raw = raw;
 		var <map>array terms = raw["terms"];
-		this.loadLocation(this.container.source, raw);
+		if (this.container.source != null)
+			this.loadLocation(this.container.source, raw);
 		//this.loadTerms(terms);
 		this.relativeParent = this;
 		Carbonite.Expression.buildTermsIntoExpression(this, terms, 0, terms.length - 1);

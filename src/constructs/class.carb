@@ -604,6 +604,12 @@ class Carbonite.Class inherits Carbonite.Named {
 					var Carbonite.Member member = this.makeMember(from, mem.raw);
 					member.inheritedFrom = from;
 
+					if (mem.inheritedFrom != null)
+						member.inheritedFromBase = mem.inheritedFrom;
+					
+					if (mem.inheritedFromBase != null)
+						member.inheritedFromBase = mem.inheritedFromBase;
+
 					if (from.route == "everything") { //WARN: Hack for header inherits. TODO: Add check for its simpleNative
 						var Carbonite.Members.Method castMethod = member;
 						castMethod.simpleNative = true;
@@ -785,6 +791,10 @@ class Carbonite.Class inherits Carbonite.Named {
 				if (this.members[i].inheritedFrom.route == "everything")
 					continue;
 			
+			if (this.members[i].inheritedFromBase != null)
+				if (this.members[i].inheritedFromBase.route == "everything")
+					continue;
+
 			members.push(this.members[i].toHeader());
 		}
 

@@ -9,5 +9,6 @@ class Carbonite.Statements.Expression inherits Carbonite.Statement {
 		this.expression.loadFromRaw(raw);
 
 		this.addAsyncCallsFromExpression(this.expression);
+		this.expression.setParentStatement(this);
 	}
 }

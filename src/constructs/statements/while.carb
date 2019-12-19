@@ -17,5 +17,6 @@ class Carbonite.Statements.While inherits Carbonite.Statement {
 		this.body.build();
 
 		this.addAsyncCallsFromExpression(this.check);
+		this.check.setParentStatement(this);
 	}
 }

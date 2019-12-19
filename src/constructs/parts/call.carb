@@ -17,11 +17,14 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 		if (this.isAsyncCall == false) {
 			var Carbonite.Members.Method parentMethod = this.parent.container.parent;
 
+			parentMethod.setAsImplicitAsync();
+			this.parent.container.setHasAsyncStatement();
+
 			parentMethod.asyncIndex++;
 			this.isAsyncCall = true;
 			this.asyncIndex = parentMethod.asyncIndex;
 			
-			this.parent.parent.asyncCalls.push(this);
+			this.parent.parent.addAsync(this);
 		}
 	}
 
@@ -88,7 +91,7 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 							this.reference = Carbonite.Member.makeReference(prev.output.reference, method, prev.context);
 							this.output = method.output.getWithContext(prev.context);
 
-							method.addCaller(this.parent.parent);
+							method.addCaller(this);
 
 							if (refMeth.reference.isAsync) {
 								this.setAsAsyncCall();
@@ -97,7 +100,7 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 							var info = refMeth.reference.parent.overloadWithCast(cast.text, types, parent);
 							var Carbonite.Members.Method method = info.method;
 
-							method.addCaller(this.parent.parent);
+							method.addCaller(this);
 
 							for (var int i in info.casts) {
 								var arg = this.arguments[info.casts[i].index];

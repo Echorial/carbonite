@@ -54,7 +54,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 				}
 			}
 
-		var string str = root.getRoute() + " = function (" + args + ") {\n" + props.join("\n") + "\n" + this.overload(cnsrs) + "\n}\n" + fixedProps.join("\n") + "\n" + this.methods(root);
+		var string str = root.getRoute() + " = function (" + args + ") {var _c_this = this;\n" + props.join("\n") + "\n" + this.overload(cnsrs) + "\n}\n" + fixedProps.join("\n") + "\n" + this.methods(root);
 		return str;
 	}
 
@@ -130,7 +130,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 							
 							let argsLength = method.arguments.length();
 
-							if (method.isAsync)
+							if (((method.parent.getRoute() + "." + method.name) != "App.start") and (method.isAsync or method.isImplicitAsync))
 								argsLength++;
 
 							overloads.push("	if (arguments.length == " + argsLength + check.join("") + ") {\n" + argInit.join("") + this.methodStr(method) + "\n	}\n");
@@ -148,6 +148,10 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 			if (method.binding != "fixed") {
 				gap = ".prototype.";
 			}
+			
+			if (method.isImplicitAsync)
+				rtn += "/*i async*/";
+
 			if ((overloads.length == 1) and (method.hasFlag("trust"))) {
 				var <string>array args = new <string>array();
 				for (var int a in method.arguments) {
@@ -156,7 +160,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 				}
 				rtn += root.getRoute() + gap + method.getRealName() + " = function (" + args.join(", ") + ") {\n" + this.methodStr(method) + "}\n\n";
 			}else{
-				rtn += root.getRoute() + gap + method.getRealName() + " = function () {\n" + overloads.join("else ") + "}\n\n";
+				rtn += root.getRoute() + gap + method.getRealName() + " = function () {var _c_this = this; var _c_root_method_arguments = arguments;\n" + overloads.join("else ") + "}\n\n";
 			}
 		}
 		return rtn;
@@ -209,6 +213,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 	bound public <string>function asyncLoop(int loopId, string initialize, string check, string iterate, string body) {
 		let loopFront = "var _c_loop_async" + loopId + " = function (_c_loop_end" + loopId + ") {";
 		loopFront += "\n	" + initialize;
+		loopFront += "\n	var _c_break_loop = _c_loop_end" + loopId + ";";
 
 		loopFront += "\n	var _c_next" +  loopId + " = function () {";
 		loopFront += "\n		if (" + check + ") {";
@@ -220,7 +225,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		loopFront += "\n	};";
 		loopFront += "\n	var _c_complex_exit" + loopId + " = function (_first_run) {if (!_first_run) {" + iterate + "} _c_next" + loopId + "(_c_complex_exit" + loopId + ")};";
 				
-		loopFront += "\n			_c_complex_exit" + loopId + "(true);";
+		loopFront += "\n	var _c_continue_loop = _c_complex_exit" + loopId + ";		_c_complex_exit" + loopId + "(true);";
 		loopFront += "\n	};";
 
 		loopFront += "\n	_c_loop_async" + loopId + "(function () {";
@@ -255,8 +260,9 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 				indent++;
 			}
 
+			let Carbonite.Members.Method parentMethod = body.parent;
+
 			if (statement.containsAsyncStatement()) {
-				let Carbonite.Members.Method parentMethod = body.parent;
 				parentMethod.complexAsyncIndex++;
 				let loopId = parentMethod.complexAsyncIndex;
 
@@ -299,6 +305,10 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 
 					asyncCloses.push(this.indent(indent - 1) + "});");
 				}
+			}else if (statement.type == "break" and parentMethod.complexAsyncIndex > 0) {
+				statements.push(this.indent(indent) + "_c_break_loop(); return;");
+			}else if (statement.type == "continue" and parentMethod.complexAsyncIndex > 0) {
+				statements.push(this.indent(indent) + "_c_continue_loop(); return;");
 			}else{
 				statements.push(this.indent(indent) + this.statement(statement, indent + 1));
 			}
@@ -308,6 +318,10 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 
 		if (complexExitIndex != 0) {
 			beforeAsyncClose = "\n" + this.indent(indent) + "_c_complex_exit" + complexExitIndex + "();\n";
+		}
+
+		if (body.hasAsyncStatement) {
+			statements.unshift("/*async*/");
 		}
 
 		return statements.join("\n") + beforeAsyncClose + asyncCloses.join("\n");
@@ -328,6 +342,9 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 	bound public override <string>function statement(Carbonite.Statement statement, int indent) {
 		if (statement.type == "define") {
 			var Carbonite.Statements.Define def = statement;
+			let prefix = "";
+			if (statement.asyncCalls.length > 0)
+				prefix = "/*async state*/";
 			return this.define(def.define, indent) + ";";
 		}else if (statement.type == "expression") {
 			var Carbonite.Statements.Expression exp = statement;
@@ -336,8 +353,13 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 			var Carbonite.Statements.Throw exp = statement;
 			return "throw " + this.expression(exp.expression, indent) + ";";
 		}else if (statement.type == "return") {
-			var Carbonite.Statements.Return exp = statement;
-			return "return " + this.expression(exp.expression, indent) + ";";
+			if (statement.container.getRootBody().hasAsyncStatement) {
+				var Carbonite.Statements.Return exp = statement;
+				return "_c_root_method_arguments[_c_root_method_arguments.length - 1](" + this.expression(exp.expression, indent) + ");\n" + this.indent(indent) + "return;";
+			}else{
+				var Carbonite.Statements.Return exp = statement;
+				return "return " + this.expression(exp.expression, indent) + ";";
+			}
 		}else if (statement.type == "yield") {
 			var Carbonite.Statements.Yield exp = statement;
 			return "$_c_yield_cb(" + this.expression(exp.expression, indent) + ");";
@@ -518,7 +540,11 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 					if (cast.reference.name == "arguments") {
 						rtn += "___" + cast.reference.name;
 					}else{
-						rtn += cast.reference.name;
+						if (cast.reference.name == "this") {
+							rtn += "_c_this";
+						}else{
+							rtn += cast.reference.name;
+						}
 					}
 				}
 			}else if (part.type == "dot") {
@@ -558,6 +584,9 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 				}
 			}else if (part.type == "call") { //BUG: Reroutes don't work on calls
 				var Carbonite.Parts.Call cast = part;
+				if (cast.isAsyncCall)
+					rtn += "/*async call*/";
+
 				if (cast.previous.type == "property") {
 					
 				}else if (cast.reference != null) {
@@ -576,7 +605,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 					if (cast.isAsyncCall and cast.asyncIndex == asyncIndex)
 						return rtn;
 
-					if (callOn.isAsync) {
+					if (callOn.isAsync or callOn.isImplicitAsync) {
 						rtn = this.asyncName(cast.asyncIndex);
 					}
 				}else{

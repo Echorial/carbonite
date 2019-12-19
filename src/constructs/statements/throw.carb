@@ -8,5 +8,6 @@ class Carbonite.Statements.Throw inherits Carbonite.Statement {
 		this.expression.loadFromRaw(raw["expression"]);
 
 		this.addAsyncCallsFromExpression(this.expression);
+		this.expression.setParentStatement(this);
 	}
 }

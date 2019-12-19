@@ -4,6 +4,8 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 	bound public bool variadic = false;
 	bound public bool simpleNative = false;
 
+	bound public bool alreadyBuilt = false;
+
 	`Used to build unique async call ids.`
 	bound public int asyncIndex = 0;
 
@@ -11,6 +13,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 	bound public int complexAsyncIndex = 0;
 
 	bound public bool isAsync = false;
+	bound public bool isImplicitAsync = false;
 
 	bound public Carbide.Virtual.Block nativeBlock = null;
 
@@ -24,7 +27,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 		for (let int i in this.callGraph) {
 			let call = this.callGraph[i];
 
-			call.isAsync = true;
+			call.setAsAsyncCall();
 		}
 	}
 
@@ -34,6 +37,11 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 
 	bound public bool hasOverload() {
 		return this.parent.getMethods(this.name).length > 1;
+	}
+
+	bound public void setAsImplicitAsync() {
+		this.isImplicitAsync = true;
+		this.updateCallGraphForAsync();
 	}
 
 	fixed public <Carbonite.Members.Method>function evaluate(string raw, Carbonite.Class parent) {
@@ -149,6 +157,11 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 	}
 
 	bound public override <void>function buildBody() {
+		if (this.alreadyBuilt)
+			return null;
+			
+		this.alreadyBuilt = true;
+
 		if (this.abstract)
 			return null;
 

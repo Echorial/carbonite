@@ -19,5 +19,6 @@ class Carbonite.Statements.Yield inherits Carbonite.Statement {
 		}
 
 		this.addAsyncCallsFromExpression(this.expression);
+		this.expression.setParentStatement(this);
 	}
 }

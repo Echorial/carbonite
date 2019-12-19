@@ -20,6 +20,7 @@ class Carbonite.Statements.If inherits Carbonite.Statement {
 		}
 
 		this.addAsyncCallsFromExpression(this.check);
+		this.check.setParentStatement(this);
 	}
 }
 
@@ -36,6 +37,9 @@ class Carbonite.Statements.IfAlternative inherits Carbonite.Range {
 			this.doCheck = true;
 			this.check = new Carbonite.Expression(parent.container.parent.parent, parent.container);
 			this.check.loadFromRaw(raw["check"]["expression"]);
+
+			this.parent.addAsyncCallsFromExpression(this.check);
+			this.check.setParentStatement(this.parent);
 		}
 		this.body = new Carbonite.Body(parent.container.parent, raw["body"]);
 		this.body.inherit(parent.container);

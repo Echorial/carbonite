@@ -14,6 +14,9 @@ class Carbonite.Body inherits object, Carbonite.Range {
 
 	bound public Carbonite.Body parentBody = null;
 
+	`While, For, or ForIn statement direct child.`
+	bound public bool isLoopBody = false;
+
 	`Is this body apart of an async function or method.`
 	bound public bool rootAsyncBody = false;
 

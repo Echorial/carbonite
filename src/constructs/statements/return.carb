@@ -22,6 +22,7 @@ class Carbonite.Statements.Return inherits Carbonite.Statement {
 
 		if (this.expression != null) {
 			this.addAsyncCallsFromExpression(this.expression);
+			this.expression.setParentStatement(this);
 		}
 	}
 }
