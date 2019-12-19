@@ -6,7 +6,8 @@ class Carbonite.Range {
 	bound public <void>function loadLocation(Carbonite.Class parent, map raw) { //TODO: Use the Carbonite.Class parent as extra location data
 		this.startOffset = raw["start"];
 		this.endOffset = raw["end"];
-		this.source = parent.source;
+		if (parent != null and parent.source != null)
+			this.source = parent.source;
 	}
 
 	bound public <void>function loadLocation(Carbonite.Source parent, map raw) {
