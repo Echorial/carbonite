@@ -1901,6 +1901,15 @@ Carbonite.Class.prototype.inherit = function () {var _c_this = this; var _c_root
 								_c_this.buildError("Invalid argument type(s) for abstract method '" + check.name + "' in class '" + _c_this.route + "'");
 								}
 							}
+						}else{
+							if (mem.getAttributes("ForceAsync").length > 0) {
+								var mp = {};
+								mp["key"] = "ForceAsync";
+								mp["value"] = true;
+								var checkMethod = check;
+								checkMethod.setAsImplicitAsync();
+								check.attributes.push(mp);
+								}
 						}
 				}
 			}
@@ -2720,6 +2729,7 @@ Carbonite.Members.Method.prototype.hasOverload = function () {var _c_this = this
 Carbonite.Members.Method.prototype.setAsImplicitAsync = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 	if (arguments.length == 0) {
 		_c_this.isImplicitAsync = true;
+		_c_this.isAsync = true;
 		_c_this.updateCallGraphForAsync();
 	}
 }
@@ -2892,6 +2902,9 @@ Carbonite.Members.Method.prototype.build = function () {var _c_this = this; var 
 						if (_c_this.hasFlag("async")) {
 							_c_this.isAsync = true;
 							_c_this.body.rootAsyncBody = true;
+							}
+						if (_c_this.getAttributes("ForceAsync").length > 0) {
+							_c_this.setAsImplicitAsync();
 							}
 					}
 				if (_c_this.name == "@index") {
@@ -3720,6 +3733,7 @@ Carbonite.Members.Operator.prototype.hasOverload = function () {var _c_this = th
 Carbonite.Members.Operator.prototype.setAsImplicitAsync = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 	if (arguments.length == 0) {
 		_c_this.isImplicitAsync = true;
+		_c_this.isAsync = true;
 		_c_this.updateCallGraphForAsync();
 	}
 }
@@ -3892,6 +3906,9 @@ Carbonite.Members.Operator.prototype.build = function () {var _c_this = this; va
 						if (_c_this.hasFlag("async")) {
 							_c_this.isAsync = true;
 							_c_this.body.rootAsyncBody = true;
+							}
+						if (_c_this.getAttributes("ForceAsync").length > 0) {
+							_c_this.setAsImplicitAsync();
 							}
 					}
 				if (_c_this.name == "@index") {
@@ -10420,8 +10437,12 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Body) || 
 		var complexExitIndex = arguments[2];
 		var statements = [];
 		var asyncCloses = [];
+		var hasReturn = false;
 		for (var i = 0; i < body.statements.length; i++) {
 			var statement = body.statements[i];
+			if (statement.type == "return") {
+				hasReturn = true;
+				}
 			for (var a = 0; a < statement.asyncCalls.length; a++) {
 				var call = statement.asyncCalls[a];
 				var asyncCall = _c_this.sequence(call.parent, call.asyncIndex, indent + 1);
@@ -10462,6 +10483,10 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Body) || 
 				}else{
 					statements.push(_c_this.indent(indent) + _c_this.statement(statement, indent + 1));
 				}
+			}
+		var parentMethod = body.parent;
+		if (parentMethod.isImplicitAsync && body.parentBody == null && complexExitIndex == 0 && hasReturn == false) {
+			statements.push("_c_root_method_arguments[_c_root_method_arguments.length - 1](undefined);\n" + _c_this.indent(indent) + "return;");
 			}
 		var beforeAsyncClose = "";
 		if (complexExitIndex != 0) {
@@ -10565,7 +10590,7 @@ Carbonite.Assemblers.Javascript.prototype.statement = function () {var _c_this =
 			}else if (statement.type == "native") {
 			var nativeState = statement;
 			if (nativeState.platform == "javascript") {
-				return nativeState.content.replace(new RegExp("@" + "return".replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), "arguments[arguments.length - 1]");
+				return nativeState.content.replace(new RegExp("@" + "return(\\([^()]*\\));", 'g'), "_c_root_method_arguments[_c_root_method_arguments.length - 1]$1; return;");
 				}
 			return "";
 			}
@@ -10763,7 +10788,7 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Terms.Seq
 				}else if (part.type == "call") {
 				var cast = part;
 				if (cast.isAsyncCall) {
-					rtn += "/*async call*/";
+					rtn += "/* async call */";
 					}
 				if (cast.previous.type == "property") {
 

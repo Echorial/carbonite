@@ -41,6 +41,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 
 	bound public void setAsImplicitAsync() {
 		this.isImplicitAsync = true;
+		this.isAsync = true;
 		this.updateCallGraphForAsync();
 	}
 
@@ -216,6 +217,10 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 				if (this.hasFlag("async")) {
 					this.isAsync = true;
 					this.body.rootAsyncBody = true;
+				}
+				
+				if (this.getAttributes("ForceAsync").length > 0) {
+					this.setAsImplicitAsync();
 				}
 			}
 

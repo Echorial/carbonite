@@ -241,8 +241,13 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		var <string>array statements = new <string>array();
 		var <string>array asyncCloses = new <string>array();
 
+		let hasReturn = false;
+
 		for (var int i in body.statements) {
 			var Carbonite.Statement statement = body.statements[i];
+
+			if (statement.type == "return")
+				hasReturn = true;
 			
 			for (let int a in statement.asyncCalls) {
 				let call = statement.asyncCalls[a];
@@ -312,6 +317,12 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 			}else{
 				statements.push(this.indent(indent) + this.statement(statement, indent + 1));
 			}
+		}
+
+		let Carbonite.Members.Method parentMethod = body.parent;
+
+		if (parentMethod.isImplicitAsync and body.parentBody == null and complexExitIndex == 0 and hasReturn == false) {
+			statements.push("_c_root_method_arguments[_c_root_method_arguments.length - 1](undefined);\n" + this.indent(indent) + "return;");
 		}
 
 		let string beforeAsyncClose = "";
@@ -410,7 +421,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		}else if (statement.type == "native") {
 			var Carbonite.Statements.Native nativeState = statement;
 			if (nativeState.platform == "javascript")
-				return nativeState.content.replace("@" + "return", "arguments[arguments.length - 1]");
+				return nativeState.content.regularReplace("@" + "return(\\([^()]*\\));", "_c_root_method_arguments[_c_root_method_arguments.length - 1]$1; return;");
 			return "";
 		}
 	}
@@ -585,7 +596,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 			}else if (part.type == "call") { //BUG: Reroutes don't work on calls
 				var Carbonite.Parts.Call cast = part;
 				if (cast.isAsyncCall)
-					rtn += "/*async call*/";
+					rtn += "/* async call */";
 
 				if (cast.previous.type == "property") {
 					

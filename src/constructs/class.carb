@@ -636,6 +636,15 @@ class Carbonite.Class inherits Carbonite.Named {
 						if (memCast.check(checks) == false)
 							this.buildError("Invalid argument type(s) for abstract method '" + check.name + "' in class '" + this.route + "'");
 					}
+				}else{
+					if (mem.getAttributes("ForceAsync").length > 0) {
+						let mp = new map();
+						mp["key"] = "ForceAsync";
+						mp["value"] = true;
+						let Carbonite.Members.Method checkMethod = check;
+						checkMethod.setAsImplicitAsync();
+						check.attributes.push(mp);
+					}
 				}
 			}
 		}
