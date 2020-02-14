@@ -571,6 +571,8 @@ Carbonite.Compiler = function () {var _c_this = this;
 
 	this.useOldTemplates = false;
 
+	this.asyncAwait = false;
+
 	this.pipeReference = {};
 
 	this.pipeConfig = {};
@@ -10231,7 +10233,16 @@ Carbonite.Assemblers.Javascript.prototype.root = function () {var _c_this = this
 					}
 				}
 			}
-		var str = root.getRoute() + " = function (" + args + ") {var _c_this = this;\n" + props.join("\n") + "\n" + _c_this.overload(cnsrs) + "\n}\n" + fixedProps.join("\n") + "\n" + _c_this.methods(root);
+		var asyncPrefix = "";
+		if (_c_this.compiler.asyncAwait) {
+			for (var c = 0; c < cnsrs.length; c++) {
+				var conMethod = cnsrs[c];
+				if (conMethod.isAsync) {
+					conMethod.buildError("Illegal async call in constructor.");
+					}
+				}
+			}
+		var str = root.getRoute() + " = " + asyncPrefix + "function (" + args + ") {var _c_this = this;\n" + props.join("\n") + "\n" + _c_this.overload(cnsrs) + "\n}\n" + fixedProps.join("\n") + "\n" + _c_this.methods(root);
 		return str;
 	}
 }
@@ -10311,10 +10322,14 @@ Carbonite.Assemblers.Javascript.prototype.methods = function () {var _c_this = t
 								argInit.push("		var " + defName + " = arguments[" + a + "];\n");
 								}
 							var argsLength = method.arguments.length;
-							if (((method.parent.getRoute() + "." + method.name) != "App.start") && (method.isAsync || method.isImplicitAsync)) {
+							if (((method.parent.getRoute() + "." + method.name) != "App.start") && (_c_this.compiler.asyncAwait == false && (method.isAsync || method.isImplicitAsync))) {
 								argsLength++;
 								}
-							overloads.push("	if (arguments.length == " + argsLength + check.join("") + ") {\n" + argInit.join("") + _c_this.methodStr(method) + "\n	}\n");
+							if (_c_this.compiler.asyncAwait && method.isAsync && method.isImplicitAsync == false) {
+								overloads.push("	if (arguments.length == " + argsLength + check.join("") + ") { " + argInit.join("") + "\nreturn new Promise((_c_resolve, _c_reject) => {" + _c_this.methodStr(method) + "\n }); }\n");
+								}else{
+									overloads.push("	if (arguments.length == " + argsLength + check.join("") + ") {\n" + argInit.join("") + _c_this.methodStr(method) + "\n	}\n");
+								}
 							}
 						}
 					}
@@ -10329,8 +10344,12 @@ Carbonite.Assemblers.Javascript.prototype.methods = function () {var _c_this = t
 			if (method.binding != "fixed") {
 				gap = ".prototype.";
 				}
+			var asyncPrefix = "";
 			if (method.isImplicitAsync) {
 				rtn += "/*i async*/";
+				if (_c_this.compiler.asyncAwait) {
+					asyncPrefix = "async ";
+					}
 				}
 			if ((overloads.length == 1) && ((method.hasFlag("trust")))) {
 				var args = [];
@@ -10338,9 +10357,9 @@ Carbonite.Assemblers.Javascript.prototype.methods = function () {var _c_this = t
 					var argument = method.arguments[a];
 					args.push(argument.name);
 					}
-				rtn += root.getRoute() + gap + method.getRealName() + " = function (" + args.join(", ") + ") {\n" + _c_this.methodStr(method) + "}\n\n";
+				rtn += root.getRoute() + gap + method.getRealName() + " = " + asyncPrefix + "function (" + args.join(", ") + ") {var _c_this = this; var _c_root_method_arguments = arguments;\n" + _c_this.methodStr(method) + "}\n\n";
 				}else{
-					rtn += root.getRoute() + gap + method.getRealName() + " = function () {var _c_this = this; var _c_root_method_arguments = arguments;\n" + overloads.join("else ") + "}\n\n";
+					rtn += root.getRoute() + gap + method.getRealName() + " = " + asyncPrefix + "function () {var _c_this = this; var _c_root_method_arguments = arguments;\n" + overloads.join("else ") + "}\n\n";
 				}
 			}
 		return rtn;
@@ -10443,19 +10462,21 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Body) || 
 			if (statement.type == "return") {
 				hasReturn = true;
 				}
-			for (var a = 0; a < statement.asyncCalls.length; a++) {
-				var call = statement.asyncCalls[a];
-				var asyncCall = _c_this.sequence(call.parent, call.asyncIndex, indent + 1);
-				var comma = ", ";
-				if (call.arguments.length == 0) {
-					comma = "";
+			if (_c_this.compiler.asyncAwait == false) {
+				for (var a = 0; a < statement.asyncCalls.length; a++) {
+					var call = statement.asyncCalls[a];
+					var asyncCall = _c_this.sequence(call.parent, call.asyncIndex, indent + 1);
+					var comma = ", ";
+					if (call.arguments.length == 0) {
+						comma = "";
+						}
+					statements.push(_c_this.indent(indent) + asyncCall.substr(0,asyncCall.length - 1) + comma + "function (" + _c_this.asyncName(call.asyncIndex) + ") {");
+					asyncCloses.push(_c_this.indent(indent - 1) + "});");
+					indent++;
 					}
-				statements.push(_c_this.indent(indent) + asyncCall.substr(0,asyncCall.length - 1) + comma + "function (" + _c_this.asyncName(call.asyncIndex) + ") {");
-				asyncCloses.push(_c_this.indent(indent - 1) + "});");
-				indent++;
 				}
 			var parentMethod = body.parent;
-			if (statement.containsAsyncStatement()) {
+			if (_c_this.compiler.asyncAwait == false && statement.containsAsyncStatement()) {
 				parentMethod.complexAsyncIndex++;
 				var loopId = parentMethod.complexAsyncIndex;
 				if (statement.type == "for") {
@@ -10476,20 +10497,20 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Body) || 
 					statements.push(_c_this.asyncLoop(loopId, "", _c_this.expression(whileLoop.check, indent), "", _c_this.body(whileLoop.body, indent, loopId)));
 					asyncCloses.push(_c_this.indent(indent - 1) + "});");
 					}
-				}else if (statement.type == "break" && parentMethod.complexAsyncIndex > 0) {
+				}else if (_c_this.compiler.asyncAwait == false && statement.type == "break" && parentMethod.complexAsyncIndex > 0) {
 				statements.push(_c_this.indent(indent) + "_c_break_loop(); return;");
-				}else if (statement.type == "continue" && parentMethod.complexAsyncIndex > 0) {
+				}else if (_c_this.compiler.asyncAwait == false && statement.type == "continue" && parentMethod.complexAsyncIndex > 0) {
 				statements.push(_c_this.indent(indent) + "_c_continue_loop(); return;");
 				}else{
 					statements.push(_c_this.indent(indent) + _c_this.statement(statement, indent + 1));
 				}
 			}
 		var parentMethod = body.parent;
-		if (parentMethod.isImplicitAsync && body.parentBody == null && complexExitIndex == 0 && hasReturn == false) {
+		if (_c_this.compiler.asyncAwait == false && parentMethod.isImplicitAsync && body.parentBody == null && complexExitIndex == 0 && hasReturn == false) {
 			statements.push("_c_root_method_arguments[_c_root_method_arguments.length - 1](undefined);\n" + _c_this.indent(indent) + "return;");
 			}
 		var beforeAsyncClose = "";
-		if (complexExitIndex != 0) {
+		if (_c_this.compiler.asyncAwait == false && complexExitIndex != 0) {
 			beforeAsyncClose = "\n" + _c_this.indent(indent) + "_c_complex_exit" + complexExitIndex + "();\n";
 			}
 		if (body.hasAsyncStatement) {
@@ -10533,7 +10554,7 @@ Carbonite.Assemblers.Javascript.prototype.statement = function () {var _c_this =
 			var exp = statement;
 			return "throw " + _c_this.expression(exp.expression, indent) + ";";
 			}else if (statement.type == "return") {
-			if (statement.container.getRootBody().hasAsyncStatement) {
+			if (_c_this.compiler.asyncAwait == false && statement.container.getRootBody().hasAsyncStatement) {
 				var exp = statement;
 				return "_c_root_method_arguments[_c_root_method_arguments.length - 1](" + _c_this.expression(exp.expression, indent) + ");\n" + _c_this.indent(indent) + "return;";
 				}else{
@@ -10590,7 +10611,11 @@ Carbonite.Assemblers.Javascript.prototype.statement = function () {var _c_this =
 			}else if (statement.type == "native") {
 			var nativeState = statement;
 			if (nativeState.platform == "javascript") {
-				return nativeState.content.replace(new RegExp("@" + "return(\\([^()]*\\));", 'g'), "_c_root_method_arguments[_c_root_method_arguments.length - 1]$1; return;");
+				if (_c_this.compiler.asyncAwait) {
+					return nativeState.content.replace(new RegExp("@" + "return(\\([^()]*\\));", 'g'), "_c_resolve$1; return;");
+					}else{
+						return nativeState.content.replace(new RegExp("@" + "return(\\([^()]*\\));", 'g'), "_c_root_method_arguments[_c_root_method_arguments.length - 1]$1; return;");
+					}
 				}
 			return "";
 			}
@@ -10799,15 +10824,21 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Terms.Seq
 					if (callOn.hasFlag("inline") == false) {
 						methodName = "." + callOn.name;
 						}
+					if (cast.isAsyncCall && _c_this.compiler.asyncAwait) {
+						rtn = "(await " + rtn;
+						}
 					if (callOn.hasFlag("native")) {
 						rtn = _c_this.callMethod(callOn, cast.arguments, rtn + methodName, indent);
 						}else{
 							rtn += _c_this.callMethod(callOn, cast.arguments, "", indent);
 						}
-					if (cast.isAsyncCall && cast.asyncIndex == asyncIndex) {
+					if (cast.isAsyncCall && _c_this.compiler.asyncAwait) {
+						rtn += ")";
+						}
+					if (_c_this.compiler.asyncAwait == false && cast.isAsyncCall && cast.asyncIndex == asyncIndex) {
 						return rtn;
 						}
-					if (callOn.isAsync || callOn.isImplicitAsync) {
+					if (_c_this.compiler.asyncAwait == false && (callOn.isAsync || callOn.isImplicitAsync)) {
 						rtn = _c_this.asyncName(cast.asyncIndex);
 						}
 					}else{
@@ -35413,10 +35444,10 @@ require('fs').readFile(arguments[0], arguments[1], arguments[2])
 	}
 }
 
-Oxygen.FileSystem.write = function (location, content, callback) {
+Oxygen.FileSystem.write = function (location, content, callback) {var _c_this = this; var _c_root_method_arguments = arguments;
 require('fs').writeFile(arguments[0], arguments[1], arguments[2])}
 
-Oxygen.FileSystem.writeSync = function (location, content) {
+Oxygen.FileSystem.writeSync = function (location, content) {var _c_this = this; var _c_root_method_arguments = arguments;
 return require('fs').writeFileSync(arguments[0], arguments[1])}
 
 Oxygen.FileSystem.statSync = function () {var _c_this = this; var _c_root_method_arguments = arguments;

@@ -33,6 +33,8 @@ class Carbonite.Compiler {
 
 	bound public bool useOldTemplates = false;
 
+	bound public bool asyncAwait = false;
+
 	bound public map pipeReference = new map();
 
 	bound public map pipeConfig = new map();
