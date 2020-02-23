@@ -23,4 +23,8 @@ relative <class T = primitive>array inherits primitive {
 
 	native inline <T>array highToLow()
 	{return context.instance + ".sort(function (a, b) {return b-a;})";}
+
+	native inline T find(<bool, everything>function checker) {
+		return context.instance + ".find(" + context.arguments[0] + ")";
+	}
 }
