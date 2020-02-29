@@ -43,6 +43,20 @@ class Carbide.Virtual.Values.String inherits Carbide.Virtual.Value {
 				var string replace = input[1].value;
 				return Carbide.Virtual.Values.String.create(this.value.replace(what, replace));
 			}
+		}else if (name == "substr") {
+			if (input.length == 2) {
+				var int start = input[0].value;
+				var int length = input[1].value;
+				return Carbide.Virtual.Values.String.create(this.value.substr(start, length));
+			}
+		}else if (name == "toUpper") {
+			if (input.length == 0) {
+				return Carbide.Virtual.Values.String.create(this.value.toUpper());
+			}
+		}else if (name == "toLower") {
+			if (input.length == 0) {
+				return Carbide.Virtual.Values.String.create(this.value.toLower());
+			}
 		}
 		return Carbide.Virtual.Values.Null.create();
 	}
