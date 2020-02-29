@@ -713,7 +713,14 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 			var Carbonite.Argument arg = func.arguments[i];
 			args.push(arg.name);
 		}
-		return "function (" + args.join(", ") + ") {\n" + this.body(func.body, indent) + "\n" + this.indent(indent) + "}";
+
+		let prefixAsync = "";
+
+		if (func.body.hasAsyncStatement) {
+			prefixAsync = "async ";
+		}
+
+		return prefixAsync + "function (" + args.join(", ") + ") {\n" + this.body(func.body, indent) + "\n" + this.indent(indent) + "}";
 	}
 
 	bound public override <string>function expression(Carbonite.Expression expression, int indent) {
