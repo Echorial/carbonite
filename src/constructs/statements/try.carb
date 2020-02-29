@@ -24,15 +24,31 @@ class Carbonite.Catch {
 	Carbonite.Type overload = null;
 	string name = "";
 
+	Carbonite.Define define = null;
+
 	void @construct(Carbonite.Body container, map raw) {
 
 		this.name = raw["input"]["name"];
 
+		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
+		this.body.inherit(container);
+
 		this.overload = new Carbonite.Type(container.parent.parent.compiler, container.parent.parent);
 		this.overload.loadFromRaw(raw["input"]["type"]);
 
-		this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
-		this.body.inherit(container);
+		this.define = new Carbonite.Define(this.name, this.overload);
+		this.define.output.isPure = true;
+
+		this.define.container = this.body;
+
+		if (this.body.scope.search(this.name) != null) {
+			this.overload.buildError("'" + this.name + "' already defined");
+		}
+
+		this.body.scope.add(this.define);
+
+		this.define.output.ownerDefine = this.define;
+
 		this.body.build();
 	}
 }
