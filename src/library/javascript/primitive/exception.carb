@@ -2,4 +2,6 @@ relative Exception {
 	fixed native inline void throw(string msg) {return "throw new Error(" + context.arguments[0] + ")";}
 	fixed native inline void try() {return "try {";}
 	fixed native inline void endTry() {return "} catch(err) {}";}
+
+	native inline property string message() {return context.instance + ".message";}
 }
