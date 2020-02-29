@@ -27,10 +27,18 @@ relative <class T = primitive>array inherits primitive {
 
 	phpNoRef native inline <T>array highToLow()
 	{return "rsort(" + context.instance + ")";}
+
+	native inline T find(<bool, everything>function checker) {
+		return "_c_lib__arrUtils::find(" + context.instance + ", " + context.arguments[0] + ")";
+	}
 }
 
 core class _c_lib__arrUtils {
 	[rawFront = "static function &readIndex(&$args, $key) {", rawBack = "}"]
 	raw fixed native everything readIndex(<everything>array data, int key)
 	{return "$nll = null; if (isset($args[$key])) return $args[$key]; else return $nll;";}
+
+	[rawFront = "static function find($arr, $func) {", rawBack = "}"]
+	raw fixed native everything find(<everything>array data, <bool, everything>function cb)
+	{return "$found = array_filter($arr, $func); if (count($found) == 0) return null; else return $found[0];";}
 }
