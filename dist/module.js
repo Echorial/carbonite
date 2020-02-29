@@ -6180,14 +6180,24 @@ Carbonite.Catch = function () {var _c_this = this;
 
 	this.name = "";
 
+	this.define = null;
+
 	if (arguments.length == 2 && ((arguments[0] instanceof Carbonite.Body) || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'object' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
 		var container = arguments[0];
 		var raw = arguments[1];
 		_c_this.name = raw["input"]["name"];
-		_c_this.overload = new Carbonite.Type(container.parent.parent.compiler, container.parent.parent);
-		_c_this.overload.loadFromRaw(raw["input"]["type"]);
 		_c_this.body = new Carbonite.Body(container.parent, container.source, raw["body"]);
 		_c_this.body.inherit(container);
+		_c_this.overload = new Carbonite.Type(container.parent.parent.compiler, container.parent.parent);
+		_c_this.overload.loadFromRaw(raw["input"]["type"]);
+		_c_this.define = new Carbonite.Define(_c_this.name, _c_this.overload);
+		_c_this.define.output.isPure = true;
+		_c_this.define.container = _c_this.body;
+		if (_c_this.body.scope.search(_c_this.name) != null) {
+			_c_this.overload.buildError("'" + _c_this.name + "' already defined");
+			}
+		_c_this.body.scope.add(_c_this.define);
+		_c_this.define.output.ownerDefine = _c_this.define;
 		_c_this.body.build();
 	}
 
@@ -10917,7 +10927,11 @@ Carbonite.Assemblers.Javascript.prototype.func = function () {var _c_this = this
 			var arg = func.arguments[i];
 			args.push(arg.name);
 			}
-		return "function (" + args.join(", ") + ") {\n" + _c_this.body(func.body, indent) + "\n" + _c_this.indent(indent) + "}";
+		var prefixAsync = "";
+		if (func.body.hasAsyncStatement) {
+			prefixAsync = "async ";
+			}
+		return prefixAsync + "function (" + args.join(", ") + ") {\n" + _c_this.body(func.body, indent) + "\n" + _c_this.indent(indent) + "}";
 	}
 }
 
@@ -12126,6 +12140,19 @@ Carbonite.Assemblers.Php.prototype.statement = function () {var _c_this = this; 
 						str += "else{\n" + _c_this.body(alt.body) + "}";
 					}
 				}
+			return str;
+			}else if (statement.type == "throw") {
+			var exp = statement;
+			return "throw " + _c_this.expression(exp.expression) + ";";
+			}else if (statement.type == "try") {
+			var tryState = statement;
+			var str = "";
+			var catches = [];
+			for (var i = 0; i < tryState.catches.length; i++) {
+				var cat = tryState.catches[i];
+				catches.push("if (" + _c_this.compareType("$_carb_catch_var", cat.overload) + " or gettype($_carb_catch_var) == 'NULL') {\n$" + cat.name + " = $_carb_catch_var;\n" + _c_this.body(cat.body) + "\n}");
+				}
+			str = "try {\n" + _c_this.body(tryState.body) + "\n} catch (Exception $_carb_catch_var) {\n" + catches.join("else") + "\n}";
 			return str;
 			}else if (statement.type == "for") {
 			var forState = statement;
@@ -40811,6 +40838,20 @@ Carbide.Virtual.Values.String.prototype.method = function () {var _c_this = this
 				var what = input[0].value;
 				var replace = input[1].value;
 				return Carbide.Virtual.Values.String.create(_c_this.value.replace(new RegExp(what.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&'), 'g'), replace));
+				}
+			}else if (name == "substr") {
+			if (input.length == 2) {
+				var start = input[0].value;
+				var length = input[1].value;
+				return Carbide.Virtual.Values.String.create(_c_this.value.substr(start,length));
+				}
+			}else if (name == "toUpper") {
+			if (input.length == 0) {
+				return Carbide.Virtual.Values.String.create(_c_this.value.toUpperCase());
+				}
+			}else if (name == "toLower") {
+			if (input.length == 0) {
+				return Carbide.Virtual.Values.String.create(_c_this.value.toLowerCase());
 				}
 			}
 		return Carbide.Virtual.Values.Null.create();
