@@ -336,6 +336,19 @@ class Carbonite.Assemblers.Php inherits Carbonite.Assemblers.Loose {
 				}
 			}
 			return str;
+		}else if (statement.type == "throw") {
+			var Carbonite.Statements.Throw exp = statement;
+			return "throw " + this.expression(exp.expression) + ";";
+		}else if (statement.type == "try") {
+			var Carbonite.Statements.Try tryState = statement;
+			var string str = "";
+			var catches = new <string>array();
+			for (var int i in tryState.catches) {
+				var cat = tryState.catches[i];
+				catches.push("if (" + this.compareType("$_carb_catch_var", cat.overload) + " or gettype($_carb_catch_var) == 'NULL') {\n$" + cat.name + " = $_carb_catch_var;\n" + this.body(cat.body) + "\n}");
+			}
+			str = "try {\n" + this.body(tryState.body) + "\n} catch (Exception $_carb_catch_var) {\n" + catches.join("else") + "\n}";
+			return str;
 		}else if (statement.type == "for") {
 			var Carbonite.Statements.For forState = statement;
 			var string str = "";
