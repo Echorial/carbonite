@@ -589,6 +589,8 @@ Carbonite.Compiler = function () {var _c_this = this;
 
 	this.sourceIndex = 0;
 
+	this.carbideCarbonMap = null;
+
 	if (arguments.length == 0) {
 		var emp = null;
 		_c_this.scope = new Carbonite.Pre.Scope(emp);
@@ -599,6 +601,7 @@ Carbonite.Compiler = function () {var _c_this = this;
 			console.log(args[0].value);
 			});
 		var compiler = Carbide.Virtual.Values.Map.create({});
+		_c_this.carbideCarbonMap = compiler;
 		var that = _c_this;
 		compiler.value["on"] = Carbide.Virtual.Values.Function.create(function (args) {
 			if (args.length == 2) {
@@ -823,6 +826,7 @@ Carbonite.Compiler.prototype.build = function () {var _c_this = this; var _c_roo
 		var varName = "platform";
 		var platformInfo = new Carbonite.Pre.Variable(varName, Carbonite.Pre.Values.Map.create(platforms));
 		_c_this.scope.addVariable(platformInfo);
+		_c_this.carbideCarbonMap.value["platform"] = Carbide.Virtual.Values.String.create(platform.platform);
 		for (var i = 0; i < _c_this.sources.length; i++) {
 			var source = _c_this.sources[i];
 			if (source.alreadyBuilt == false) {
