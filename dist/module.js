@@ -3095,6 +3095,9 @@ Carbonite.Members.Method.fromHeader = function () {var _c_this = this; var _c_ro
 				method.flags.push(flags[i]);
 				}
 			}
+		if (method.hasFlag("async")) {
+			method.isAsync = true;
+			}
 		method.output = new Carbonite.Type(parent.compiler, parent);
 		method.output.loadFromRaw(data["output"]);
 		var args = data["arguments"];
@@ -4085,6 +4088,9 @@ Carbonite.Members.Operator.fromHeader = function () {var _c_this = this; var _c_
 				method.flags.push(flags[i]);
 				}
 			}
+		if (method.hasFlag("async")) {
+			method.isAsync = true;
+			}
 		method.output = new Carbonite.Type(parent.compiler, parent);
 		method.output.loadFromRaw(data["output"]);
 		var args = data["arguments"];
@@ -4503,6 +4509,7 @@ Carbonite.Function = function () {var _c_this = this;
 		_c_this.parent = parent;
 		_c_this.blockIndex = _c_this.parent.relativeParent.blockIndex;
 		_c_this.body = new Carbonite.Body(_c_this.parent.container.parent, _c_this.raw["body"]);
+		_c_this.body.anonymousFunctionBody = true;
 		_c_this.body.scope.parent = _c_this.parent.container.scope;
 		_c_this.output = new Carbonite.Type(_c_this.parent.parent.compiler, _c_this.parent.parent);
 		_c_this.output.loadFromRaw(_c_this.raw["output"]);
@@ -4547,6 +4554,8 @@ Carbonite.Body = function () {var _c_this = this;
 	this.relativeOutput = null;
 
 	this.parentBody = null;
+
+	this.anonymousFunctionBody = false;
 
 	this.isLoopBody = false;
 
@@ -9376,12 +9385,14 @@ else 	if (arguments.length == 3 && ((arguments[0] instanceof Carbonite.Part || (
 Carbonite.Parts.Call.prototype.setAsAsyncCall = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 	if (arguments.length == 0) {
 		if (_c_this.isAsyncCall == false) {
-			var parentMethod = _c_this.parent.container.parent;
-			parentMethod.setAsImplicitAsync();
-			_c_this.parent.container.setHasAsyncStatement();
-			parentMethod.asyncIndex++;
+			if (_c_this.parent.container.getRootBody().anonymousFunctionBody == false) {
+				var parentMethod = _c_this.parent.container.parent;
+				parentMethod.setAsImplicitAsync();
+				_c_this.parent.container.setHasAsyncStatement();
+				parentMethod.asyncIndex++;
+				_c_this.asyncIndex = parentMethod.asyncIndex;
+				}
 			_c_this.isAsyncCall = true;
-			_c_this.asyncIndex = parentMethod.asyncIndex;
 			_c_this.parent.parent.addAsync(_c_this);
 			}
 	}

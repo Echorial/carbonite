@@ -15,6 +15,7 @@ class Carbonite.Function {
 		this.blockIndex = this.parent.relativeParent.blockIndex;
 
 		this.body = new Carbonite.Body(this.parent.container.parent, this.raw["body"]);
+		this.body.anonymousFunctionBody = true;
 		this.body.scope.parent = this.parent.container.scope;
 		this.output = new Carbonite.Type(this.parent.parent.compiler, this.parent.parent);
 		this.output.loadFromRaw(this.raw["output"]);

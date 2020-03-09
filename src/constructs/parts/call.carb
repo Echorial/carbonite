@@ -15,14 +15,17 @@ class Carbonite.Parts.Call inherits Carbonite.Part {
 
 	bound public <void>function setAsAsyncCall() {
 		if (this.isAsyncCall == false) {
-			var Carbonite.Members.Method parentMethod = this.parent.container.parent;
+			if (this.parent.container.getRootBody().anonymousFunctionBody == false) {
+				var Carbonite.Members.Method parentMethod = this.parent.container.parent;
 
-			parentMethod.setAsImplicitAsync();
-			this.parent.container.setHasAsyncStatement();
+				parentMethod.setAsImplicitAsync();
+				this.parent.container.setHasAsyncStatement();
 
-			parentMethod.asyncIndex++;
+				parentMethod.asyncIndex++;
+				this.asyncIndex = parentMethod.asyncIndex;
+			}
+
 			this.isAsyncCall = true;
-			this.asyncIndex = parentMethod.asyncIndex;
 			
 			this.parent.parent.addAsync(this);
 		}

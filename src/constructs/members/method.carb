@@ -387,6 +387,10 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 				method.flags.push(flags[i]);
 		}
 
+		if (method.hasFlag("async")) {
+			method.isAsync = true;
+		}
+
 		method.output = new Carbonite.Type(parent.compiler, parent);
 		method.output.loadFromRaw(data["output"]);
 
