@@ -3098,6 +3098,12 @@ Carbonite.Members.Method.fromHeader = function () {var _c_this = this; var _c_ro
 		if (method.hasFlag("async")) {
 			method.isAsync = true;
 			}
+		if (data["isImplicitAsync"]) {
+			method.isImplicitAsync = true;
+			}
+		if (data["isAsync"]) {
+			method.isAsync = true;
+			}
 		method.output = new Carbonite.Type(parent.compiler, parent);
 		method.output.loadFromRaw(data["output"]);
 		var args = data["arguments"];
@@ -3108,6 +3114,18 @@ Carbonite.Members.Method.fromHeader = function () {var _c_this = this; var _c_ro
 	}
 }
 
+Carbonite.Members.Method.prototype.boolToHeader = function () {var _c_this = this; var _c_root_method_arguments = arguments;
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'boolean' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var key = arguments[0];
+		var value = arguments[1];
+		if (value) {
+			return "\"" + key + "\": true";
+			}else{
+				return "\"" + key + "\": false";
+			}
+	}
+}
+
 Carbonite.Members.Method.prototype.toHeader = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 	if (arguments.length == 0) {
 		var args = [];
@@ -3115,7 +3133,7 @@ Carbonite.Members.Method.prototype.toHeader = function () {var _c_this = this; v
 			var arg = _c_this.arguments[i];
 			args.push(arg.toHeader());
 			}
-		return "{\"type\": \"method\", \"binding\": \"" + _c_this.binding + "\", \"name\": \"" + _c_this.name + "\", " + _c_this.getHeaderFlags() + " \"output\": " + _c_this.output.toHeader() + ", \"arguments\": [" + args.join(",") + "]}";
+		return "{\"type\": \"method\", \"binding\": \"" + _c_this.binding + "\", \"name\": \"" + _c_this.name + "\", " + _c_this.getHeaderFlags() + " \"output\": " + _c_this.output.toHeader() + ", \"arguments\": [" + args.join(",") + "], " + _c_this.boolToHeader("isImplicitAsync", _c_this.isImplicitAsync) + ", " + _c_this.boolToHeader("isAsync", _c_this.isAsync) + "}";
 	}
 }
 
@@ -4091,6 +4109,12 @@ Carbonite.Members.Operator.fromHeader = function () {var _c_this = this; var _c_
 		if (method.hasFlag("async")) {
 			method.isAsync = true;
 			}
+		if (data["isImplicitAsync"]) {
+			method.isImplicitAsync = true;
+			}
+		if (data["isAsync"]) {
+			method.isAsync = true;
+			}
 		method.output = new Carbonite.Type(parent.compiler, parent);
 		method.output.loadFromRaw(data["output"]);
 		var args = data["arguments"];
@@ -4101,6 +4125,18 @@ Carbonite.Members.Operator.fromHeader = function () {var _c_this = this; var _c_
 	}
 }
 
+Carbonite.Members.Operator.prototype.boolToHeader = function () {var _c_this = this; var _c_root_method_arguments = arguments;
+	if (arguments.length == 2 && (typeof arguments[0] == 'string' || typeof arguments[0] == 'undefined' || arguments[0] === null) && (typeof arguments[1] == 'boolean' || typeof arguments[1] == 'undefined' || arguments[1] === null)) {
+		var key = arguments[0];
+		var value = arguments[1];
+		if (value) {
+			return "\"" + key + "\": true";
+			}else{
+				return "\"" + key + "\": false";
+			}
+	}
+}
+
 Carbonite.Members.Operator.prototype.toHeader = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 	if (arguments.length == 0) {
 		var args = [];
@@ -4108,7 +4144,7 @@ Carbonite.Members.Operator.prototype.toHeader = function () {var _c_this = this;
 			var arg = _c_this.arguments[i];
 			args.push(arg.toHeader());
 			}
-		return "{\"type\": \"method\", \"binding\": \"" + _c_this.binding + "\", \"name\": \"" + _c_this.name + "\", " + _c_this.getHeaderFlags() + " \"output\": " + _c_this.output.toHeader() + ", \"arguments\": [" + args.join(",") + "]}";
+		return "{\"type\": \"method\", \"binding\": \"" + _c_this.binding + "\", \"name\": \"" + _c_this.name + "\", " + _c_this.getHeaderFlags() + " \"output\": " + _c_this.output.toHeader() + ", \"arguments\": [" + args.join(",") + "], " + _c_this.boolToHeader("isImplicitAsync", _c_this.isImplicitAsync) + ", " + _c_this.boolToHeader("isAsync", _c_this.isAsync) + "}";
 	}
 }
 

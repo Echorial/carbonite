@@ -391,6 +391,14 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 			method.isAsync = true;
 		}
 
+		if (data["isImplicitAsync"]) {
+			method.isImplicitAsync = true;
+		}
+
+		if (data["isAsync"]) {
+			method.isAsync = true;
+		}
+
 		method.output = new Carbonite.Type(parent.compiler, parent);
 		method.output.loadFromRaw(data["output"]);
 
@@ -402,6 +410,13 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 		return method;
 	}
 
+	string boolToHeader(string key, bool value) {
+		if (value)
+			return '"' + key + '": true';
+		else
+			return '"' + key + '": false';
+	}
+
 	string toHeader() {
 		var args = new <string>array();
 		for (var int i in this.arguments) {
@@ -409,7 +424,7 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 			args.push(arg.toHeader());
 		}
 
-		return '{"type": "method", "binding": "' + this.binding + '", "name": "' + this.name + '", ' + this.getHeaderFlags() + ' "output": ' + this.output.toHeader() + ', "arguments": [' + args.join(",") + ']}';
+		return '{"type": "method", "binding": "' + this.binding + '", "name": "' + this.name + '", ' + this.getHeaderFlags() + ' "output": ' + this.output.toHeader() + ', "arguments": [' + args.join(",") + '], ' + this.boolToHeader("isImplicitAsync", this.isImplicitAsync) + ', ' + this.boolToHeader("isAsync", this.isAsync) + '}';
 	}
 }
 
