@@ -45,10 +45,10 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		var <Carbonite.Members.Method>array cnsrs = root.getMethods("@construct");
 		var string args = "";
 		if (cnsrs.length > 0)
-			if (cnsrs[0].hasFlag("trust")) {
+			if (cnsrs[0].hasFlag("trust") or cnsrs.length == 1) {
 				for (var int i in cnsrs[0].arguments) {
 					var arg = cnsrs[0].arguments[i];
-					args += arg.name;
+					args += this.unreserve(arg.name);
 					if (i != cnsrs[0].arguments.length - 1)
 						args += ", ";
 				}
@@ -71,7 +71,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 	bound public override <string>function overload(<Carbonite.Members.Method>array methods) {
 		if (methods.length == 1) {
 			var Carbonite.Members.Method method = methods[0];
-			if (method.hasFlag("trust")) {
+			if (method.hasFlag("trust") or methods.length == 1) {
 				return this.methodStr(method);
 			}
 		}
@@ -124,7 +124,8 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 					if (member.name != "@construct") {
 						if ((member.hasFlag("relative") == false) and (member.abstract == false)) {
 							var Carbonite.Members.Method method = member;
-							var overloads = methods.find(method.name);
+							var methodMapOverload = methods.find(method.name);
+							var overloads = methodMapOverload.overloads;
 							
 							var <string>array check = new <string>array();
 							var <string>array argInit = new <string>array();
@@ -144,6 +145,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 								argsLength++;
 
 							if (this.compiler.asyncAwait and method.isAsync and method.isImplicitAsync == false) {
+								methodMapOverload.async = true;
 								overloads.push("	if (arguments.length == " + argsLength + check.join("") + ") { " + argInit.join("") + "\nreturn new Promise((_c_resolve, _c_reject) => {" + this.methodStr(method) + "\n }); }\n");
 							}else{
 								overloads.push("	if (arguments.length == " + argsLength + check.join("") + ") {\n" + argInit.join("") + this.methodStr(method) + "\n	}\n");
@@ -172,11 +174,11 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 					asyncPrefix = "async ";
 			}
 
-			if ((overloads.length == 1) and (method.hasFlag("trust"))) {
+			if ((methodOverload.async == false) and (overloads.length == 1) and (method.hasFlag("trust") or (overloads.length == 1))) {
 				var <string>array args = new <string>array();
 				for (var int a in method.arguments) {
 					var Carbonite.Argument argument = method.arguments[a];
-					args.push(argument.name);
+					args.push(this.unreserve(argument.name));
 				}
 				rtn += root.getRoute() + gap + method.getRealName() + " = " + asyncPrefix + "function (" + args.join(", ") + ") {var _c_this = this; var _c_root_method_arguments = arguments;\n" + this.methodStr(method) + "}\n\n";
 			}else{
@@ -359,15 +361,21 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 		return statements.join("\n") + beforeAsyncClose + asyncCloses.join("\n");
 	}
 
+	bound public <string>function unreserve(string name) {
+		if (name == "arguments") {
+			return "___" + name;
+		}else{
+			return name;
+		}
+	}
+
 	bound public override <string>function define(Carbonite.Define define, int indent) {
 		var string set = "";
 		if (define.initializer != empty) {
 			set = " = " + this.expression(define.initializer, indent);
 		}
-		var defName =  define.name;
-		if (defName == "arguments") {
-			defName = "___" + defName;
-		}
+		var defName = this.unreserve(define.name);
+		
 		return "var " + defName + set;
 	}
 
@@ -747,6 +755,7 @@ class Carbonite.Assemblers.Javascript inherits Carbonite.Assemblers.Loose {
 
 class MethodOverload {
 	string name = "";
+	bool async = false;
 	<string>array overloads = new <string>array();
 
 	void @construct(string name) {
@@ -761,13 +770,13 @@ class MethodMap {
 		
 	}
 
-	<string>array find(string name) {
+	MethodOverload find(string name) {
 		for (var int i in this.methods) {
 			if (this.methods[i].name == name)
-				return this.methods[i].overloads;
+				return this.methods[i];
 		}
 		var method = new MethodOverload(name);
 		this.methods.push(method);
-		return method.overloads;
+		return method;
 	}
 }

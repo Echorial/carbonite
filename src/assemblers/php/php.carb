@@ -160,7 +160,8 @@ class Carbonite.Assemblers.Php inherits Carbonite.Assemblers.Loose {
 
 								continue;
 							}
-							var overloads = methods.find(method.name);
+							var methodMapOverload = methods.find(method.name);
+							var overloads = methodMapOverload.overloads;
 							/*if (method.name in methods) {
 								overloads = methods[method.name];
 							}else{
