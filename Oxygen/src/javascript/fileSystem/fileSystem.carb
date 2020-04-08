@@ -39,7 +39,7 @@ class Oxygen.FileSystem inherits FileSystem {
 	{return "return require('path').resolve(" + context.arguments[0] + ");";}
 
 	fixed native bool isDir(string location)
-	{return "return require('fs').lstatSync(" + context.arguments[0] + ").isDirectory();";}
+	{return "const _fs = require('fs'); return _fs.lstatSync(_fs.realpathSync(" + context.arguments[0] + ")).isDirectory();";}
 
 	fixed native bool exists(string location)
 	{return "return require('fs').existsSync(" + context.arguments[0] + ")";}
