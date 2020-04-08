@@ -31050,7 +31050,7 @@ Oxygen.FileSystem.resolve = function (path) {var _c_this = this; var _c_root_met
 return require('path').resolve(arguments[0]);}
 
 Oxygen.FileSystem.isDir = function (location) {var _c_this = this; var _c_root_method_arguments = arguments;
-return require('fs').lstatSync(arguments[0]).isDirectory();}
+const _fs = require('fs'); return _fs.lstatSync(_fs.realpathSync(arguments[0])).isDirectory();}
 
 Oxygen.FileSystem.exists = function (location) {var _c_this = this; var _c_root_method_arguments = arguments;
 return require('fs').existsSync(arguments[0])}
