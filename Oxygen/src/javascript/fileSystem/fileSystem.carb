@@ -49,6 +49,9 @@ class Oxygen.FileSystem inherits FileSystem {
 
 	fixed native void makeDir(string location)
 	{return "require('fs').mkdirSync(" + context.arguments[0] + ")";}
+
+	fixed native void unlink(string path)
+	{return "require('fs').unlinkSync(" + context.arguments[0] + ")";}
 }
 
 

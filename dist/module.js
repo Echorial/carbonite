@@ -31061,6 +31061,9 @@ return require('path').basename(arguments[0])}
 Oxygen.FileSystem.makeDir = function (location) {var _c_this = this; var _c_root_method_arguments = arguments;
 require('fs').mkdirSync(arguments[0])}
 
+Oxygen.FileSystem.unlink = function (path) {var _c_this = this; var _c_root_method_arguments = arguments;
+require('fs').unlinkSync(arguments[0])}
+
 Oxygen.FileSystem.Stat = function () {var _c_this = this;
 	this.dev = 0;
 

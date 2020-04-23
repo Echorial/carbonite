@@ -37,4 +37,6 @@ abstract interface FileSystem {
 	fixed string basename(string location);
 
 	fixed void makeDir(string location);
+
+	fixed void unlink(string path);
 }
