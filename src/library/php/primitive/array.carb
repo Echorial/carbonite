@@ -15,6 +15,7 @@ relative <class T = primitive>array inherits primitive {
 
 	phpNoRef native inline <T>array split(int index) {return "array_slice(" + context.instance + ", " + context.arguments[0] + ")";}
 	phpNoRef native inline <T>array splice(int index) {return "array_splice(" + context.instance + ", " + context.arguments[0] + ")";}
+	phpNoRef native inline <T>array slice(int index, int count) {return "array_slice(" + context.instance + ", " + context.arguments[0] + ", " + context.arguments[1] + ")";}
 	phpNoRef native inline <T>array clone() {return "array_values(" + context.instance + ")";}
 	native inline <T>array concat(<everything>array with) {return "array_merge(" + context.instance + ", " + context.arguments[0] + ")";}
 

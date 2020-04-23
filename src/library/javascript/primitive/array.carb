@@ -15,6 +15,7 @@ relative <class T = primitive>array inherits primitive {
 
 	native inline <T>array split(int index) {return context.instance + ".slice().splice(0, " + context.arguments[0] + ")";}
 	native inline <T>array splice(int index) {return context.instance + ".slice().splice(" + context.arguments[0] + ")";}
+	native inline <T>array slice(int index, int count) {return context.instance + ".slice(" + context.arguments[0] + ", " + context.arguments[1] + ")";}
 	native inline <T>array clone() {return "JSON.parse(JSON.stringify(" + context.instance + "))";}
 	native inline <T>array concat(<everything>array with) {return context.instance + ".concat(" + context.arguments[0] + ")";}
 
