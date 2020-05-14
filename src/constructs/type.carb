@@ -14,7 +14,7 @@ class Carbonite.Type inherits Carbonite.Range {
 
 	bound public bool isPure = false;
 
-	`If this type hold a null value.
+	`If this type can hold a null value.
 	@note all complex primitives (array, map) are always nullable, whereas value primitives are nullable by default.`
 	bound public bool nullable = true;
 
@@ -35,6 +35,7 @@ class Carbonite.Type inherits Carbonite.Range {
 	bound public bool owned = false;
 	bound public int ownedUntil = -1;
 
+	[Expose]
 	bound public bool containsReference = false;
 
 	fixed public <Carbonite.Type>function @construct(Carbonite.Compiler compiler, Carbonite.Class parent) {

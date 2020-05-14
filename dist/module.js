@@ -38611,12 +38611,19 @@ carbide_proxy_Carbonite_Type.prototype.property = function (name, c_scope) {var 
 			var insta = _c_this.value;
 			var carbide_rtn = insta.reference;
 			return carbide_proxy_Carbonite_Class.create(carbide_rtn);
+			}else if (name == "containsReference") {
+			var insta = _c_this.value;
+			var carbide_rtn = insta.containsReference;
+			return Carbide.Virtual.Value.primitiveToValue(carbide_rtn);
 			}}
 
 carbide_proxy_Carbonite_Type.prototype.dotSet = function (name, setTo, c_scope) {var _c_this = this; var _c_root_method_arguments = arguments;
 		if (name == "reference") {
 			var c_setCast = setTo.value;
 			_c_this.value.reference = c_setCast;
+			}else if (name == "containsReference") {
+			var c_setCast = setTo.value;
+			_c_this.value.containsReference = c_setCast;
 			}}
 
 carbide_valueArray_Carbonite_Class = function (val) {var _c_this = this;
