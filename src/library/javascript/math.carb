@@ -24,7 +24,7 @@ relative Math {
 	fixed native inline float log(float x) {return "Math.log(" + context.arguments[0] + ")";}
 
 	fixed native inline float round(float x) {return "Math.round(" + context.arguments[0] + ")";}
-	fixed native inline float round(float x, float to) {return "(Math.round(" + context.arguments[0] + " / " + context.arguments[0] + ") * " + context.arguments[0] + ")";}
+	fixed native inline float round(float x, float to) {return "(Math.round(" + context.arguments[0] + " / " + context.arguments[1] + ") * " + context.arguments[0] + ")";}
 
 	fixed native inline float ceil(float x) {return "Math.ceil(" + context.arguments[0] + ")";}
 	fixed native inline float floor(float x) {return "Math.floor(" + context.arguments[0] + ")";}
@@ -32,4 +32,6 @@ relative Math {
 	fixed native inline float sqrt(float x) {return "Math.sqrt(" + context.arguments[0] + ")";}
 
 	fixed native inline float abs(float x) {return "Math.abs(" + context.arguments[0] + ")";}
+
+	fixed native inline float random() {return "Math.random()";}
 }

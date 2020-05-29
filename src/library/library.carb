@@ -28,6 +28,7 @@
 
 #if platform.php
 	#include "php/primitive.carb"
+	#include "php/math.carb"
 	#include "php/primitive"
 #end if
 
