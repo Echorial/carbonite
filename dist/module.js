@@ -1655,7 +1655,7 @@ Carbonite.Class.prototype.docDynamic = function () {var _c_this = this; var _c_r
 		for (var i = 0; i < _c_this.members.length; i++) {
 			members.push(_c_this.members[i].docDynamic());
 			}
-		var output = "{\"type\": \"class\", route: \"" + _c_this.route + "\", name: \"" + _c_this.name + "\", \"doc\": \"" + _c_this.doc.docDynamic() + "\", \"inherits\": [" + inherits.join(",") + "], \"members\": [" + members.join(",") + "]}";
+		var output = "{\"type\": \"class\", \"base\": \"" + _c_this.base + "\", route: \"" + _c_this.route + "\", name: \"" + _c_this.name + "\", \"doc\": \"" + _c_this.doc.docDynamic() + "\", \"inherits\": [" + inherits.join(",") + "], \"members\": [" + members.join(",") + "]}";
 		return output;}
 
 Carbonite.Class.prototype.canCast = function (to) {var _c_this = this; var _c_root_method_arguments = arguments;
@@ -2087,7 +2087,15 @@ Carbonite.Member.prototype.docDynamic = function () {var _c_this = this; var _c_
 			}else{
 				extra = "";
 			}
-		return "{\"type\": \"" + _c_this.type + "\", \"name\": \"" + _c_this.name + "\", \"doc\": \"" + _c_this.doc.docDynamic() + "\", \"output\": \"" + _c_this.output.lookPretty() + "\"" + extra + "}";}
+		var inherited = "";
+		if (_c_this.inheritedFrom != null) {
+			inherited = _c_this.inheritedFrom.route;
+			}
+		var abstract = "false";
+		if (_c_this.abstract) {
+			abstract = "true";
+			}
+		return "{\"type\": \"" + _c_this.type + "\", \"inherited\": \"" + inherited + "\", \"abstract\": " + abstract + ", \"name\": \"" + _c_this.name + "\", \"doc\": \"" + _c_this.doc.docDynamic() + "\", \"output\": \"" + _c_this.output.lookPretty() + "\"" + extra + "}";}
 
 Carbonite.Member.fromHeader = function (parent, data) {var _c_this = this; var _c_root_method_arguments = arguments;
 		var type = data["type"];
@@ -2532,13 +2540,17 @@ Carbonite.Members.Method.prototype.getRealName = function () {var _c_this = this
 			}
 		return _c_this.name;}
 
-Carbonite.Members.Method.prototype.docDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
+Carbonite.Members.Method.prototype.extraDocDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 		var args = [];
 		for (var i = 0; i < _c_this.arguments.length; i++) {
 			var arg = _c_this.arguments[i];
 			args.push(arg.docDynamic());
 			}
-		return "{\"type\": \"method\", \"name\": \"" + _c_this.name + "\", \"doc\": \"" + _c_this.doc.docDynamic() + "\", \"output\": \"" + _c_this.output.lookPretty() + "\", \"arguments\": [" + args.join(",") + "]}";}
+		var isAsync = "false";
+		if (_c_this.isAsync) {
+			isAsync = "true";
+			}
+		return "\"arguments\": [" + args.join(",") + "], \"async\": " + isAsync;}
 
 Carbonite.Members.Method.fromHeader = function (parent, data) {var _c_this = this; var _c_root_method_arguments = arguments;
 		var method = new Carbonite.Members.Method(parent, parent, null);
@@ -2642,8 +2654,22 @@ Carbonite.Members.Method.prototype.hasFlag = function (flag) {var _c_this = this
 			}
 		return false;}
 
-Carbonite.Members.Method.prototype.extraDocDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
-}
+Carbonite.Members.Method.prototype.docDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
+		var extra = _c_this.extraDocDynamic();
+		if (extra != null) {
+			extra = ", " + extra;
+			}else{
+				extra = "";
+			}
+		var inherited = "";
+		if (_c_this.inheritedFrom != null) {
+			inherited = _c_this.inheritedFrom.route;
+			}
+		var abstract = "false";
+		if (_c_this.abstract) {
+			abstract = "true";
+			}
+		return "{\"type\": \"" + _c_this.type + "\", \"inherited\": \"" + inherited + "\", \"abstract\": " + abstract + ", \"name\": \"" + _c_this.name + "\", \"doc\": \"" + _c_this.doc.docDynamic() + "\", \"output\": \"" + _c_this.output.lookPretty() + "\"" + extra + "}";}
 
 Carbonite.Members.Method.prototype.getHeaderFlags = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 		var flags = "";
@@ -2820,9 +2846,6 @@ Carbonite.Members.Property.prototype.buildDefault = function () {var _c_this = t
 Carbonite.Members.Property.prototype.build = function (location) {var _c_this = this; var _c_root_method_arguments = arguments;
 }
 
-Carbonite.Members.Property.prototype.docDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
-		return "{\"type\": \"property\", \"name\": \"" + _c_this.name + "\", \"doc\": \"" + _c_this.doc.docDynamic() + "\", \"output\": \"" + _c_this.output.lookPretty() + "\"}";}
-
 Carbonite.Members.Property.prototype.toHeader = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 		return "{\"type\": \"property\", \"binding\": \"" + _c_this.binding + "\", \"name\": \"" + _c_this.name + "\", " + _c_this.getHeaderFlags() + " \"output\": " + _c_this.output.toHeader() + "}";}
 
@@ -2902,6 +2925,23 @@ Carbonite.Members.Property.prototype.hasFlag = function (flag) {var _c_this = th
 
 Carbonite.Members.Property.prototype.extraDocDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 }
+
+Carbonite.Members.Property.prototype.docDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
+		var extra = _c_this.extraDocDynamic();
+		if (extra != null) {
+			extra = ", " + extra;
+			}else{
+				extra = "";
+			}
+		var inherited = "";
+		if (_c_this.inheritedFrom != null) {
+			inherited = _c_this.inheritedFrom.route;
+			}
+		var abstract = "false";
+		if (_c_this.abstract) {
+			abstract = "true";
+			}
+		return "{\"type\": \"" + _c_this.type + "\", \"inherited\": \"" + inherited + "\", \"abstract\": " + abstract + ", \"name\": \"" + _c_this.name + "\", \"doc\": \"" + _c_this.doc.docDynamic() + "\", \"output\": \"" + _c_this.output.lookPretty() + "\"" + extra + "}";}
 
 Carbonite.Members.Property.prototype.getHeaderFlags = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 		var flags = "";
@@ -3348,13 +3388,17 @@ Carbonite.Members.Operator.prototype.getCastName = function (prefix) {var _c_thi
 			}
 		return nme;}
 
-Carbonite.Members.Operator.prototype.docDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
+Carbonite.Members.Operator.prototype.extraDocDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 		var args = [];
 		for (var i = 0; i < _c_this.arguments.length; i++) {
 			var arg = _c_this.arguments[i];
 			args.push(arg.docDynamic());
 			}
-		return "{\"type\": \"method\", \"name\": \"" + _c_this.name + "\", \"doc\": \"" + _c_this.doc.docDynamic() + "\", \"output\": \"" + _c_this.output.lookPretty() + "\", \"arguments\": [" + args.join(",") + "]}";}
+		var isAsync = "false";
+		if (_c_this.isAsync) {
+			isAsync = "true";
+			}
+		return "\"arguments\": [" + args.join(",") + "], \"async\": " + isAsync;}
 
 Carbonite.Members.Operator.fromHeader = function (parent, data) {var _c_this = this; var _c_root_method_arguments = arguments;
 		var method = new Carbonite.Members.Method(parent, parent, null);
@@ -3455,8 +3499,22 @@ Carbonite.Members.Operator.prototype.hasFlag = function (flag) {var _c_this = th
 			}
 		return false;}
 
-Carbonite.Members.Operator.prototype.extraDocDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
-}
+Carbonite.Members.Operator.prototype.docDynamic = function () {var _c_this = this; var _c_root_method_arguments = arguments;
+		var extra = _c_this.extraDocDynamic();
+		if (extra != null) {
+			extra = ", " + extra;
+			}else{
+				extra = "";
+			}
+		var inherited = "";
+		if (_c_this.inheritedFrom != null) {
+			inherited = _c_this.inheritedFrom.route;
+			}
+		var abstract = "false";
+		if (_c_this.abstract) {
+			abstract = "true";
+			}
+		return "{\"type\": \"" + _c_this.type + "\", \"inherited\": \"" + inherited + "\", \"abstract\": " + abstract + ", \"name\": \"" + _c_this.name + "\", \"doc\": \"" + _c_this.doc.docDynamic() + "\", \"output\": \"" + _c_this.output.lookPretty() + "\"" + extra + "}";}
 
 Carbonite.Members.Operator.prototype.getHeaderFlags = function () {var _c_this = this; var _c_root_method_arguments = arguments;
 		var flags = "";
@@ -10635,7 +10693,7 @@ Carbonite.Platforms.Doc.prototype.buildDynamic = function () {var _c_this = this
 			var item = _c_this.compiler.docs.items[i];
 			items.push(item.serialize());
 			}
-		var output = "{\"version\": \"Unkown\", \"items\": [" + items.join(", ") + "], \"articles\": [" + articles.join(",") + "]}";
+		var output = "{\"version\": \"Unknown\", \"items\": [" + items.join(", ") + "], \"articles\": [" + articles.join(",") + "]}";
 		return "window.__cDoc = " + output + "; CarbonDoc.load(__cDoc);";}
 
 Carbonite.Platforms.Doc.make = function (compiler, platform, options) {var _c_this = this; var _c_root_method_arguments = arguments;
