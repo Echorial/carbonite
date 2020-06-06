@@ -125,7 +125,19 @@ class Carbonite.Member inherits object, Carbonite.Range {
 		else
 			extra = "";
 
-		return '{"type": "' + this.type + '", "name": "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "output": "' + this.output.lookPretty() + '"' + extra + '}';
+		let inherited = "";
+
+		if (this.inheritedFrom != null) {
+			inherited = this.inheritedFrom.route;
+		}
+
+		let abstract = "false";
+
+		if (this.abstract) {
+			abstract = "true";
+		}
+
+		return '{"type": "' + this.type + '", "inherited": "' + inherited + '", "abstract": ' + abstract + ', "name": "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "output": "' + this.output.lookPretty() + '"' + extra + '}';
 	}
 
 	fixed Carbonite.Member fromHeader(Carbonite.Class parent, map data) {

@@ -366,13 +366,19 @@ class Carbonite.Members.Method inherits Carbonite.Member {
 		return this.name;
 	}
 
-	override bound public <string>function docDynamic() {
+	override bound public <string>function extraDocDynamic() {
 		var args = new <string>array();
 		for (var int i in this.arguments) {
 			var arg = this.arguments[i];
 			args.push(arg.docDynamic());
 		}
-		return '{"type": "method", "name": "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "output": "' + this.output.lookPretty() + '", "arguments": [' + args.join(",") + ']}';
+
+		let isAsync = "false";
+
+		if (this.isAsync)
+			isAsync = "true";
+
+		return '"arguments": [' + args.join(",") + '], "async": ' + isAsync;
 	}
 
 	override fixed Carbonite.Member fromHeader(Carbonite.Class parent, map data) {

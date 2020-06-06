@@ -42,11 +42,7 @@ class Carbonite.Members.Property inherits Carbonite.Member {
 	bound public override <void>function build(Carbonite.Class location) {
 		
 	}
-
-	override bound public <string>function docDynamic() {
-		return '{"type": "property", "name": "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "output": "' + this.output.lookPretty() + '"}';
-	}
-
+	
 	string toHeader() {
 		return '{"type": "property", "binding": "' + this.binding + '", "name": "' + this.name + '", ' + this.getHeaderFlags() + ' "output": ' + this.output.toHeader() + '}';
 	}
