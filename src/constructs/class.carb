@@ -727,7 +727,7 @@ class Carbonite.Class inherits Carbonite.Named {
 			members.push(this.members[i].docDynamic());
 		
 
-		var output = '{"type": "class", route: "' + this.route + '", name: "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "inherits": [' + inherits.join(",") + '], "members": [' + members.join(",") + ']}';
+		var output = '{"type": "class", "base": "' + this.base + '", route: "' + this.route + '", name: "' + this.name + '", "doc": "' + this.doc.docDynamic() + '", "inherits": [' + inherits.join(",") + '], "members": [' + members.join(",") + ']}';
 
 		return output;
 	}
