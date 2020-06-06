@@ -35,7 +35,7 @@ class Carbonite.Platforms.Doc inherits Carbonite.Platform {
 			items.push(item.serialize());
 		}
 
-		var output = '{"version": "Unkown", "items": [' + items.join(", ") + '], "articles": [' + articles.join(",") + ']}';
+		var output = '{"version": "Unknown", "items": [' + items.join(", ") + '], "articles": [' + articles.join(",") + ']}';
 
 		return "window.__cDoc = " + output + "; CarbonDoc.load(__cDoc);";
 	}
